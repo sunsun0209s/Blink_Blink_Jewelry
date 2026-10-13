@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BlinkBlink.Admin/BlinkBlink.Admin.csproj" />
+    <Project Path="src/BlinkBlink.Application/BlinkBlink.Application.csproj" />
+    <Project Path="src/BlinkBlink.Domain/BlinkBlink.Domain.csproj" />
+    <Project Path="src/BlinkBlink.Infrastructure/BlinkBlink.Infrastructure.csproj" />
+    <Project Path="src/BlinkBlink.Web/BlinkBlink.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BlinkBlink.IntegrationTests/BlinkBlink.IntegrationTests.csproj" />
+    <Project Path="tests/BlinkBlink.UnitTests/BlinkBlink.UnitTests.csproj" />
+  </Folder>
+</Solution>

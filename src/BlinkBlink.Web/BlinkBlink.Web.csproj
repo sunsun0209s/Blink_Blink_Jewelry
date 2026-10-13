@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlinkBlink.Application\BlinkBlink.Application.csproj" />
+    <ProjectReference Include="..\BlinkBlink.Infrastructure\BlinkBlink.Infrastructure.csproj" />
+    <ProjectReference Include="..\BlinkBlink.Domain\BlinkBlink.Domain.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
