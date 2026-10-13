@@ -31,8 +31,7 @@
 ### Bước 6: Yêu cầu gộp code trên web GitHub
 - Mở link GitHub của nhóm trên trình duyệt.
 - Thấy thanh màu vàng hiện lên thì bấm nút **Compare & pull request**.
-- Nhắn tin báo 2 bạn phụ trách chính vào kiểm tra code.
-- Chờ 2 bạn chính duyệt và bấm gộp vào nhánh `main`, không tự bấm gộp.
+- Có thể tự bấm gộp hoặc hỏi ý kiến mọi người trong nhóm review code xem ổn ko rồi gộp.
 
 ---
 
