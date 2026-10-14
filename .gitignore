@@ -485,3 +485,5 @@ $RECYCLE.BIN/
 GEMINI.md
 gemini.md
 .gemini/
+*.pdf
+*.xml
