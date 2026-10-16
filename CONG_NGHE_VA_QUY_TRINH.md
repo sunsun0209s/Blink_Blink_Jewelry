@@ -10,11 +10,11 @@ Hệ thống được xây dựng trên một nền tảng thống nhất của 
 
 | Thành phần | Công nghệ lựa chọn | Vai trò trong hệ thống |
 | :--- | :--- | :--- |
-| **Nền tảng & Ngôn ngữ** | C# trên nền .NET 10 | Ngôn ngữ lập trình chính cho toàn bộ hệ thống, an toàn về kiểu dữ liệu và tối ưu hiệu năng. |
-| **Giao diện Quản trị (Desktop)** | WPF (.NET 10) với **UserControl** | Ứng dụng chạy trên máy tính Windows tại quầy giao dịch, dành cho Quản lý, Thu ngân và Thủ kho. Áp dụng mô hình MVVM (Model-View-ViewModel) kết hợp kiến trúc UserControl giúp từng màn hình nghiệp vụ độc lập, dễ thay thế và tái sử dụng. |
-| **Giao diện Khách hàng (Web)** | ASP.NET Core MVC (.NET 10) | Trang web chạy trên trình duyệt internet dành cho khách hàng tra cứu mẫu mã, giỏ hàng, thông tin thẻ thành viên và phiếu bảo hành; dùng chung tầng nghiệp vụ với ứng dụng Desktop. |
+| **Nền tảng & Ngôn ngữ** | C# trên nền .NET 8 (LTS) | Ngôn ngữ lập trình chính cho toàn bộ hệ thống, an toàn về kiểu dữ liệu và tối ưu hiệu năng dài hạn. |
+| **Giao diện Quản trị (Desktop)** | WPF (.NET 8) với **UserControl** | Ứng dụng chạy trên máy tính Windows tại quầy giao dịch, dành cho Quản lý, Thu ngân và Thủ kho. Áp dụng mô hình MVVM (Model-View-ViewModel) kết hợp kiến trúc UserControl giúp từng màn hình nghiệp vụ độc lập, dễ thay thế và tái sử dụng. |
+| **Giao diện Khách hàng (Web)** | ASP.NET Core MVC (.NET 8) | Trang web chạy trên trình duyệt internet dành cho khách hàng tra cứu mẫu mã, giỏ hàng, thông tin thẻ thành viên và phiếu bảo hành; dùng chung tầng nghiệp vụ với ứng dụng Desktop. |
 | **Hệ quản trị Cơ sở dữ liệu** | Microsoft SQL Server | Nơi lưu trữ toàn bộ dữ liệu kinh doanh của cửa hàng (sản phẩm, hóa đơn, khách hàng, phiếu nhập kho, phiếu kiểm kê, bảo hành, nhật ký kiểm toán), bảo đảm chuẩn hóa quan hệ 3NF. |
-| **Tương tác CSDL (ORM)** | Entity Framework Core 10 | Tự động ánh xạ 18 lớp đối tượng C# thành 18 bảng trong SQL Server; tự động sinh và cập nhật cấu trúc database bằng công cụ Migrations. |
+| **Tương tác CSDL (ORM)** | Entity Framework Core 8 | Tự động ánh xạ 18 lớp đối tượng C# thành 18 bảng trong SQL Server; tự động sinh và cập nhật cấu trúc database bằng công cụ Migrations. |
 | **Cơ chế quản lý phụ thuộc** | Dependency Injection (DI) | Cơ chế tiêm phụ thuộc có sẵn của .NET giúp kết nối các tầng với nhau thông qua hợp đồng (Interface), đảm bảo tính linh hoạt và dễ kiểm thử. |
 | **Kiểm thử tự động** | xUnit | Công cụ viết mã kiểm thử tự động xem logic tính tiền hóa đơn, xét hạng thẻ thành viên và giao dịch CSDL có chạy chính xác hay không. |
 
@@ -30,8 +30,8 @@ Theo yêu cầu của giảng viên, hệ thống được phân rã và tài li
      - **Khách hàng:** Tương tác từ xa qua Cổng thông tin Web ASP.NET Core MVC.
 2. **Mức 2 - Vỏ chứa (Container Diagram):**
    - Phân rã hệ thống thành các khối ứng dụng chạy độc lập:
-     - **Desktop Admin App (WPF .NET 10):** Chạy trên máy trạm của cửa hàng.
-     - **Customer Web App (ASP.NET Core MVC):** Chạy trên máy chủ web.
+     - **Desktop Admin App (WPF .NET 8):** Chạy trên máy trạm của cửa hàng.
+     - **Customer Web App (ASP.NET Core MVC .NET 8):** Chạy trên máy chủ web.
      - **Shared Core Libraries (`Domain`, `Application`, `Infrastructure`):** Khối thư viện logic dùng chung.
      - **Database (SQL Server):** Lưu trữ dữ liệu tập trung.
 3. **Mức 3 - Thành phần (Component Diagram):**

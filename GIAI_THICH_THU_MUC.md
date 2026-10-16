@@ -83,7 +83,7 @@ Là trái tim của hệ thống. Tầng này chứa các thực thể và quy t
 ---
 
 ### 1.3. `src/BlinkBlink.Infrastructure/` (Tầng Hạ Tầng & Cơ Sở Dữ Liệu SQL Server)
-Chịu trách nhiệm kết nối trực tiếp với Microsoft SQL Server qua Entity Framework Core 10.
+Chịu trách nhiệm kết nối trực tiếp với Microsoft SQL Server qua Entity Framework Core 8.
 
 * **Hiện tại đang có:**
   * `Data/`: Chứa cấu hình kết nối CSDL và các bản ghi cấu trúc bảng (Migrations).
