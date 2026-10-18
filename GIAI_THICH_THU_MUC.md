@@ -1,6 +1,6 @@
 # GIẢI THÍCH CHI TIẾT CẤU TRÚC THƯ MỤC DỰ ÁN BLINK BLINK JEWELRY
 
-Tài liệu này giải thích cụ thể: **mỗi thư mục hiện tại chứa gì** và **trong tương lai sẽ được viết thêm những gì**, bám sát 100% bản vẽ thiết kế `Class Diagram.xml` và yêu cầu kiến trúc của giảng viên.
+Tài liệu này giải thích cụ thể: **mỗi thư mục hiện tại chứa gì** và **trong tương lai sẽ được viết thêm những gì**, bám sát 100% bản vẽ thiết kế `Class Diagram.xml` và 5 sơ đồ phân hệ chi tiết trong thư mục `XML/`.
 
 ---
 
@@ -14,159 +14,145 @@ Chứa toàn bộ mã nguồn của hệ thống, tổ chức theo kiến trúc 
 Là trái tim của hệ thống. Tầng này chứa các thực thể và quy tắc kinh doanh của cửa hàng kim hoàn, không phụ thuộc vào CSDL hay giao diện.
 
 * **Hiện tại đang có:**
-  * `Common/`: Các lớp nền tảng dùng chung (`BaseEntity.cs` định nghĩa ID, ngày tạo).
-  * `Entities/`: Đã phân chia thành 7 thư mục nghiệp vụ tương ứng với 18 lớp trong `Class Diagram.xml`:
+  * `Common/`: Các lớp nền tảng dùng chung.
+  * `Entities/`: Phân chia thành các thư mục nghiệp vụ chuẩn hóa theo Class Diagram:
     * `Identity/`: Quản lý tài khoản, nhân viên, phân quyền và nhật ký kiểm toán.
-    * `Catalog/`: Quản lý danh mục và thông tin trang sức.
-    * `Orders/`: Quản lý hóa đơn bán hàng tại quầy.
-    * `Cart/`: Quản lý giỏ hàng trực tuyến cho khách trên Web.
-    * `Customers/`: Quản lý khách hàng và thẻ thành viên VIP.
-    * `Inventory/`: Quản lý nhập kho và kiểm kê định kỳ.
-    * `Warranty/`: Quản lý tiếp nhận và bảo hành trang sức.
+    * `Catalog/`: Quản lý danh mục, thông tin trang sức và lịch sử giá.
+    * `Orders/`: Quản lý hóa đơn bán hàng tại quầy và trực tuyến.
+    * `Cart/`: Quản lý giỏ hàng trực tuyến cho khách mua sắm trên Web.
+    * `Customers/`: Quản lý thông tin khách hàng.
+    * `Inventory/`: Quản lý phiếu nhập kho và biên bản kiểm kê định kỳ.
+    * `Warranty/`: Quản lý phiếu tiếp nhận và bảo hành trang sức.
   * `Enums/`: Thư mục chứa các kiểu liệt kê trạng thái.
-  * `Exceptions/`: Thư mục chứa các biệt lệ nghiệp vụ riêng.
-  * `Interfaces/`: Hợp đồng truy vấn dữ liệu (`IRepository<T>`, `IUnitOfWork`).
+  * `Exceptions/`: Thư mục chứa các ngoại lệ nghiệp vụ riêng.
+  * `Interfaces/`: Hợp đồng truy vấn dữ liệu (Repository Interfaces).
 
-* **Tương lai sẽ viết thêm:**
-  * **18 Lớp thực thể cụ thể (chuẩn hóa theo `Class Diagram.xml`):**
-    * `Identity/`:
-      * `VaiTro.cs`: `maVaiTro`, `tenVaiTro`, `moTa`.
-      * `NguoiDung.cs` (giao diện `<<interface>>`): `maNguoiDung`, `tenDangNhap`, `matKhau`, `maVaiTro`, `trangThai`.
-      * `NhanVien.cs`: `maNhanVien`, `hoTen`, `soDienThoai`, `maNguoiDung`, `tyLeHoaHong`.
-      * `AuditLog.cs`: `maLog`, `maNhanVien`, `hanhDong`, `doiTuongTacDong`, `thoiGian`, `noiDungChiTiet`.
-    * `Catalog/`:
-      * `DanhMuc.cs`: `maDanhMuc`, `tenDanhMuc`, `moTa`.
-      * `SanPhamTrangSuc.cs`: `maSanPham`, `tenSanPham`, `maDanhMuc`, `chatLieu`, `size`, `trangThai`, `giaNhap`, `giaBan`.
-      * `LichSuGia.cs`: `maLichSu`, `maSanPham`, `giaNhapCu`, `giaNhapMoi`, `giaBanCu`, `giaBanMoi`, `ngayThayDoi`, `maNhanVienThucHien`.
-    * `Orders/`:
-      * `HoaDon.cs`: `soHoaDon`, `ngayLap`, `maNhanVien`, `maKhachHang`, `tongTienHang`, `tienGiamGia`, `tongThanhToan`.
-      * `ChiTietHoaDon.cs`: `soHoaDon`, `maSanPham`, `thanhTien`.
-    * `Cart/`:
-      * `GioHang.cs`: `maGioHang`, `maKhachHang`, `soLuong`, `danhSachSanPham`.
-      * `ChiTietGioHang.cs`: `maGioHang`, `maSanPham`, `soLuongSanPham`.
-    * `Customers/`:
-      * `TheThanhVien.cs`: `maHangThanhVien`, `tenHang`, `mocDiemYeuCau`, `phanTramGiamTienCong`.
-      * `KhachHang.cs`: `maKhachHang`, `hoTen`, `soDienThoai`, `ngaySinh`, `diemTichLuy`, `maHangThanhVien`.
-    * `Inventory/`:
-      * `PhieuNhapKho.cs`: `soPhieuNhap`, `ngayNhap`, `nhaCungCap`, `maNhanVien`, `tongSoSanPham`, `tongGiaTri`.
-      * `ChiTietNhapKho.cs`: `soPhieuNhap`, `maSanPham`, `soLuong`, `giaVonNhap`, `soChungTu`.
-      * `PhieuKiemKe.cs`: `soPhieuKiemKe`, `ngayKiemKe`, `viTriKiemKe`, `maNhanVienKho`, `trangThaiDuyet`.
-      * `ChiTietKiemKe.cs`: `soPhieuKiemKe`, `maSanPham`, `tonSoSach`, `tonThucTe`, `chenhLech`.
-    * `Warranty/`:
-      * `PhieuBaoHanh.cs`: `soPhieuBH`, `maKhachHang`, `maSanPham`, `dichVuYeuCau`, `chiPhiSuaChua`, `trangThaiXuLy`.
-  * `Enums/`: `TrangThaiSanPham.cs`, `TrangThaiHoaDon.cs`, `TrangThaiKiemKe.cs`, `TrangThaiBaoHanh.cs`.
-  * `Exceptions/`: `SanPhamDaBanException.cs`, `KhongDuTonKhoException.cs`, `NguoiDungBiKhoaException.cs`.
+* **Danh sách lớp thực thể cụ thể (Chuẩn hóa 100% theo bản vẽ Diagram):**
+  * `Identity/`:
+    * `VaiTro.cs`: `MaVaiTro`, `TenVaiTro`, `MoTa`, `ThemQuyen(maQuyen)`, `XoaQuyen(maQuyen)`.
+    * `NguoiDung.cs` (lớp trừu tượng `<<abstract>>`): `MaNguoiDung`, `HoTen`, `SoDienThoai`, `TenDangNhap`, `MatKhau`, `MaVaiTro`, `TrangThai`, `DangNhap(tenDN, mk)`, `DoiMatKhau(mkMoi)`, `CapNhatThongTin(hoTen, sdt)`, `KhoaTaiKhoan()`.
+    * `NhanVien.cs` (kế thừa `NguoiDung`): `MaNhanVien`, `LuongCoBan`.
+    * `AuditLog.cs`: `MaLog`, `MaNhanVien`, `HanhDong`, `DoiTuongTacDong`, `ThoiGian`, `NoiDungChiTiet`.
+  * `Catalog/`:
+    * `DanhMuc.cs`: `MaDanhMuc`, `TenDanhMuc`, `MoTa`, `LayDanhSachSanPham()`, `CapNhatDanhMuc()`.
+    * `SanPhamTrangSuc.cs`: `MaSanPham`, `TenSanPham`, `MaDanhMuc`, `ChatLieu`, `Size`, `TrangThai`, `GiaNhap`, `GiaBan`.
+    * `LichSuGia.cs`: `MaLichSu`, `MaSanPham`, `GiaNhapCu`, `GiaNhapMoi`, `GiaBanCu`, `GiaBanMoi`, `NgayThayDoi`, `MaNhanVienThucHien`.
+  * `Orders/`:
+    * `HoaDon.cs`: `SoHoaDon`, `NgayLap`, `MaNhanVien`, `MaKhachHang`, `TongTienHang`, `TienGiamGia`, `TongThanhToan`.
+    * `ChiTietHoaDon.cs`: `SoHoaDon`, `MaSanPham`, `ThanhTien`.
+  * `Cart/`:
+    * `GioHang.cs`: `MaGioHang`, `MaKhachHang`, `SoLuong`.
+    * `ChiTietGioHang.cs`: `MaGioHang`, `MaSanPham`, `SoLuongSanPham`.
+  * `Customers/`:
+    * `KhachHang.cs` (kế thừa `NguoiDung`): `MaKhachHang`, `NgaySinh`, `ToString()`.
+  * `Inventory/`:
+    * `PhieuNhapKho.cs`: `SoPhieuNhap`, `NgayNhap`, `NhaCungCap`, `MaNhanVien`, `TongSoSanPham`, `TongGiaTri`.
+    * `ChiTietNhapKho.cs`: `SoPhieuNhap`, `MaSanPham`, `SoLuong`, `GiaVonNhap`, `SoChungTu`.
+    * `PhieuKiemKe.cs`: `SoPhieuKiemKe`, `NgayKiemKe`, `ViTriKiemKe`, `MaNhanVienKho`, `TrangThaiDuyet`.
+    * `ChiTietKiemKe.cs`: `SoPhieuKiemKe`, `MaSanPham`, `TonSoSach`, `TonThucTe`, `ChenhLech`.
+  * `Warranty/`:
+    * `PhieuBaoHanh.cs`: `SoPhieuBH`, `MaKhachHang`, `MaSanPham`, `DichVuYeuCau`, `ChiPhiSuaChua`, `TrangThaiXuLy`.
+  * `Interfaces/` (Repository Interfaces chuẩn hóa):
+    * `INguoiDungRepository.cs`, `INhanVienRepository.cs`, `IKhachHangRepository.cs`, `IVaiTroRepository.cs`.
+    * `ISanPhamRepository.cs`, `IDanhMucRepository.cs`, `IPhieuNhapKhoRepository.cs`.
+    * `IHoaDonRepository.cs`, `IGioHangRepository.cs`.
+    * `IBaoHanhRepository.cs`.
+    * `IThongKeRepository.cs`.
 
 ---
 
 ### 1.2. `src/BlinkBlink.Application/` (Tầng Ca Sử Dụng & Dịch Vụ Nghiệp Vụ)
-Điều phối luồng công việc giữa giao diện và cơ sở dữ liệu. Nhận yêu cầu từ người dùng, gọi các thực thể Domain xử lý và lưu kết quả.
+Điều phối luồng công việc giữa giao diện và cơ sở dữ liệu. Nhận yêu cầu từ người dùng thông qua các DTO, thực thi nghiệp vụ trong Use Cases và tương tác qua các Repository Interfaces.
 
-* **Hiện tại đang có:**
-  * `Common/`: Các lớp truyền tải dữ liệu (DTO).
-  * `Interfaces/`: Các hợp đồng dịch vụ (`IOrderService`, `IInventoryService`...).
-  * `Services/`: Đã tạo sẵn 7 thư mục dịch vụ tương ứng 7 phân hệ:
-    * `Identity/`, `Catalog/`, `Orders/`, `Cart/`, `Customers/`, `Inventory/`, `Warranty/`.
-  * `Strategies/`: Các chiến lược giảm giá theo thẻ thành viên (Strategy Pattern).
-  * `Validators/`: Các lớp kiểm tra tính hợp lệ của dữ liệu đầu vào.
-
-* **Tương lai sẽ viết thêm:**
-  * `Services/Orders/OrderService.cs`: Xử lý tạo đơn hàng tại quầy (POS), tính tiền chiết khấu thành viên, lưu hóa đơn và cập nhật trạng thái món trang sức.
-  * `Services/Catalog/ProductService.cs` & `PriceHistoryService.cs`: Quản lý sản phẩm, cập nhật giá mới và tự động lưu vết vào `LichSuGia`.
-  * `Services/Cart/CartService.cs`: Xử lý thêm, bớt, cập nhật số lượng món hàng trong giỏ hàng web.
-  * `Services/Inventory/StockInService.cs` & `StockCheckService.cs`: Lập phiếu nhập kho từ nhà cung cấp và đối soát kiểm kê kho định kỳ.
-  * `Services/Customers/CustomerService.cs`: Tự động cộng điểm thưởng cho khách và xét nâng hạng thẻ thành viên VIP khi đạt mốc.
-  * `Services/Warranty/WarrantyService.cs`: Lập phiếu tiếp nhận sửa chữa, đánh bóng, theo dõi tiến độ và tính chi phí bảo hành.
-  * `Services/Identity/AuthService.cs` & `AuditLogService.cs`: Xác thực đăng nhập, kiểm tra vai trò và ghi nhật ký thao tác người dùng.
-  * `Strategies/`: `BronzeDiscountStrategy.cs`, `GoldDiscountStrategy.cs`, `DiamondDiscountStrategy.cs` (áp dụng giảm giá tiền công theo thẻ).
+* **Cấu trúc thư mục chuẩn hóa:**
+  * `DTOs/`: Chứa các Data Transfer Objects truyền nhận dữ liệu:
+    * `Identity/`: `DangNhapDTO.cs`, `DangKyKhachHangDTO.cs`, `TaoNhanVienDTO.cs`.
+    * `Orders/`: `DatHangDTO.cs`.
+    * `Inventory/`: `SanPhamDTO.cs`, `NhapKhoDTO.cs`.
+    * `Warranty/`: `TaoBaoHanhDTO.cs`, `CapNhatTrangThaiDTO.cs`.
+    * `Reporting/`: `DoanhThuThongKeDTO.cs`, `BaoCaoTonKhoDTO.cs`, `TopSanPhamBanChayDTO.cs`.
+  * `Services/` (Use Cases tương ứng 5 phân hệ theo Diagram):
+    * `Identity/`:
+      * `DangNhapUseCase.cs`: Xác thực tài khoản người dùng đăng nhập hệ thống.
+      * `DangKyKhachHangUseCase.cs`: Đăng ký tài khoản khách hàng mới trên Web MVC.
+      * `QuanLyNhanVienUseCase.cs`: Thêm mới nhân sự, cấp vai trò và khóa tài khoản nhân viên.
+    * `Orders/`:
+      * `DatHangUseCase.cs`: Xử lý lưu đơn hàng, kiểm tra giỏ hàng và thanh toán.
+    * `Inventory/`:
+      * `QuanLySanPhamUseCase.cs`: Quản lý danh mục, thêm mới và cập nhật sản phẩm trang sức.
+      * `XacNhanNhapKhoUseCase.cs`: Tiếp nhận hàng nhập kho từ nhà cung cấp và cộng tồn kho.
+    * `Warranty/`:
+      * `TiepNhanBaoHanhUseCase.cs`: Lập phiếu tiếp nhận sửa chữa, đánh bóng trang sức.
+      * `XuLyBaoHanhUseCase.cs`: Cập nhật tiến độ hoàn thành và chi phí sửa chữa.
+    * `Reporting/`:
+      * `ThongKeDoanhThuUseCase.cs`: Tổng hợp doanh số bán hàng theo mốc thời gian.
+      * `ThongKeKhoHangUseCase.cs`: Đối soát lượng tồn thực tế vs sổ sách và cảnh báo tồn kho.
 
 ---
 
 ### 1.3. `src/BlinkBlink.Infrastructure/` (Tầng Hạ Tầng & Cơ Sở Dữ Liệu SQL Server)
 Chịu trách nhiệm kết nối trực tiếp với Microsoft SQL Server qua Entity Framework Core 8.
 
-* **Hiện tại đang có:**
-  * `Data/`: Chứa cấu hình kết nối CSDL và các bản ghi cấu trúc bảng (Migrations).
-  * `Repositories/`: Chứa các lớp truy vấn dữ liệu từ SQL Server.
-  * `Reporting/`: Chuẩn bị định dạng dữ liệu hóa đơn điện tử để hiển thị ra màn hình.
-  * `Security/`: Mã hóa mật khẩu và bảo mật thông tin.
-
-* **Tương lai sẽ viết thêm:**
-  * `Data/AppDbContext.cs`: Khai báo 18 bảng CSDL (`DbSet<T>`) tương ứng với 18 thực thể.
-  * `Data/Configurations/`: Cấu hình Fluent API chi tiết cho 18 bảng (khóa chính, khóa ngoại, kiểu dữ liệu, chỉ mục Index tăng tốc độ truy vấn, bảo đảm chuẩn hóa 3NF).
-  * `Data/Migrations/`: Các tệp mã nguồn tự động sinh và cập nhật bảng trên SQL Server.
-  * `Repositories/GenericRepository<T>.cs`: Các phương thức truy vấn dùng chung (Thêm, Sửa, Xóa, Tìm kiếm theo mã ID).
-  * `Security/PasswordHasher.cs`: Băm mật khẩu người dùng trước khi lưu vào CSDL, không lưu mật khẩu thô.
-  * `Reporting/InvoicePreviewService.cs`: Định dạng dữ liệu hóa đơn bán lẻ để hiển thị trực tiếp lên màn hình máy tính cho thu ngân và khách xem trước.
+* **Cấu trúc thư mục chuẩn hóa:**
+  * `Data/`:
+    * `AppDbContext.cs`: Khai báo các `DbSet<T>` và tự động nạp cấu hình qua `ApplyConfigurationsFromAssembly`.
+    * `Configurations/`: Các tệp cấu hình Fluent API độc lập cho từng bảng (`VaiTroConfiguration.cs`, `NguoiDungConfiguration.cs`, `NhanVienConfiguration.cs`, `KhachHangConfiguration.cs`...). Áp dụng chiến lược Table-per-Type (TPT) cho cây kế thừa `NguoiDung`.
+  * `Repositories/`: Triển khai cụ thể các Repository kết nối SQL Server qua `AppDbContext`:
+    * `NguoiDungRepository.cs`, `NhanVienRepository.cs`, `KhachHangRepository.cs`, `VaiTroRepository.cs`.
+    * `SanPhamRepository.cs`, `DanhMucRepository.cs`, `PhieuNhapKhoRepositoryImpl.cs`.
+    * `HoaDonRepository.cs`, `GioHangRepository.cs`.
+    * `BaoHanhRepository.cs`.
+    * `ThongKeRepository.cs`.
 
 ---
 
 ### 1.4. `src/BlinkBlink.Admin/` (Giao Diện Quản Trị & POS - Desktop WPF)
-Ứng dụng máy tính dành cho Quản lý, Thu ngân và Thủ kho. Áp dụng mô hình **MVVM** và kiến trúc **UserControl** theo đúng yêu cầu của giảng viên: cửa sổ chính `MainWindow.xaml` đóng vai trò khung điều hướng (Navigation Container), nội dung từng chức năng được tách thành các `UserControl` độc lập, dễ tái sử dụng và kiểm thử.
+Ứng dụng máy tính Windows tại quầy dành cho Quản lý, Thu ngân và Thủ kho. Áp dụng mô hình **MVVM** và kiến trúc **UserControl** theo đúng yêu cầu giảng viên:
 
-* **Hiện tại đang có:**
-  * `App.xaml`, `App.xaml.cs`: Khởi động ứng dụng và đăng ký dịch vụ (Dependency Injection).
-  * `MainWindow.xaml`: Cửa sổ làm việc chính chứa thanh menu điều hướng và vùng hiển thị UserControl.
-  * `Views/UserControls/`: Đã tạo sẵn 7 thư mục chức năng:
-    * `Orders/`: Giao diện bán hàng tại quầy (POS).
-    * `Catalog/`: Giao diện quản lý danh mục và sản phẩm.
-    * `Inventory/`: Giao diện lập phiếu nhập kho và kiểm kê.
-    * `Customers/`: Giao diện hồ sơ khách hàng và hạng thẻ thành viên.
-    * `Warranty/`: Giao diện tiếp nhận và quản lý bảo hành.
-    * `Identity/`: Giao diện quản lý nhân viên, phân quyền và nhật ký thao tác.
-    * `Reporting/`: Giao diện thống kê doanh thu và hoa hồng.
-  * `Views/Windows/`: Chứa các cửa sổ độc lập (như cửa sổ đăng nhập `LoginWindow.xaml`).
-  * `ViewModels/`: Đã tạo sẵn 7 thư mục ViewModel tương ứng với từng phân hệ trên để xử lý logic hiển thị và liên kết dữ liệu (Data Binding).
-  * `Services/`: Dịch vụ điều hướng trang (`NavigationService.cs`) và hộp thoại thông báo.
-
-* **Tương lai sẽ viết thêm:**
-  * `Views/UserControls/Orders/UC_BanHangPOS.xaml`: Bán hàng tại quầy, tra cứu mã sản phẩm, tự động tính tổng tiền, giảm giá theo hạng thẻ, hiển thị hóa đơn xem trước.
-  * `Views/UserControls/Catalog/UC_SanPham.xaml` & `UC_LichSuGia.xaml`: Quản lý thông tin trang sức và xem biến động giá nhập/bán.
-  * `Views/UserControls/Inventory/UC_NhapKho.xaml` & `UC_KiemKe.xaml`: Lập phiếu nhập kho, đối soát tồn sổ sách vs tồn thực tế để lập biên bản chênh lệch.
-  * `Views/UserControls/Customers/UC_KhachHang.xaml`: Tra cứu điểm tích lũy, lịch sử mua sắm và xét hạng thẻ.
-  * `Views/UserControls/Warranty/UC_BaoHanh.xaml`: Nhập thông tin bảo hành, tình trạng tiếp nhận, chi phí sửa chữa.
-  * `Views/UserControls/Identity/UC_NhanVien.xaml` & `UC_AuditLog.xaml`: Quản lý nhân viên và xem vết kiểm toán.
-  * `Views/Windows/LoginWindow.xaml`: Cửa sổ đăng nhập kiểm tra tài khoản, mật khẩu và chuyển hướng theo vai trò.
+* **Cấu trúc thư mục:**
+  * `MainWindow.xaml`: Cửa sổ khung điều hướng chính.
+  * `Views/UserControls/`: Các màn hình nghiệp vụ độc lập:
+    * `Identity/UC_NhanVien.xaml`: Quản lý nhân viên, phân quyền chức vụ.
+    * `Orders/UC_BanHangPOS.xaml`: Bán hàng tại quầy, quét mã sản phẩm và in hóa đơn.
+    * `Catalog/UC_SanPham.xaml` & `UC_LichSuGia.xaml`: Quản lý thông tin trang sức và xem biến động giá.
+    * `Inventory/UC_NhapKho.xaml` & `UC_KiemKe.xaml`: Lập phiếu nhập kho, đối soát tồn sổ sách vs tồn thực tế.
+    * `Customers/UC_KhachHang.xaml`: Tra cứu hồ sơ khách hàng.
+    * `Warranty/UC_BaoHanh.xaml`: Nhập thông tin bảo hành, tiến độ sửa chữa.
+    * `Reporting/UC_BaoCaoThongKe.xaml`: Màn hình thống kê doanh thu và kho hàng.
+  * `Views/Windows/`: `LoginWindow.xaml` (Cửa sổ đăng nhập Desktop).
+  * `ViewModels/`: Các lớp ViewModel liên kết dữ liệu (Data Binding) cho từng UserControl.
 
 ---
 
 ### 1.5. `src/BlinkBlink.Web/` (Cổng Thông Tin Cho Khách Hàng - Web ASP.NET Core MVC)
 Website dành cho khách hàng bên ngoài truy cập bằng trình duyệt internet. Dùng chung tầng `Application` và CSDL SQL Server với ứng dụng Desktop.
 
-* **Hiện tại đang có:**
-  * `Program.cs`: Cấu hình máy chủ web, định tuyến URL và kết nối dịch vụ.
-  * `Controllers/`: Chứa các bộ điều khiển tiếp nhận yêu cầu từ trình duyệt.
-  * `Views/`: Chứa giao diện trang web (HTML/Razor).
-  * `Models/`: Các lớp dữ liệu dành riêng cho giao diện web.
-  * `wwwroot/`: Chứa CSS, JavaScript, thư viện giao diện và hình ảnh sản phẩm.
-
-* **Tương lai sẽ viết thêm:**
-  * `Controllers/HomeController.cs`: Trang chủ giới thiệu thương hiệu và các bộ sưu tập nổi bật.
-  * `Controllers/ProductsController.cs`: Xem danh mục trang sức, bộ lọc theo chất liệu/size/khoảng giá và trang chi tiết sản phẩm.
-  * `Controllers/CartController.cs`: Xem giỏ hàng trực tuyến, thêm/bớt số lượng món đồ và gửi yêu cầu đặt hàng.
-  * `Controllers/WarrantyController.cs`: Trang tra cứu tiến độ bảo hành theo số phiếu hoặc mã sản phẩm.
-  * `Controllers/AccountController.cs`: Trang cho khách đăng nhập, xem thông tin thẻ thành viên và số điểm tích lũy của mình.
+* **Cấu trúc Controllers chuẩn hóa theo Diagram XML:**
+  * `XacThucController.cs`: Xử lý đăng nhập khách hàng (`DangNhap`).
+  * `KhachHangController.cs`: Xử lý đăng ký tài khoản khách hàng (`DangKy`).
+  * `NhanVienController.cs`: Cấp tài khoản và khóa tài khoản nhân viên.
+  * `BanHangController.cs`: Đặt hàng và xử lý giỏ hàng trực tuyến.
+  * `SanPhamController.cs`: Xem danh mục trang sức, chi tiết sản phẩm.
+  * `PhieuNhapKhoController.cs`: Tiếp nhận nhập kho.
+  * `BaoHanhController.cs`: Tra cứu tiến độ bảo hành theo mã sản phẩm hoặc số phiếu.
+  * `ThongKeController.cs`: Báo cáo thống kê.
+* **Views/ (Giao diện Razor HTML/CSS):**
+  * `XacThuc/DangNhap.cshtml`: Giao diện trang Đăng nhập sang trọng.
+  * `KhachHang/DangKy.cshtml`: Giao diện trang Đăng ký thành viên mới.
+  * `Home/Index.cshtml`: Trang chủ giới thiệu thương hiệu kim hoàn.
 
 ---
 
 ## 2. THƯ MỤC KIỂM THỬ: `tests/`
 
-Chứa các đoạn mã tự động kiểm tra tính đúng đắn của logic nghiệp vụ trước khi đưa vào vận hành:
-
-* **`tests/BlinkBlink.UnitTests/`**:
-  * Kiểm tra tính tiền hóa đơn: tiền hàng trừ tiền giảm giá có đúng bằng tổng thanh toán hay không.
-  * Kiểm tra công thức tính hoa hồng của nhân viên bán hàng.
-  * Kiểm tra logic tự động nâng hạng thẻ thành viên khi điểm tích lũy vượt mốc quy định.
-* **`tests/BlinkBlink.IntegrationTests/`**:
-  * Kiểm tra giao dịch toàn vẹn (Transaction ACID) trên SQL Server: khi hoàn tất một hóa đơn, hệ thống phải vừa lưu hóa đơn, vừa chuyển trạng thái sản phẩm sang 'Đã bán', vừa cộng điểm tích lũy cho khách hàng trong cùng một giao dịch an toàn.
+* **`tests/BlinkBlink.UnitTests/`**: Kiểm thử đơn vị các phương thức nghiệp vụ Domain (`DangNhap`, `DoiMatKhau`, tính tiền hóa đơn, kiểm kê kho).
+* **`tests/BlinkBlink.IntegrationTests/`**: Kiểm thử tích hợp tương tác CSDL SQL Server qua EF Core 8.
 
 ---
 
-## 3. CÁC TỆP TIN Ở THƯ MỤC GỐC (ROOT)
+## 3. CÁC TỆP TIN Ở THƯ MỤC GỐC (ROOT) DỰ ÁN
+* **`BlinkBlinkJewelry.sln`**: Tệp Solution gốc của .NET 8 LTS quản lý toàn bộ 7 projects trong hệ thống Clean Architecture.
+* **`GIAI_THICH_THU_MUC.md`**: Bản giải thích chi tiết cấu trúc thư mục, trách nhiệm từng tầng và phân công module.
+* **`CONG_NGHE_VA_QUY_TRINH.md`**: Bản mô tả công nghệ sử dụng, kiến trúc phân tầng C4 và chu trình Migrations CSDL dùng chung.
+* **`WORKFLOW.md`**: Quy ước đặt tên nhánh, commit message và quy trình phối hợp làm việc nhóm trên GitHub.
 
-* **`Class Diagram.xml`**: Bản vẽ thiết kế kiến trúc lớp (UML Class Diagram) chuẩn hóa của dự án. Mọi thực thể, thuộc tính và mối quan hệ trong mã nguồn đều phải khớp 100% với tệp này.
-* **`.gitignore`**: Danh sách các tệp tạm thời sinh ra khi biên dịch (`bin/`, `obj/`) mà Git tự động bỏ qua, không đưa lên GitHub.
-* **`BlinkBlinkJewelry.sln` & `BlinkBlinkJewelry.slnx`**: Tệp Solution tổng thể để mở và liên kết cả 6 dự án thành phần trên Visual Studio hoặc VS Code.
-* **`README.md`**: Giới thiệu tổng quan về đồ án và danh sách thành viên thực hiện.
-* **`WORKFLOW.md`**: Hướng dẫn quy trình sử dụng Git ngắn gọn cho nhóm 4 người làm việc song song không bị xung đột mã nguồn.
-* **`CONG_NGHE_VA_QUY_TRINH.md`**: Bản mô tả công nghệ sử dụng và lộ trình thiết kế hệ thống từ trong ra ngoài (Domain-First).

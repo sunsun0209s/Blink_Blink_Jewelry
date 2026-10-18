@@ -1,0 +1,59 @@
+@model BlinkBlink.Application.DTOs.Identity.DangNhapDTO
+
+@{
+    ViewData["Title"] = "Đăng nhập tài khoản";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0 rounded-4">
+            <div class="card-header bg-dark text-center py-4 rounded-top-4 border-0">
+                <div class="mb-2">
+                    <i class="bi bi-gem text-warning display-5"></i>
+                </div>
+                <h4 class="text-white fw-bold mb-0">BLINK BLINK JEWELRY</h4>
+                <p class="text-white-50 small mb-0">Đăng nhập cổng thông tin khách hàng</p>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <form asp-controller="XacThuc" asp-action="DangNhap" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="TenDangNhap" class="form-label fw-semibold">Tên đăng nhập / Số điện thoại</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                            <input asp-for="TenDangNhap" class="form-control" placeholder="Nhập tên đăng nhập" autofocus required />
+                        </div>
+                        <span asp-validation-for="TenDangNhap" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="MatKhau" class="form-label fw-semibold">Mật khẩu</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                            <input asp-for="MatKhau" type="password" class="form-control" placeholder="Nhập mật khẩu" required />
+                        </div>
+                        <span asp-validation-for="MatKhau" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-bb-gold py-2 fw-bold">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
+                        </button>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <span class="text-muted small">Chưa có tài khoản thành viên?</span>
+                        <a asp-controller="KhachHang" asp-action="DangKy" class="text-decoration-none fw-semibold text-warning"> Đăng ký ngay</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

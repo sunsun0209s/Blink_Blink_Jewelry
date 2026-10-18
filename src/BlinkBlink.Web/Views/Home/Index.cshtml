@@ -1,8 +1,65 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Trang chủ";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="p-5 mb-4 bg-light rounded-4 shadow-sm border text-center mt-3">
+    <div class="container-fluid py-4">
+        <div class="mb-3">
+            <i class="bi bi-gem display-3" style="color: #c5a059;"></i>
+        </div>
+        <h1 class="display-5 fw-bold text-dark">BLINK BLINK JEWELRY</h1>
+        <p class="col-md-8 fs-5 text-muted mx-auto">
+            Hệ thống quản lý và kinh doanh trang sức cao cấp hàng đầu. Tinh tế trong từng đường nét kim hoàn, chuẩn mực trong từng quy trình phục vụ.
+        </p>
+
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <div class="alert alert-light border d-inline-block px-4 py-3 shadow-sm rounded-pill mt-3">
+                <i class="bi bi-person-check-fill text-success me-2"></i>
+                Bạn đang đăng nhập với tài khoản: <strong>@User.Identity.Name</strong>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <a asp-controller="XacThuc" asp-action="DangNhap" class="btn btn-dark btn-lg px-4">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
+                </a>
+                <a asp-controller="KhachHang" asp-action="DangKy" class="btn btn-outline-dark btn-lg px-4" style="border-color: #c5a059; color: #9d7c38;">
+                    <i class="bi bi-person-plus me-1"></i> Đăng ký thành viên
+                </a>
+            </div>
+        }
+    </div>
 </div>
+
+<div class="row g-4 py-3">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm text-center p-3">
+            <div class="card-body">
+                <i class="bi bi-stars display-6 text-warning mb-3"></i>
+                <h5 class="card-title fw-bold">Bộ sưu tập Trang sức</h5>
+                <p class="card-text text-muted">Đa dạng mẫu mã nhẫn kim cương, dây chuyền vàng trắng, ngọc trai và đá quý tự nhiên.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm text-center p-3">
+            <div class="card-body">
+                <i class="bi bi-shield-check display-6 text-warning mb-3"></i>
+                <h5 class="card-title fw-bold">Bảo hành Trọn đời</h5>
+                <p class="card-text text-muted">Dịch vụ làm sáng, đính đá và kiểm định chất lượng trang sức chuẩn quốc tế.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm text-center p-3">
+            <div class="card-body">
+                <i class="bi bi-award display-6 text-warning mb-3"></i>
+                <h5 class="card-title fw-bold">Đặc quyền Khách hàng</h5>
+                <p class="card-text text-muted">Tài khoản khách hàng thân thiết với nhiều ưu đãi và dịch vụ hậu mãi chu đáo.</p>
+            </div>
+        </div>
+    </div>
+</div>
+

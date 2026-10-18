@@ -1,0 +1,122 @@
+<UserControl x:Class="BlinkBlink.Admin.Views.UserControls.Identity.UC_NhanVien"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="1050" Background="#F8F9FA">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Tiêu đề Header -->
+        <Border Grid.Row="0" Background="#1A1A1A" CornerRadius="8" Padding="20,15" Margin="0,0,0,15">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💎" FontSize="26" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="QUẢN LÝ NHÂN SỰ &amp; PHÂN QUYỀN TÀI KHOẢN" FontSize="18" FontWeight="Bold" Foreground="#C5A059"/>
+                    <TextBlock Text="Phân hệ Quản lý người dùng - Cửa hàng Trang sức Blink Blink Jewelry" FontSize="12" Foreground="#AAAAAA"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Khung Nhập Liệu Thêm Nhân Viên Mới -->
+        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="20" Margin="0,0,0,15" BorderBrush="#E0E0E0" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Thêm mới hồ sơ nhân viên" FontWeight="Bold" FontSize="14" Foreground="#333333" Margin="0,0,0,12"/>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="15"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="15"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Cột 1 -->
+                    <StackPanel Grid.Row="0" Grid.Column="0">
+                        <TextBlock Text="Họ và tên (*)" Margin="0,0,0,4" Foreground="#555"/>
+                        <TextBox x:Name="txtHoTen" Height="32" Padding="6,4" BorderBrush="#CCC"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Grid.Column="0">
+                        <TextBlock Text="Số điện thoại (*)" Margin="0,0,0,4" Foreground="#555"/>
+                        <TextBox x:Name="txtSoDienThoai" Height="32" Padding="6,4" BorderBrush="#CCC"/>
+                    </StackPanel>
+
+                    <!-- Cột 2 -->
+                    <StackPanel Grid.Row="0" Grid.Column="2">
+                        <TextBlock Text="Tên đăng nhập (*)" Margin="0,0,0,4" Foreground="#555"/>
+                        <TextBox x:Name="txtTenDangNhap" Height="32" Padding="6,4" BorderBrush="#CCC"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Grid.Column="2">
+                        <TextBlock Text="Mật khẩu khởi tạo (*)" Margin="0,0,0,4" Foreground="#555"/>
+                        <PasswordBox x:Name="txtMatKhau" Height="32" Padding="6,4" BorderBrush="#CCC"/>
+                    </StackPanel>
+
+                    <!-- Cột 3 -->
+                    <StackPanel Grid.Row="0" Grid.Column="4">
+                        <TextBlock Text="Mức lương cơ bản (VNĐ) (*)" Margin="0,0,0,4" Foreground="#555"/>
+                        <TextBox x:Name="txtLuongCoBan" Height="32" Padding="6,4" BorderBrush="#CCC"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Grid.Column="4">
+                        <TextBlock Text="Vai trò đảm nhiệm (*)" Margin="0,0,0,4" Foreground="#555"/>
+                        <ComboBox x:Name="cboVaiTro" Height="32" SelectedIndex="0" DisplayMemberPath="TenVaiTro" SelectedValuePath="MaVaiTro"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Nút hành động -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                    <Button x:Name="btnLamMoi" Content="Làm mới" Width="100" Height="34" Margin="0,0,10,0" Background="#E0E0E0" BorderThickness="0" Click="BtnLamMoi_Click"/>
+                    <Button x:Name="btnThemNhanVien" Content="+ Thêm nhân viên" Width="140" Height="34" Background="#C5A059" Foreground="White" FontWeight="Bold" BorderThickness="0" Click="BtnThemNhanVien_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Danh sách nhân viên trong cửa hàng -->
+        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="15" BorderBrush="#E0E0E0" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <TextBlock Text="Danh sách nhân sự hiện hành" FontWeight="Bold" FontSize="14" Foreground="#333333" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="btnKhoaTaiKhoan" Content="🔒 Khóa tài khoản chọn" Width="160" Height="30" Background="#D9534F" Foreground="White" BorderThickness="0" Click="BtnKhoaTaiKhoan_Click"/>
+                    </StackPanel>
+                </Grid>
+
+                <DataGrid x:Name="dgvNhanVien" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                          GridLinesVisibility="Horizontal" HeadersVisibility="Column" SelectionMode="Single"
+                          RowHeight="36" BorderThickness="0" AlternatingRowBackground="#FAFAFA">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Mã NV" Binding="{Binding MaNhanVien}" Width="90"/>
+                        <DataGridTextColumn Header="Họ và tên" Binding="{Binding HoTen}" Width="160"/>
+                        <DataGridTextColumn Header="Số điện thoại" Binding="{Binding SoDienThoai}" Width="110"/>
+                        <DataGridTextColumn Header="Tên đăng nhập" Binding="{Binding TenDangNhap}" Width="130"/>
+                        <DataGridTextColumn Header="Mã vai trò" Binding="{Binding MaVaiTro}" Width="90"/>
+                        <DataGridTextColumn Header="Lương cơ bản" Binding="{Binding LuongCoBan, StringFormat={}{0:N0} VNĐ}" Width="120"/>
+                        <DataGridCheckBoxColumn Header="Hoạt động" Binding="{Binding TrangThai}" Width="80"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
