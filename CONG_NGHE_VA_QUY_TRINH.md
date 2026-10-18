@@ -105,10 +105,10 @@ Chuyển hóa 18 lớp đối tượng thành các bảng quan hệ trong CSDL S
 3. **Cấu hình chuỗi kết nối (Connection String) trong `src/BlinkBlink.Web/appsettings.json`**:
    ```json
    "ConnectionStrings": {
-     "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+     "DefaultConnection": "Server=localhost;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
    }
    ```
-   *(Sử dụng SQL Server LocalDB mặc định có sẵn của Visual Studio, không cần cài đặt thêm phần mềm máy chủ).*
+   *(Sử dụng Microsoft SQL Server 2022 cài đặt trên máy cá nhân, tên server mặc định là `localhost`).*
 
 4. **Bộ câu lệnh chi tiết Migration & Quản lý CSDL (Entity Framework Core Tools)**:
 
