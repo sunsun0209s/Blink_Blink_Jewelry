@@ -91,10 +91,68 @@ Hiện thực hóa chính xác 18 lớp từ `Class Diagram.xml` thành mã C# t
 ---
 
 #### Giai đoạn 2: Hiện thực hóa Cơ sở dữ liệu (`BlinkBlink.Infrastructure`)
-Chuyển hóa 18 lớp đối tượng thành các bảng quan hệ trong CSDL:
-1. Tạo lớp `AppDbContext` kế thừa `DbContext` của EF Core, khai báo 18 thuộc tính `DbSet<T>`.
-2. Viết cấu hình Fluent API chi tiết cho từng bảng: chỉ định khóa chính, khóa ngoại, độ dài ký tự, các chỉ mục (Index) tăng tốc tìm kiếm và các ràng buộc chuẩn hóa 3NF.
-3. Chạy công cụ Migrations để tự động tạo ra database trên SQL Server.
+Chuyển hóa 18 lớp đối tượng thành các bảng quan hệ trong CSDL SQL Server:
+1. **Lớp ngữ cảnh `AppDbContext`**: Kế thừa `DbContext` của EF Core, khai báo các thuộc tính `DbSet<T>`.
+2. **Cấu hình Fluent API độc lập**: 
+   - Tách từng file cấu hình trong thư mục `Data/Configurations/` kế thừa `IEntityTypeConfiguration<T>`.
+   - Trong `AppDbContext.cs`, sử dụng `modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly)` để tự động quét nạp cấu hình, tránh 100% nguy cơ xung đột (conflict) mã nguồn giữa các thành viên.
+3. **Cấu hình chuỗi kết nối (Connection String) trong `src/BlinkBlink.Web/appsettings.json`**:
+   ```json
+   "ConnectionStrings": {
+     "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+   }
+   ```
+   *(Sử dụng SQL Server LocalDB mặc định có sẵn của Visual Studio, không cần cài đặt thêm phần mềm máy chủ).*
+
+4. **Bộ câu lệnh chi tiết Migration & Quản lý CSDL (Entity Framework Core Tools)**:
+
+   * **Bước 0: Cài đặt công cụ CLI (Chỉ cần chạy 1 lần duy nhất trên máy nếu chưa có):**
+     ```bash
+     dotnet tool install --global dotnet-ef
+     ```
+     *(Hoặc cập nhật nếu đã cài bản cũ: `dotnet tool update --global dotnet-ef`)*
+
+   * **Bước 1: Tạo Migration (Sinh bản thiết kế thay đổi CSDL khi có sửa đổi Entity/Fluent API):**
+     * Dùng .NET CLI tại thư mục gốc solution:
+       ```bash
+       dotnet ef migrations add <TenMigration> --project src/BlinkBlink.Infrastructure --startup-project src/BlinkBlink.Web
+       ```
+       *Ví dụ tạo bản CSDL đầu tiên:*
+       ```bash
+       dotnet ef migrations add InitialCreate --project src/BlinkBlink.Infrastructure --startup-project src/BlinkBlink.Web
+       ```
+     * Hoặc dùng Package Manager Console (PMC) trong Visual Studio (chọn Default project là `BlinkBlink.Infrastructure`):
+       ```powershell
+       Add-Migration <TenMigration>
+       ```
+
+   * **Bước 2: Cập nhật CSDL (Bắn lệnh SQL tự động tạo/sửa bảng trong SQL Server):**
+     * Dùng .NET CLI:
+       ```bash
+       dotnet ef database update --project src/BlinkBlink.Infrastructure --startup-project src/BlinkBlink.Web
+       ```
+     * Hoặc dùng Package Manager Console (PMC):
+       ```powershell
+       Update-Database
+       ```
+
+   * **Quy trình phối hợp làm việc nhóm khi kéo code từ Git:**
+     Khi bạn khác trong nhóm vừa thêm bảng mới và merge vào `main`, các thành viên còn lại chỉ cần chạy 2 lệnh:
+     ```bash
+     git pull origin main
+     dotnet ef database update --project src/BlinkBlink.Infrastructure --startup-project src/BlinkBlink.Web
+     ```
+     *(CSDL SQL Server trên máy bạn sẽ tự động cập nhật khớp 100% với nhóm mà không cần gửi file .bak hay .sql qua lại).*
+
+   * **Câu lệnh hoàn tác / Rollback khi lỡ tạo sai Migration:**
+     * Trả CSDL về phiên bản Migration trước:
+       ```bash
+       dotnet ef database update <TenMigrationTruocDo> --project src/BlinkBlink.Infrastructure --startup-project src/BlinkBlink.Web
+       ```
+     * Xóa file Migration vừa tạo (khi chưa apply hoặc đã rollback):
+       ```bash
+       dotnet ef migrations remove --project src/BlinkBlink.Infrastructure --startup-project src/BlinkBlink.Web
+       ```
 
 ---
 
