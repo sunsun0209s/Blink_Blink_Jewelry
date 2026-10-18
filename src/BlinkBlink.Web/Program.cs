@@ -65,6 +65,21 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Tự động kiểm tra và khởi tạo Database cùng các bảng trên SQL Server
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        dbContext.Database.EnsureCreated();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Lỗi trong quá trình khởi tạo CSDL SQL Server.");
+    }
+}
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");

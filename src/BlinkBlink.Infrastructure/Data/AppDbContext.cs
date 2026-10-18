@@ -15,7 +15,7 @@ public class AppDbContext : DbContext
     }
 
     // =========================================================================
-    // PHÂN HỆ NGƯỜI DÙNG & PHÂN QUYỀN (Phụ trách: XuanTam)
+    // PHÂN HỆ NGƯỜI DÙNG & PHÂN QUYỀN 
     // =========================================================================
     public DbSet<VaiTro> VaiTros => Set<VaiTro>();
     public DbSet<NguoiDung> NguoiDungs => Set<NguoiDung>();
