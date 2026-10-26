@@ -12,14 +12,17 @@ namespace BlinkBlink.Application.Services.Identity;
 public class DangKyKhachHangUseCase
 {
     private readonly IKhachHangRepository _khachHangRepo;
+    private readonly IHoaDonRepository? _hoaDonRepo;
 
     /// <summary>
-    /// Khởi tạo Use Case với Repository khách hàng
+    /// Khởi tạo Use Case với Repository khách hàng và hóa đơn
     /// </summary>
     /// <param name="khachHangRepo">Kho dữ liệu khách hàng</param>
-    public DangKyKhachHangUseCase(IKhachHangRepository khachHangRepo)
+    /// <param name="hoaDonRepo">Kho dữ liệu hóa đơn (tự động mapping đơn cũ theo SĐT)</param>
+    public DangKyKhachHangUseCase(IKhachHangRepository khachHangRepo, IHoaDonRepository? hoaDonRepo = null)
     {
         _khachHangRepo = khachHangRepo ?? throw new ArgumentNullException(nameof(khachHangRepo));
+        _hoaDonRepo = hoaDonRepo;
     }
 
     /// <summary>
@@ -62,6 +65,17 @@ public class DangKyKhachHangUseCase
         );
 
         _khachHangRepo.LuuKhachHang(khachHangMoi);
+
+        // Tự động đối chiếu SĐT với CSDL hóa đơn mua hàng trước đó, gắn mã khách hàng vào các đơn offline nếu có
+        try
+        {
+            _hoaDonRepo?.CapNhatKhachHangTheoSoDienThoai(khachHangMoi.SoDienThoai, khachHangMoi.MaNguoiDung);
+        }
+        catch
+        {
+            // Bỏ qua lỗi cập nhật phụ nếu có để đảm bảo luồng đăng ký tài khoản không bị gián đoạn
+        }
+
         return true;
     }
 }

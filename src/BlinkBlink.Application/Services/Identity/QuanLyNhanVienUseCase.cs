@@ -91,10 +91,113 @@ public class QuanLyNhanVienUseCase
         }
 
         // Gọi phương thức nghiệp vụ của Domain Entity NguoiDung
-        nhanVien.KhoaTaiKhoan();
+        if (nhanVien.TrangThai)
+        {
+            nhanVien.KhoaTaiKhoan();
+        }
+        else
+        {
+            nhanVien.TrangThai = true;
+        }
         
         // Lưu lại thay đổi vào cơ sở dữ liệu
         _nhanVienRepo.LuuNhanVien(nhanVien);
         return true;
+    }
+
+    /// <summary>
+    /// Chỉnh sửa thông tin hồ sơ nhân viên và chọn lại vai trò phân quyền
+    /// </summary>
+    /// <param name="maNv">Mã nhân viên cần cập nhật</param>
+    /// <param name="hoTen">Họ và tên mới</param>
+    /// <param name="soDienThoai">Số điện thoại liên lạc</param>
+    /// <param name="luongCoBan">Mức lương cơ bản</param>
+    /// <param name="maVaiTro">Mã vai trò mới (ADMIN, SALE, WAREHOUSE)</param>
+    /// <returns>True nếu cập nhật thành công</returns>
+    public bool CapNhatThongTinNhanVien(string maNv, string hoTen, string soDienThoai, decimal luongCoBan, string maVaiTro)
+    {
+        if (string.IsNullOrWhiteSpace(maNv) || string.IsNullOrWhiteSpace(hoTen) || string.IsNullOrWhiteSpace(maVaiTro))
+        {
+            return false;
+        }
+
+        var nhanVien = _nhanVienRepo.TimTheoMa(maNv.Trim());
+        if (nhanVien == null)
+        {
+            return false;
+        }
+
+        nhanVien.HoTen = hoTen.Trim();
+        nhanVien.SoDienThoai = soDienThoai?.Trim() ?? string.Empty;
+        nhanVien.LuongCoBan = luongCoBan;
+        nhanVien.MaVaiTro = maVaiTro.Trim();
+
+        _nhanVienRepo.CapNhatNhanVien(nhanVien);
+        return true;
+    }
+
+    /// <summary>
+    /// Đặt lại mật khẩu mặc định 123456789 cho nhân viên theo quy định hệ thống mới
+    /// </summary>
+    /// <param name="maNv">Mã định danh nhân viên cần đặt lại mật khẩu</param>
+    /// <returns>True nếu đặt lại mật khẩu thành công; ngược lại False</returns>
+    public bool ResetMatKhau(string maNv)
+    {
+        if (string.IsNullOrWhiteSpace(maNv))
+        {
+            return false;
+        }
+
+        var nhanVien = _nhanVienRepo.TimTheoMa(maNv.Trim());
+        if (nhanVien == null)
+        {
+            return false;
+        }
+
+        // Mật khẩu mặc định khởi tạo ban đầu theo quy định hệ thống chuẩn: 123456789
+        const string matKhauMacDinh = "123456789";
+        nhanVien.DoiMatKhau(matKhauMacDinh);
+
+        _nhanVienRepo.LuuNhanVien(nhanVien);
+        return true;
+    }
+
+    /// <summary>
+    /// Xóa nhân viên khỏi hệ thống nếu nhân viên chưa từng phát sinh dữ liệu nghiệp vụ (phiếu nhập, hóa đơn, kiểm kê).
+    /// Nếu đã từng phát sinh dữ liệu thì chặn xóa và yêu cầu khóa tài khoản.
+    /// </summary>
+    /// <param name="maNv">Mã nhân viên cần xóa</param>
+    /// <param name="message">Thông báo kết quả phản hồi</param>
+    /// <returns>True nếu xóa thành công, False nếu vi phạm ràng buộc dữ liệu</returns>
+    public bool XoaNhanVien(string maNv, out string message)
+    {
+        if (string.IsNullOrWhiteSpace(maNv))
+        {
+            message = "Mã nhân viên không hợp lệ.";
+            return false;
+        }
+
+        var nhanVien = _nhanVienRepo.TimTheoMa(maNv.Trim());
+        if (nhanVien == null)
+        {
+            message = "Không tìm thấy thông tin nhân viên trong hệ thống.";
+            return false;
+        }
+
+        if (!_nhanVienRepo.KiemTraCoTheXoa(maNv.Trim()))
+        {
+            message = $"Nhân viên [{maNv}] đã từng thực hiện tạo phiếu nhập kho, lập hóa đơn bán hàng hoặc xử lý đơn hàng. Hệ thống không cho phép xóa khỏi CSDL để bảo toàn chứng từ, chỉ cho phép khóa tài khoản!";
+            return false;
+        }
+
+        var ok = _nhanVienRepo.XoaNhanVien(maNv.Trim());
+        if (ok)
+        {
+            message = $"Đã xóa thành công nhân viên [{maNv}] và tài khoản liên quan khỏi cơ sở dữ liệu.";
+            return true;
+        }
+
+        message = "Xóa nhân viên thất bại do lỗi hệ thống dữ liệu.";
+        return false;
     }
 }

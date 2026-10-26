@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Data;
+using Microsoft.Data.SqlClient;
 using BlinkBlink.Domain.Entities.Identity;
 using BlinkBlink.Domain.Interfaces;
 using BlinkBlink.Infrastructure.Data;
@@ -8,23 +9,22 @@ using BlinkBlink.Infrastructure.Data;
 namespace BlinkBlink.Infrastructure.Repositories;
 
 /// <summary>
-/// Triển khai kho dữ liệu Vai trò phân quyền thông qua Entity Framework Core.
-/// Bản vẽ kỹ thuật: Phân hệ quản lý người dùng & phân quyền.xml - VaiTroRepository
+/// Triển khai Repository cho thực thể VaiTro bằng ADO.NET thuần.
+/// Khớp 100% với Class Diagram kỹ thuật và XML sơ đồ phân hệ người dùng & phân quyền.
 /// </summary>
 public class VaiTroRepository : IVaiTroRepository
 {
-    private readonly AppDbContext _dbContext;
+    private readonly DatabaseHelper _dbHelper;
 
-    public VaiTroRepository(AppDbContext dbContext)
+    public VaiTroRepository(DatabaseHelper dbHelper)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _dbHelper = dbHelper ?? throw new ArgumentNullException(nameof(dbHelper));
     }
 
-    /// <summary>
-    /// Tìm vai trò theo mã định danh
-    /// </summary>
-    /// <param name="maVaiTro">Mã vai trò (ví dụ: ADMIN, SALE)</param>
-    /// <returns>Đối tượng VaiTro hoặc null</returns>
+    public VaiTroRepository(string connectionString) : this(new DatabaseHelper(connectionString))
+    {
+    }
+
     public VaiTro? TimTheoMa(string maVaiTro)
     {
         if (string.IsNullOrWhiteSpace(maVaiTro))
@@ -32,39 +32,74 @@ public class VaiTroRepository : IVaiTroRepository
             return null;
         }
 
-        return _dbContext.VaiTros.Find(maVaiTro.Trim());
+        const string sql = "SELECT MaVaiTro, TenVaiTro, MoTa FROM dbo.VaiTro WHERE MaVaiTro = @MaVaiTro;";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@MaVaiTro", SqlDbType.VarChar, 20) { Value = maVaiTro.Trim() });
+
+        using var reader = cmd.ExecuteReader();
+        if (reader.Read())
+        {
+            return new VaiTro(
+                maVaiTro: reader.GetString(reader.GetOrdinal("MaVaiTro")),
+                tenVaiTro: reader.GetString(reader.GetOrdinal("TenVaiTro")),
+                moTa: reader.IsDBNull(reader.GetOrdinal("MoTa")) ? string.Empty : reader.GetString(reader.GetOrdinal("MoTa"))
+            );
+        }
+
+        return null;
     }
 
-    /// <summary>
-    /// Lấy toàn bộ danh sách vai trò hiện có trong hệ thống
-    /// </summary>
-    /// <returns>Danh sách các đối tượng VaiTro</returns>
     public List<VaiTro> LayTatCa()
     {
-        return _dbContext.VaiTros.ToList();
+        var list = new List<VaiTro>();
+        const string sql = "SELECT MaVaiTro, TenVaiTro, MoTa FROM dbo.VaiTro;";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        using var reader = cmd.ExecuteReader();
+
+        while (reader.Read())
+        {
+            list.Add(new VaiTro(
+                maVaiTro: reader.GetString(reader.GetOrdinal("MaVaiTro")),
+                tenVaiTro: reader.GetString(reader.GetOrdinal("TenVaiTro")),
+                moTa: reader.IsDBNull(reader.GetOrdinal("MoTa")) ? string.Empty : reader.GetString(reader.GetOrdinal("MoTa"))
+            ));
+        }
+
+        return list;
     }
 
-    /// <summary>
-    /// Lưu mới hoặc cập nhật vai trò vào cơ sở dữ liệu
-    /// </summary>
-    /// <param name="vt">Thực thể vai trò</param>
     public void LuuVaiTro(VaiTro vt)
     {
         if (vt == null)
         {
-            return;
+            throw new ArgumentNullException(nameof(vt), "Vai trò không được để trống.");
         }
 
-        var existing = _dbContext.VaiTros.Find(vt.MaVaiTro);
-        if (existing == null)
-        {
-            _dbContext.VaiTros.Add(vt);
-        }
-        else
-        {
-            _dbContext.Entry(existing).CurrentValues.SetValues(vt);
-        }
+        const string sql = @"
+            IF EXISTS (SELECT 1 FROM dbo.VaiTro WHERE MaVaiTro = @MaVaiTro)
+            BEGIN
+                UPDATE dbo.VaiTro
+                SET TenVaiTro = @TenVaiTro,
+                    MoTa = @MoTa
+                WHERE MaVaiTro = @MaVaiTro;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.VaiTro (MaVaiTro, TenVaiTro, MoTa)
+                VALUES (@MaVaiTro, @TenVaiTro, @MoTa);
+            END";
 
-        _dbContext.SaveChanges();
+        var parameters = new[]
+        {
+            new SqlParameter("@MaVaiTro", SqlDbType.VarChar, 20) { Value = vt.MaVaiTro },
+            new SqlParameter("@TenVaiTro", SqlDbType.NVarChar, 100) { Value = vt.TenVaiTro },
+            new SqlParameter("@MoTa", SqlDbType.NVarChar, 255) { Value = (object?)vt.MoTa ?? DBNull.Value }
+        };
+
+        _dbHelper.ExecuteNonQuery(sql, parameters);
     }
 }
