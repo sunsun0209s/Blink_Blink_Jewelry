@@ -65,8 +65,8 @@ public class DatHangUseCase
             return false;
         }
 
-        // Sinh mã hóa đơn duy nhất kết hợp tiền tố HD, dấu thời gian và số ngẫu nhiên
-        var maHoaDon = $"HD{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";
+        // Sinh mã hóa đơn duy nhất kết hợp chuẩn hệ thống HD_ONLINE_, dấu thời gian và số ngẫu nhiên
+        var maHoaDon = $"HD_ONLINE_{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";
 
         var hoaDon = new HoaDon(
             maHoaDon: maHoaDon,
@@ -93,7 +93,8 @@ public class DatHangUseCase
                 soHoaDon: maHoaDon,
                 maSanPham: item.MaSanPham,
                 donGia: sp.GiaBan,
-                soLuong: item.SoLuongSanPham
+                soLuong: item.SoLuongSanPham,
+                phanTramGiamGia: sp.PhanTramGiamGia
             );
 
             hoaDon.ChiTietHoaDons.Add(chiTiet);

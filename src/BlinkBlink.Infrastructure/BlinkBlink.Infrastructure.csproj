@@ -9,6 +9,15 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Data\AppDbContext.cs" />
+    <Compile Remove="Data\Configurations\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\BlinkBlinkJewelry.sql" Link="BlinkBlinkJewelry.sql" Condition="Exists('..\..\BlinkBlinkJewelry.sql')" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
