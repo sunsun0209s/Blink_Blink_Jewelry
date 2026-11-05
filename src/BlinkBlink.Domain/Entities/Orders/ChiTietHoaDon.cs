@@ -30,27 +30,39 @@ public class ChiTietHoaDon
     /// </summary>
     public int SoLuong { get; set; }
 
+    /// <summary>
+    /// Phần trăm giảm giá ưu đãi tại thời điểm mua (ví dụ: 10 = giảm 10%)
+    /// Khớp thuộc tính: - _phanTramGiamGia: int trong Diagram
+    /// </summary>
+    public int PhanTramGiamGia { get; set; }
+
     // Quan hệ điều hướng (Navigation properties)
     public virtual HoaDon? HoaDon { get; set; }
     public virtual SanPhamTrangSuc? SanPham { get; set; }
 
     public ChiTietHoaDon() { }
 
-    public ChiTietHoaDon(string soHoaDon, string maSanPham, decimal donGia, int soLuong)
+    public ChiTietHoaDon(string soHoaDon, string maSanPham, decimal donGia, int soLuong, int phanTramGiamGia = 0)
     {
         SoHoaDon = soHoaDon;
         MaSanPham = maSanPham;
         DonGia = donGia;
         SoLuong = soLuong;
+        PhanTramGiamGia = phanTramGiamGia;
     }
 
     /// <summary>
-    /// Tính thành tiền của dòng chi tiết sản phẩm.
+    /// Tính thành tiền sau khi đã trừ tỷ lệ giảm giá sản phẩm tại thời điểm mua.
     /// Khớp phương thức: + TinhThanhTien(): decimal trong Diagram.
     /// </summary>
-    /// <returns>Thành tiền = Đơn giá * Số lượng</returns>
+    /// <returns>Thành tiền = Đơn giá * Số lượng * (100 - % Giảm) / 100</returns>
     public decimal TinhThanhTien()
     {
-        return DonGia * SoLuong;
+        var tongGoc = DonGia * SoLuong;
+        if (PhanTramGiamGia > 0 && PhanTramGiamGia <= 100)
+        {
+            return tongGoc * (100 - PhanTramGiamGia) / 100m;
+        }
+        return tongGoc;
     }
 }

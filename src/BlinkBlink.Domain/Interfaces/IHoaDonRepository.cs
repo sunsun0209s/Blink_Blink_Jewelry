@@ -48,6 +48,13 @@ public interface IHoaDonRepository
     /// <param name="hd">Thực thể hóa đơn cần cập nhật</param>
     void CapNhatHoaDon(HoaDon hd);
 
+    /// <summary>
+    /// Tự động cập nhật mã khách hàng cho các hóa đơn offline (tạm gán mã '0') theo số điện thoại khi khách hàng tạo tài khoản mới.
+    /// </summary>
+    /// <param name="soDienThoai">Số điện thoại khách hàng</param>
+    /// <param name="maKhachHangMoi">Mã khách hàng mới tạo</param>
+    void CapNhatKhachHangTheoSoDienThoai(string soDienThoai, string maKhachHangMoi);
+
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
     Task LuuHoaDonAsync(HoaDon hd, CancellationToken cancellationToken = default);
     Task<HoaDon?> TimTheoMaAsync(string maHoaDon, CancellationToken cancellationToken = default);

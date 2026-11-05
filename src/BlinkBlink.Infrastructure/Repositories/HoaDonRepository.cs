@@ -114,8 +114,8 @@ public class HoaDonRepository : IHoaDonRepository
             if (hd.ChiTietHoaDons != null && hd.ChiTietHoaDons.Count > 0)
             {
                 const string sqlInsertCt = @"
-                    INSERT INTO dbo.ChiTietHoaDon (SoHoaDon, MaSanPham, DonGia, SoLuong)
-                    VALUES (@SoHoaDon, @MaSanPham, @DonGia, @SoLuong);";
+                    INSERT INTO dbo.ChiTietHoaDon (SoHoaDon, MaSanPham, DonGia, SoLuong, PhanTramGiamGia)
+                    VALUES (@SoHoaDon, @MaSanPham, @DonGia, @SoLuong, @PhanTramGiamGia);";
 
                 foreach (var ct in hd.ChiTietHoaDons)
                 {
@@ -124,6 +124,7 @@ public class HoaDonRepository : IHoaDonRepository
                     cmdCt.Parameters.Add(new SqlParameter("@MaSanPham", SqlDbType.VarChar, 50) { Value = ct.MaSanPham });
                     cmdCt.Parameters.Add(new SqlParameter("@DonGia", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = ct.DonGia });
                     cmdCt.Parameters.Add(new SqlParameter("@SoLuong", SqlDbType.Int) { Value = ct.SoLuong });
+                    cmdCt.Parameters.Add(new SqlParameter("@PhanTramGiamGia", SqlDbType.Int) { Value = ct.PhanTramGiamGia });
                     cmdCt.ExecuteNonQuery();
                 }
             }
@@ -320,7 +321,7 @@ public class HoaDonRepository : IHoaDonRepository
     {
         var list = new List<ChiTietHoaDon>();
         const string sql = @"
-            SELECT c.SoHoaDon, c.MaSanPham, c.DonGia, c.SoLuong,
+            SELECT c.SoHoaDon, c.MaSanPham, c.DonGia, c.SoLuong, ISNULL(c.PhanTramGiamGia, 0) AS PhanTramGiamGiaCT,
                    s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai, s.HinhAnh, s.PhanTramGiamGia
             FROM dbo.ChiTietHoaDon c
             LEFT JOIN dbo.SanPhamTrangSuc s ON c.MaSanPham = s.MaSanPham
@@ -337,7 +338,8 @@ public class HoaDonRepository : IHoaDonRepository
                 soHoaDon: reader.GetString(reader.GetOrdinal("SoHoaDon")),
                 maSanPham: reader.GetString(reader.GetOrdinal("MaSanPham")),
                 donGia: reader.GetDecimal(reader.GetOrdinal("DonGia")),
-                soLuong: reader.GetInt32(reader.GetOrdinal("SoLuong"))
+                soLuong: reader.GetInt32(reader.GetOrdinal("SoLuong")),
+                phanTramGiamGia: reader.GetInt32(reader.GetOrdinal("PhanTramGiamGiaCT"))
             );
 
             if (!reader.IsDBNull(reader.GetOrdinal("TenSanPham")))
@@ -382,5 +384,24 @@ public class HoaDonRepository : IHoaDonRepository
         };
 
         return hd;
+    }
+
+    public void CapNhatKhachHangTheoSoDienThoai(string soDienThoai, string maKhachHangMoi)
+    {
+        if (string.IsNullOrWhiteSpace(soDienThoai) || string.IsNullOrWhiteSpace(maKhachHangMoi))
+        {
+            return;
+        }
+
+        const string sql = @"
+            UPDATE dbo.HoaDon
+            SET MaKhachHang = @MaKhachHangMoi
+            WHERE SoDienThoaiNhan = @SoDienThoai AND (MaKhachHang = '0' OR MaKhachHang = 'KH_0');";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@SoDienThoai", SqlDbType.VarChar, 20) { Value = soDienThoai.Trim() });
+        cmd.Parameters.Add(new SqlParameter("@MaKhachHangMoi", SqlDbType.VarChar, 50) { Value = maKhachHangMoi.Trim() });
+        cmd.ExecuteNonQuery();
     }
 }
