@@ -48,13 +48,14 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                         NhaCungCap = @NhaCungCap,
                         MaNhanVien = @MaNhanVien,
                         TongSoSanPham = @TongSoSanPham,
-                        TongGiaTri = @TongGiaTri
+                        TongGiaTri = @TongGiaTri,
+                        TrangThai = @TrangThai
                     WHERE MaPhieuNhap = @MaPhieuNhap;
                 END
                 ELSE
                 BEGIN
-                    INSERT INTO dbo.PhieuNhapKho (MaPhieuNhap, NgayNhap, NhaCungCap, MaNhanVien, TongSoSanPham, TongGiaTri)
-                    VALUES (@MaPhieuNhap, @NgayNhap, @NhaCungCap, @MaNhanVien, @TongSoSanPham, @TongGiaTri);
+                    INSERT INTO dbo.PhieuNhapKho (MaPhieuNhap, NgayNhap, NhaCungCap, MaNhanVien, TongSoSanPham, TongGiaTri, TrangThai)
+                    VALUES (@MaPhieuNhap, @NgayNhap, @NhaCungCap, @MaNhanVien, @TongSoSanPham, @TongGiaTri, @TrangThai);
                 END";
 
             using (var cmdP = new SqlCommand(sqlPhieu, conn, tx))
@@ -65,6 +66,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                 cmdP.Parameters.Add(new SqlParameter("@MaNhanVien", SqlDbType.VarChar, 50) { Value = phieu.MaNhanVien });
                 cmdP.Parameters.Add(new SqlParameter("@TongSoSanPham", SqlDbType.Int) { Value = phieu.TongSoSanPham });
                 cmdP.Parameters.Add(new SqlParameter("@TongGiaTri", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = phieu.TongGiaTri });
+                cmdP.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.Bit) { Value = phieu.TrangThai });
                 cmdP.ExecuteNonQuery();
             }
 
@@ -82,11 +84,12 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                     VALUES (@MaPhieuNhap, @MaSanPham, @SoLuong, @GiaVonNhap, @SoChungTu);";
 
                 const string sqlUpdateGiaBinhQuan = @"
-                    -- Tính số lượng tồn kho thực tế trước đợt nhập này
+                    -- Tính số lượng tồn kho thực tế trước đợt nhập này (chỉ tính từ các phiếu nhập còn hợp lệ)
                     DECLARE @TonKho INT = ISNULL((
                         SELECT ISNULL(SUM(ct.SoLuong), 0)
                         FROM dbo.ChiTietNhapKho ct
-                        WHERE ct.MaSanPham = @MaSanPham
+                        INNER JOIN dbo.PhieuNhapKho pn ON ct.MaPhieuNhap = pn.MaPhieuNhap
+                        WHERE ct.MaSanPham = @MaSanPham AND pn.TrangThai = 1
                     ), 0) - ISNULL((
                         SELECT ISNULL(SUM(chd.SoLuong), 0)
                         FROM dbo.ChiTietHoaDon chd
@@ -150,7 +153,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
     {
         var list = new List<PhieuNhapKho>();
         const string sql = @"
-            SELECT MaPhieuNhap, NgayNhap, NhaCungCap, MaNhanVien, TongSoSanPham, TongGiaTri
+            SELECT MaPhieuNhap, NgayNhap, NhaCungCap, MaNhanVien, TongSoSanPham, TongGiaTri, TrangThai
             FROM dbo.PhieuNhapKho
             ORDER BY NgayNhap DESC;";
 
@@ -160,11 +163,15 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
 
         while (reader.Read())
         {
+            var trangThaiCol = reader.GetOrdinal("TrangThai");
+            var trangThai = !reader.IsDBNull(trangThaiCol) && reader.GetBoolean(trangThaiCol);
+
             var p = new PhieuNhapKho(
                 maPhieuNhap: reader.GetString(reader.GetOrdinal("MaPhieuNhap")),
                 nhaCungCap: reader.GetString(reader.GetOrdinal("NhaCungCap")),
                 maNhanVien: reader.GetString(reader.GetOrdinal("MaNhanVien")),
-                ngayNhap: reader.GetDateTime(reader.GetOrdinal("NgayNhap"))
+                ngayNhap: reader.GetDateTime(reader.GetOrdinal("NgayNhap")),
+                trangThai: trangThai
             )
             {
                 TongSoSanPham = reader.GetInt32(reader.GetOrdinal("TongSoSanPham")),
@@ -181,26 +188,15 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
         return list;
     }
 
-    public Task LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken cancellationToken = default)
-    {
-        LuuPhieuNhap(phieu);
-        return Task.CompletedTask;
-    }
-
-    public Task<List<PhieuNhapKho>> LayTatCaAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(LayTatCa());
-    }
-
-    public Task<PhieuNhapKho?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default)
+    public PhieuNhapKho? TimTheoId(string maPhieu)
     {
         if (string.IsNullOrWhiteSpace(maPhieu))
         {
-            return Task.FromResult<PhieuNhapKho?>(null);
+            return null;
         }
 
         const string sql = @"
-            SELECT MaPhieuNhap, NgayNhap, NhaCungCap, MaNhanVien, TongSoSanPham, TongGiaTri
+            SELECT MaPhieuNhap, NgayNhap, NhaCungCap, MaNhanVien, TongSoSanPham, TongGiaTri, TrangThai
             FROM dbo.PhieuNhapKho
             WHERE MaPhieuNhap = @MaPhieuNhap;";
 
@@ -213,11 +209,15 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
         {
             if (reader.Read())
             {
+                var trangThaiCol = reader.GetOrdinal("TrangThai");
+                var trangThai = !reader.IsDBNull(trangThaiCol) && reader.GetBoolean(trangThaiCol);
+
                 phieu = new PhieuNhapKho(
                     maPhieuNhap: reader.GetString(reader.GetOrdinal("MaPhieuNhap")),
                     nhaCungCap: reader.GetString(reader.GetOrdinal("NhaCungCap")),
                     maNhanVien: reader.GetString(reader.GetOrdinal("MaNhanVien")),
-                    ngayNhap: reader.GetDateTime(reader.GetOrdinal("NgayNhap"))
+                    ngayNhap: reader.GetDateTime(reader.GetOrdinal("NgayNhap")),
+                    trangThai: trangThai
                 )
                 {
                     TongSoSanPham = reader.GetInt32(reader.GetOrdinal("TongSoSanPham")),
@@ -231,7 +231,34 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
             phieu.ChiTietNhapKhos = LayChiTietNhapKho(phieu.MaPhieuNhap);
         }
 
-        return Task.FromResult(phieu);
+        return phieu;
+    }
+
+    public void VoHieuHoaPhieuNhap(string maPhieuNhap)
+    {
+        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return;
+
+        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 0 WHERE MaPhieuNhap = @MaPhieuNhap;";
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
+        cmd.ExecuteNonQuery();
+    }
+
+    public Task LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken cancellationToken = default)
+    {
+        LuuPhieuNhap(phieu);
+        return Task.CompletedTask;
+    }
+
+    public Task<List<PhieuNhapKho>> LayTatCaAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(LayTatCa());
+    }
+
+    public Task<PhieuNhapKho?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(TimTheoId(maPhieu));
     }
 
     private List<ChiTietNhapKho> LayChiTietNhapKho(string maPhieuNhap)
