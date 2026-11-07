@@ -131,6 +131,39 @@ public class DatabaseHelper
                     ALTER TABLE dbo.PhieuBaoHanh ADD ChiPhiThucTe DECIMAL(18,2) NOT NULL CONSTRAINT DF_PhieuBaoHanh_ChiPhiThucTe DEFAULT 0;
                 END
 
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuBaoHanh') AND name = 'TinhTrangTiepNhan')
+                BEGIN
+                    ALTER TABLE dbo.PhieuBaoHanh ADD TinhTrangTiepNhan NVARCHAR(300) NULL;
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuBaoHanh') AND name = 'GhiChu')
+                BEGIN
+                    ALTER TABLE dbo.PhieuBaoHanh ADD GhiChu NVARCHAR(500) NULL;
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuBaoHanh') AND name = 'SoDienThoai')
+                BEGIN
+                    ALTER TABLE dbo.PhieuBaoHanh ADD SoDienThoai VARCHAR(20) NULL;
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM dbo.VaiTro WHERE MaVaiTro = 'TECHNICIAN')
+                BEGIN
+                    INSERT INTO dbo.VaiTro (MaVaiTro, TenVaiTro, MoTa)
+                    VALUES ('TECHNICIAN', N'Nhân viên kỹ thuật', N'Tiếp nhận sửa chữa, gia công và quyết toán chi phí bảo hành trang sức');
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM dbo.NguoiDung WHERE TenDangNhap = 'kythuat')
+                BEGIN
+                    INSERT INTO dbo.NguoiDung (MaNguoiDung, HoTen, SoDienThoai, TenDangNhap, MatKhau, MaVaiTro, TrangThai)
+                    VALUES ('USER_NV003', N'Đỗ Văn Kỹ Thuật', '0944556677', 'kythuat', '123456789', 'TECHNICIAN', 1);
+
+                    IF NOT EXISTS (SELECT 1 FROM dbo.NhanVien WHERE MaNguoiDung = 'USER_NV003')
+                    BEGIN
+                        INSERT INTO dbo.NhanVien (MaNguoiDung, MaNhanVien, LuongCoBan)
+                        VALUES ('USER_NV003', 'NV003', 10000000.00);
+                    END
+                END
+
                 IF NOT EXISTS (SELECT 1 FROM dbo.NguoiDung WHERE MaNguoiDung = '0')
                 BEGIN
                     INSERT INTO dbo.NguoiDung (MaNguoiDung, HoTen, SoDienThoai, TenDangNhap, MatKhau, MaVaiTro, TrangThai)
@@ -141,6 +174,43 @@ public class DatabaseHelper
                         INSERT INTO dbo.KhachHang (MaNguoiDung, MaKhachHang, NgaySinh)
                         VALUES ('0', 'KH_GUEST_POS', '2000-01-01');
                     END
+                END
+
+                -- Tạo bảng NhomSanPham và cột MaNhom cho SanPhamTrangSuc
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'NhomSanPham')
+                BEGIN
+                    CREATE TABLE dbo.NhomSanPham (
+                        MaNhom NVARCHAR(50) PRIMARY KEY,
+                        TenNhom NVARCHAR(255) NOT NULL,
+                        MoTa NVARCHAR(500) NULL
+                    );
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.SanPhamTrangSuc') AND name = 'MaNhom')
+                BEGIN
+                    ALTER TABLE dbo.SanPhamTrangSuc ADD MaNhom NVARCHAR(50) NOT NULL CONSTRAINT DF_SanPhamTrangSuc_MaNhom DEFAULT '0';
+                END
+
+                -- Cột TrangThai cho PhieuNhapKho (1: Hợp lệ, 0: Vô hiệu hóa)
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuNhapKho') AND name = 'TrangThai')
+                BEGIN
+                    ALTER TABLE dbo.PhieuNhapKho ADD TrangThai BIT NOT NULL CONSTRAINT DF_PhieuNhapKho_TrangThai DEFAULT 1;
+                END
+
+                -- Cột TrangThai, GhiChu và NgayDuyet cho PhieuKiemKe
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuKiemKe') AND name = 'TrangThai')
+                BEGIN
+                    ALTER TABLE dbo.PhieuKiemKe ADD TrangThai NVARCHAR(50) NOT NULL CONSTRAINT DF_PhieuKiemKe_TrangThai DEFAULT 'ChoDuyet';
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuKiemKe') AND name = 'GhiChu')
+                BEGIN
+                    ALTER TABLE dbo.PhieuKiemKe ADD GhiChu NVARCHAR(500) NULL;
+                END
+
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuKiemKe') AND name = 'NgayDuyet')
+                BEGIN
+                    ALTER TABLE dbo.PhieuKiemKe ADD NgayDuyet DATETIME2 NULL;
                 END";
 
             ExecuteNonQuery(migrationSql);
