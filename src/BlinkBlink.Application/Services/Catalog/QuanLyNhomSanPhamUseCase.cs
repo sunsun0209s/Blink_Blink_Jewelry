@@ -159,8 +159,7 @@ public class QuanLyNhomSanPhamUseCase
             return false;
         }
 
-        // Đồng bộ tên sản phẩm theo tên nhóm và gán mã nhóm
-        sp.TenSanPham = nhom.TenNhom;
+        // Giữ nguyên tên gốc của sản phẩm khi thêm vào nhóm, chỉ gán mã nhóm
         sp.MaNhom = maNhom;
         _sanPhamRepo.LuuSanPham(sp);
 
