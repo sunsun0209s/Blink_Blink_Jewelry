@@ -23,6 +23,27 @@ public interface IPhieuKiemKeRepository
     /// <returns>Thực thể phiếu kiểm kê</returns>
     PhieuKiemKe? TimTheoId(string maPhieu);
 
+    /// <summary>
+    /// Lấy danh sách toàn bộ phiếu kiểm kê kho trong hệ thống (sắp xếp theo thứ tự mới nhất).
+    /// </summary>
+    List<PhieuKiemKe> LayTatCa();
+
+    /// <summary>
+    /// Xóa phiếu kiểm kê (chỉ cho phép khi phiếu ở trạng thái ChoDuyet).
+    /// </summary>
+    void XoaPhieuKiemKe(string maPhieu);
+
+    /// <summary>
+    /// Cập nhật trạng thái phiếu kiểm kê (ChoDuyet, DaDuyet, VoHieuHoa).
+    /// </summary>
+    void CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null);
+
+    /// <summary>
+    /// Kiểm tra xem có phiếu kiểm kê nào khác chứa sản phẩm này được duyệt sau phiếu chỉ định hay không.
+    /// Dùng để ràng buộc chống chồng chéo khi vô hiệu hóa phiếu kiểm kê.
+    /// </summary>
+    bool KiemTraCoPhieuKiemKeMoiHon(string maPhieu, string maSanPham);
+
     // Mở rộng bất đồng bộ chuẩn .NET 8
     Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default);
     Task<PhieuKiemKe?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default);

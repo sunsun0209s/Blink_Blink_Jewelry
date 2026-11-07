@@ -16,18 +16,20 @@ public class PhieuNhapKho
     public string MaNhanVien { get; set; } = string.Empty;
     public int TongSoSanPham { get; set; }
     public decimal TongGiaTri { get; set; }
+    public bool TrangThai { get; set; } = true; // true: Hợp lệ / Hoạt động, false: Đã vô hiệu hóa bởi Admin
 
     // Quan hệ hợp thành (Composition) 1-N: 1 Phiếu nhập kho sở hữu nhiều Chi tiết nhập kho
     public virtual ICollection<ChiTietNhapKho> ChiTietNhapKhos { get; set; } = new List<ChiTietNhapKho>();
 
     public PhieuNhapKho() { }
 
-    public PhieuNhapKho(string maPhieuNhap, string nhaCungCap, string maNhanVien, DateTime? ngayNhap = null)
+    public PhieuNhapKho(string maPhieuNhap, string nhaCungCap, string maNhanVien, DateTime? ngayNhap = null, bool trangThai = true)
     {
         MaPhieuNhap = maPhieuNhap;
         NhaCungCap = nhaCungCap;
         MaNhanVien = maNhanVien;
         NgayNhap = ngayNhap ?? DateTime.UtcNow;
+        TrangThai = trangThai;
     }
 
     /// <summary>

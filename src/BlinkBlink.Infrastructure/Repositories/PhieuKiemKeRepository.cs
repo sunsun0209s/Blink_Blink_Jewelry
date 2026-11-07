@@ -47,13 +47,16 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
                     SET NgayKiemKe = @NgayKiemKe,
                         ViTriKiemKe = @ViTriKiemKe,
                         MaNhanVienKho = @MaNhanVienKho,
-                        TrangThaiDuyet = @TrangThaiDuyet
+                        TrangThai = @TrangThai,
+                        TrangThaiDuyet = @TrangThaiDuyet,
+                        GhiChu = @GhiChu,
+                        NgayDuyet = @NgayDuyet
                     WHERE MaPhieuKiemKe = @MaPhieuKiemKe;
                 END
                 ELSE
                 BEGIN
-                    INSERT INTO dbo.PhieuKiemKe (MaPhieuKiemKe, NgayKiemKe, ViTriKiemKe, MaNhanVienKho, TrangThaiDuyet)
-                    VALUES (@MaPhieuKiemKe, @NgayKiemKe, @ViTriKiemKe, @MaNhanVienKho, @TrangThaiDuyet);
+                    INSERT INTO dbo.PhieuKiemKe (MaPhieuKiemKe, NgayKiemKe, ViTriKiemKe, MaNhanVienKho, TrangThai, TrangThaiDuyet, GhiChu, NgayDuyet)
+                    VALUES (@MaPhieuKiemKe, @NgayKiemKe, @ViTriKiemKe, @MaNhanVienKho, @TrangThai, @TrangThaiDuyet, @GhiChu, @NgayDuyet);
                 END";
 
             using (var cmdP = new SqlCommand(sqlPhieu, conn, tx))
@@ -62,7 +65,10 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
                 cmdP.Parameters.Add(new SqlParameter("@NgayKiemKe", SqlDbType.DateTime2) { Value = phieu.NgayKiemKe });
                 cmdP.Parameters.Add(new SqlParameter("@ViTriKiemKe", SqlDbType.NVarChar, 150) { Value = (object?)phieu.ViTriKiemKe ?? DBNull.Value });
                 cmdP.Parameters.Add(new SqlParameter("@MaNhanVienKho", SqlDbType.VarChar, 50) { Value = phieu.MaNhanVienKho });
+                cmdP.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.NVarChar, 50) { Value = phieu.TrangThai });
                 cmdP.Parameters.Add(new SqlParameter("@TrangThaiDuyet", SqlDbType.Bit) { Value = phieu.TrangThaiDuyet });
+                cmdP.Parameters.Add(new SqlParameter("@GhiChu", SqlDbType.NVarChar, 500) { Value = (object?)phieu.GhiChu ?? DBNull.Value });
+                cmdP.Parameters.Add(new SqlParameter("@NgayDuyet", SqlDbType.DateTime2) { Value = (object?)phieu.NgayDuyet ?? DBNull.Value });
                 cmdP.ExecuteNonQuery();
             }
 
@@ -109,7 +115,7 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
         }
 
         const string sql = @"
-            SELECT MaPhieuKiemKe, NgayKiemKe, ViTriKiemKe, MaNhanVienKho, TrangThaiDuyet
+            SELECT MaPhieuKiemKe, NgayKiemKe, ViTriKiemKe, MaNhanVienKho, TrangThai, TrangThaiDuyet, GhiChu, NgayDuyet
             FROM dbo.PhieuKiemKe
             WHERE MaPhieuKiemKe = @MaPhieuKiemKe;";
 
@@ -122,6 +128,10 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
         {
             if (reader.Read())
             {
+                var trangThaiCol = reader.GetOrdinal("TrangThai");
+                var ghiChuCol = reader.GetOrdinal("GhiChu");
+                var ngayDuyetCol = reader.GetOrdinal("NgayDuyet");
+
                 phieu = new PhieuKiemKe(
                     maPhieuKiemKe: reader.GetString(reader.GetOrdinal("MaPhieuKiemKe")),
                     viTriKiemKe: reader.IsDBNull(reader.GetOrdinal("ViTriKiemKe")) ? string.Empty : reader.GetString(reader.GetOrdinal("ViTriKiemKe")),
@@ -129,7 +139,10 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
                     ngayKiemKe: reader.GetDateTime(reader.GetOrdinal("NgayKiemKe"))
                 )
                 {
-                    TrangThaiDuyet = reader.GetBoolean(reader.GetOrdinal("TrangThaiDuyet"))
+                    TrangThai = !reader.IsDBNull(trangThaiCol) ? reader.GetString(trangThaiCol) : "ChoDuyet",
+                    TrangThaiDuyet = reader.GetBoolean(reader.GetOrdinal("TrangThaiDuyet")),
+                    GhiChu = !reader.IsDBNull(ghiChuCol) ? reader.GetString(ghiChuCol) : string.Empty,
+                    NgayDuyet = !reader.IsDBNull(ngayDuyetCol) ? reader.GetDateTime(ngayDuyetCol) : null
                 };
             }
         }
@@ -140,6 +153,125 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
         }
 
         return phieu;
+    }
+
+    public List<PhieuKiemKe> LayTatCa()
+    {
+        var list = new List<PhieuKiemKe>();
+        const string sql = @"
+            SELECT MaPhieuKiemKe, NgayKiemKe, ViTriKiemKe, MaNhanVienKho, TrangThai, TrangThaiDuyet, GhiChu, NgayDuyet
+            FROM dbo.PhieuKiemKe
+            ORDER BY NgayKiemKe DESC;";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        using var reader = cmd.ExecuteReader();
+
+        while (reader.Read())
+        {
+            var trangThaiCol = reader.GetOrdinal("TrangThai");
+            var ghiChuCol = reader.GetOrdinal("GhiChu");
+            var ngayDuyetCol = reader.GetOrdinal("NgayDuyet");
+
+            var p = new PhieuKiemKe(
+                maPhieuKiemKe: reader.GetString(reader.GetOrdinal("MaPhieuKiemKe")),
+                viTriKiemKe: reader.IsDBNull(reader.GetOrdinal("ViTriKiemKe")) ? string.Empty : reader.GetString(reader.GetOrdinal("ViTriKiemKe")),
+                maNhanVienKho: reader.GetString(reader.GetOrdinal("MaNhanVienKho")),
+                ngayKiemKe: reader.GetDateTime(reader.GetOrdinal("NgayKiemKe"))
+            )
+            {
+                TrangThai = !reader.IsDBNull(trangThaiCol) ? reader.GetString(trangThaiCol) : "ChoDuyet",
+                TrangThaiDuyet = reader.GetBoolean(reader.GetOrdinal("TrangThaiDuyet")),
+                GhiChu = !reader.IsDBNull(ghiChuCol) ? reader.GetString(ghiChuCol) : string.Empty,
+                NgayDuyet = !reader.IsDBNull(ngayDuyetCol) ? reader.GetDateTime(ngayDuyetCol) : null
+            };
+            list.Add(p);
+        }
+
+        foreach (var p in list)
+        {
+            p.ChiTietKiemKes = LayChiTietKiemKe(p.MaPhieuKiemKe);
+        }
+
+        return list;
+    }
+
+    public void XoaPhieuKiemKe(string maPhieu)
+    {
+        if (string.IsNullOrWhiteSpace(maPhieu)) return;
+
+        using var conn = _dbHelper.GetConnection();
+        using var tx = conn.BeginTransaction();
+
+        try
+        {
+            using (var cmdCt = new SqlCommand("DELETE FROM dbo.ChiTietKiemKe WHERE MaPhieuKiemKe = @MaPhieu AND EXISTS (SELECT 1 FROM dbo.PhieuKiemKe WHERE MaPhieuKiemKe = @MaPhieu AND TrangThai = 'ChoDuyet');", conn, tx))
+            {
+                cmdCt.Parameters.Add(new SqlParameter("@MaPhieu", SqlDbType.VarChar, 50) { Value = maPhieu.Trim() });
+                cmdCt.ExecuteNonQuery();
+            }
+
+            using (var cmdP = new SqlCommand("DELETE FROM dbo.PhieuKiemKe WHERE MaPhieuKiemKe = @MaPhieu AND TrangThai = 'ChoDuyet';", conn, tx))
+            {
+                cmdP.Parameters.Add(new SqlParameter("@MaPhieu", SqlDbType.VarChar, 50) { Value = maPhieu.Trim() });
+                cmdP.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
+    public void CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null)
+    {
+        if (string.IsNullOrWhiteSpace(maPhieu)) return;
+
+        const string sql = @"
+            UPDATE dbo.PhieuKiemKe
+            SET TrangThai = @TrangThai,
+                TrangThaiDuyet = @TrangThaiDuyet,
+                NgayDuyet = @NgayDuyet
+            WHERE MaPhieuKiemKe = @MaPhieu;";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@MaPhieu", SqlDbType.VarChar, 50) { Value = maPhieu.Trim() });
+        cmd.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.NVarChar, 50) { Value = trangThaiMoi });
+        cmd.Parameters.Add(new SqlParameter("@TrangThaiDuyet", SqlDbType.Bit) { Value = string.Equals(trangThaiMoi, "DaDuyet", StringComparison.OrdinalIgnoreCase) });
+        cmd.Parameters.Add(new SqlParameter("@NgayDuyet", SqlDbType.DateTime2) { Value = (object?)ngayDuyet ?? DBNull.Value });
+        cmd.ExecuteNonQuery();
+    }
+
+    public bool KiemTraCoPhieuKiemKeMoiHon(string maPhieu, string maSanPham)
+    {
+        if (string.IsNullOrWhiteSpace(maPhieu) || string.IsNullOrWhiteSpace(maSanPham)) return false;
+
+        const string sql = @"
+            SELECT COUNT(1)
+            FROM dbo.PhieuKiemKe pk
+            INNER JOIN dbo.ChiTietKiemKe ct ON pk.MaPhieuKiemKe = ct.MaPhieuKiemKe
+            WHERE pk.MaPhieuKiemKe != @MaPhieu
+              AND pk.TrangThai = 'DaDuyet'
+              AND ct.MaSanPham = @MaSanPham
+              AND (
+                  ISNULL(pk.NgayDuyet, pk.NgayKiemKe) > (
+                      SELECT ISNULL(target.NgayDuyet, target.NgayKiemKe)
+                      FROM dbo.PhieuKiemKe target
+                      WHERE target.MaPhieuKiemKe = @MaPhieu
+                  )
+              );";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@MaPhieu", SqlDbType.VarChar, 50) { Value = maPhieu.Trim() });
+        cmd.Parameters.Add(new SqlParameter("@MaSanPham", SqlDbType.VarChar, 50) { Value = maSanPham.Trim() });
+
+        var count = Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
+        return count > 0;
     }
 
     public Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default)

@@ -14,20 +14,32 @@ public class PhieuKiemKe
     public DateTime NgayKiemKe { get; set; } = DateTime.UtcNow;
     public string ViTriKiemKe { get; set; } = string.Empty;
     public string MaNhanVienKho { get; set; } = string.Empty;
-    public bool TrangThaiDuyet { get; set; }
+    public string TrangThai { get; set; } = "ChoDuyet"; // ChoDuyet, DaDuyet, VoHieuHoa
+    public string GhiChu { get; set; } = string.Empty;
+    public DateTime? NgayDuyet { get; set; }
+
+    /// <summary>
+    /// Thuộc tính đồng bộ với Diagram cũ (true khi DaDuyet, false khi ChoDuyet hoặc VoHieuHoa).
+    /// </summary>
+    public bool TrangThaiDuyet
+    {
+        get => string.Equals(TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase);
+        set => TrangThai = value ? "DaDuyet" : "ChoDuyet";
+    }
 
     // Quan hệ hợp thành (Composition) 1-N: 1 Phiếu kiểm kê sở hữu danh sách Chi tiết kiểm kê
     public virtual ICollection<ChiTietKiemKe> ChiTietKiemKes { get; set; } = new List<ChiTietKiemKe>();
 
     public PhieuKiemKe() { }
 
-    public PhieuKiemKe(string maPhieuKiemKe, string viTriKiemKe, string maNhanVienKho, DateTime? ngayKiemKe = null)
+    public PhieuKiemKe(string maPhieuKiemKe, string viTriKiemKe, string maNhanVienKho, DateTime? ngayKiemKe = null, string trangThai = "ChoDuyet", string ghiChu = "")
     {
         MaPhieuKiemKe = maPhieuKiemKe;
         ViTriKiemKe = viTriKiemKe;
         MaNhanVienKho = maNhanVienKho;
         NgayKiemKe = ngayKiemKe ?? DateTime.UtcNow;
-        TrangThaiDuyet = false;
+        TrangThai = trangThai;
+        GhiChu = ghiChu;
     }
 
     /// <summary>
@@ -36,12 +48,12 @@ public class PhieuKiemKe
     public void BatDauKiemKe()
     {
         // Khớp hàm BatDauKiemKe(): void trong Diagram
-        TrangThaiDuyet = false;
+        TrangThai = "ChoDuyet";
         NgayKiemKe = DateTime.UtcNow;
     }
 
     /// <summary>
-    /// Kết thúc quy trình kiểm kê và chốt số liệu.
+    /// Kết thúc quy trình kiểm kê và chốt số liệu khi Quản lý duyệt phiếu.
     /// </summary>
     public void KetThucKiemKe()
     {
@@ -50,7 +62,16 @@ public class PhieuKiemKe
         {
             chiTiet.XacDinhTrangThai();
         }
-        TrangThaiDuyet = true;
+        TrangThai = "DaDuyet";
+        NgayDuyet = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Vô hiệu hóa phiếu kiểm kê khi quản trị viên hủy kết quả kiểm kê nhầm.
+    /// </summary>
+    public void VoHieuHoa()
+    {
+        TrangThai = "VoHieuHoa";
     }
 
     /// <summary>

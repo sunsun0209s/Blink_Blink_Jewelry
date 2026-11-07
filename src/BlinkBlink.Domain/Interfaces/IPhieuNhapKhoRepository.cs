@@ -21,6 +21,16 @@ public interface IPhieuNhapKhoRepository
     /// </summary>
     List<PhieuNhapKho> LayTatCa();
 
+    /// <summary>
+    /// Tìm phiếu nhập kho theo mã.
+    /// </summary>
+    PhieuNhapKho? TimTheoId(string maPhieu);
+
+    /// <summary>
+    /// Đánh dấu vô hiệu hóa phiếu nhập kho (dành riêng cho Admin).
+    /// </summary>
+    void VoHieuHoaPhieuNhap(string maPhieuNhap);
+
     // Mở rộng bất đồng bộ chuẩn .NET 8
     Task LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken cancellationToken = default);
     Task<PhieuNhapKho?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default);

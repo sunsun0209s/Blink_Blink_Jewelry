@@ -69,6 +69,77 @@ public class XacNhanNhapKhoUseCase
         _nhapKhoRepo.LuuPhieuNhap(phieu);
     }
 
+    /// <summary>
+    /// Vô hiệu hóa phiếu nhập kho (dành riêng cho Quản trị viên Admin).
+    /// Tự động hoàn trừ số lượng tồn kho tương ứng và tính lại giá nhập bình quân như thể phiếu này chưa từng tồn tại.
+    /// Tuyệt đối không cho phép chỉnh sửa phiếu nhập.
+    /// </summary>
+    /// <param name="maPhieuNhap">Mã phiếu nhập cần vô hiệu hóa</param>
+    /// <param name="maAdmin">Mã tài khoản quản trị viên thực hiện</param>
+    /// <param name="error">Thông điệp lỗi nếu thất bại</param>
+    /// <returns>True nếu vô hiệu hóa thành công</returns>
+    public bool VoHieuHoaPhieuNhap(string maPhieuNhap, string maAdmin, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(maPhieuNhap))
+        {
+            error = "Mã phiếu nhập không hợp lệ.";
+            return false;
+        }
+
+        var phieu = _nhapKhoRepo.TimTheoId(maPhieuNhap);
+        if (phieu == null)
+        {
+            error = $"Không tìm thấy phiếu nhập kho #{maPhieuNhap}.";
+            return false;
+        }
+
+        if (!phieu.TrangThai)
+        {
+            error = $"Phiếu nhập kho #{maPhieuNhap} đã bị vô hiệu hóa trước đó.";
+            return false;
+        }
+
+        // 1. Đánh dấu vô hiệu hóa trong cơ sở dữ liệu
+        _nhapKhoRepo.VoHieuHoaPhieuNhap(maPhieuNhap);
+
+        // 2. Cập nhật hoàn trừ tồn kho và tính lại giá vốn cho các sản phẩm trong phiếu
+        var allReceipts = _nhapKhoRepo.LayTatCa().Where(p => p.TrangThai && p.MaPhieuNhap != maPhieuNhap).ToList();
+
+        if (phieu.ChiTietNhapKhos != null)
+        {
+            foreach (var ct in phieu.ChiTietNhapKhos)
+            {
+                var sp = _sanPhamRepo.TimTheoId(ct.MaSanPham);
+                if (sp != null)
+                {
+                    // Trừ số lượng tồn kho tương ứng với đợt nhập bị vô hiệu hóa
+                    sp.SoLuongTon = Math.Max(0, sp.SoLuongTon - ct.SoLuong);
+
+                    // Tính lại giá nhập bình quân theo các phiếu nhập còn hợp lệ
+                    var validDetailsForSp = allReceipts
+                        .SelectMany(r => r.ChiTietNhapKhos ?? Enumerable.Empty<ChiTietNhapKho>())
+                        .Where(c => c.MaSanPham == ct.MaSanPham && c.SoLuong > 0)
+                        .ToList();
+
+                    if (validDetailsForSp.Count > 0)
+                    {
+                        var tongGiaTriConLai = validDetailsForSp.Sum(c => c.SoLuong * c.GiaVonNhap);
+                        var tongSoLuongConLai = validDetailsForSp.Sum(c => c.SoLuong);
+                        if (tongSoLuongConLai > 0)
+                        {
+                            sp.GiaNhap = Math.Round(tongGiaTriConLai / tongSoLuongConLai, 2);
+                        }
+                    }
+
+                    _sanPhamRepo.LuuSanPham(sp);
+                }
+            }
+        }
+
+        return true;
+    }
+
     // =========================================================================
     // MỞ RỘNG BẤT ĐỒNG BỘ CHUẨN CLEAN ARCHITECTURE .NET 8 LTS
     // =========================================================================
