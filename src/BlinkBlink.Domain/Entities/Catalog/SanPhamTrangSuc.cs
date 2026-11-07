@@ -14,6 +14,8 @@ public class SanPhamTrangSuc
     public string TenSanPham { get; set; } = string.Empty;
     public string MaDanhMuc { get; set; } = string.Empty; // Khóa ngoại đến Danh mục
     public virtual DanhMuc? DanhMuc { get; set; }
+    public string MaNhom { get; set; } = "0"; // Khóa ngoại đến Nhóm sản phẩm (Mặc định "0" là chưa gom nhóm)
+    public virtual NhomSanPham? NhomSanPham { get; set; }
     public string ChatLieu { get; set; } = string.Empty;
     public string Size { get; set; } = string.Empty; // Chuẩn hóa string theo Diagram
     public string TrangThai { get; set; } = "HetHang"; // SanSang, DaBan, DangBaoHanh, HetHang
@@ -35,7 +37,8 @@ public class SanPhamTrangSuc
         decimal giaBan,
         string trangThai = "HetHang",
         string hinhAnh = "",
-        int phanTramGiamGia = 0)
+        int phanTramGiamGia = 0,
+        string maNhom = "0")
     {
         MaSanPham = maSanPham;
         TenSanPham = tenSanPham;
@@ -47,6 +50,7 @@ public class SanPhamTrangSuc
         TrangThai = trangThai;
         HinhAnh = hinhAnh;
         PhanTramGiamGia = phanTramGiamGia;
+        MaNhom = string.IsNullOrWhiteSpace(maNhom) ? "0" : maNhom;
     }
 
     /// <summary>

@@ -28,8 +28,14 @@ public interface ISanPhamRepository
     /// </summary>
     List<SanPhamTrangSuc> LayTatCa();
 
+    /// <summary>
+    /// Lấy danh sách sản phẩm trang sức thuộc về một nhóm.
+    /// </summary>
+    List<SanPhamTrangSuc> LayTheoNhom(string maNhom);
+
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
     Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default);
     Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken cancellationToken = default);
     Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken cancellationToken = default);
+    Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken cancellationToken = default);
 }
