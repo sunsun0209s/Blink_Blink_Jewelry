@@ -46,6 +46,14 @@ public interface IBaoHanhRepository
     /// <param name="pbh">Thực thể phiếu bảo hành cần cập nhật</param>
     void CapNhatPhieu(PhieuBaoHanh pbh);
 
+    /// <summary>
+    /// Tự động cập nhật mã khách hàng cho các phiếu bảo hành của khách vãng lai (mã '0' hoặc 'KH_0') theo số điện thoại khi khách tạo tài khoản mới.
+    /// Khớp phương thức: + CapNhatKhachHangTheoSoDienThoai(sdt: string, maKH: string): void trong Diagram.
+    /// </summary>
+    /// <param name="soDienThoai">Số điện thoại khách hàng</param>
+    /// <param name="maKhachHangMoi">Mã khách hàng mới tạo</param>
+    void CapNhatKhachHangTheoSoDienThoai(string soDienThoai, string maKhachHangMoi);
+
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
     Task LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default);
     Task<PhieuBaoHanh?> TimTheoSoPhieuAsync(string soPhieu, CancellationToken cancellationToken = default);
