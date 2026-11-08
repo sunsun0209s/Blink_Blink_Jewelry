@@ -6,7 +6,7 @@ using BlinkBlink.Domain.Interfaces;
 namespace BlinkBlink.Application.Services.Warranty;
 
 /// <summary>
-/// Trường hợp sử dụng Xử lý bảo hành (XuLyBaoHanhUseCase) dành cho nhân viên kỹ thuật / quản trị viên.
+/// Trường hợp sử dụng Xử lý bảo hành (XuLyBaoHanhUseCase) dành cho nhân viên kỹ thuật / quản trị viên / nhân viên bán hàng.
 /// Thực hiện cập nhật tiến độ xử lý và hoàn tất quyết toán dịch vụ bảo hành trang sức.
 /// Khớp 100% với Class Diagram kỹ thuật và XML sơ đồ phân hệ bảo hành.
 /// </summary>
@@ -28,7 +28,7 @@ public class XuLyBaoHanhUseCase
     /// Khớp phương thức: + CapNhatTienDo(soPhieu: string, trangThaiMoi: string): bool trong Diagram.
     /// </summary>
     /// <param name="soPhieu">Số phiếu bảo hành</param>
-    /// <param name="trangThaiMoi">Trạng thái mới: DangKiemDinh, DangXuLy, ChoKhachNhan</param>
+    /// <param name="trangThaiMoi">Trạng thái mới: TiepNhan, DangXuLy, DaXuLy, DaTraKhach, DaHuy</param>
     /// <returns>True nếu cập nhật thành công, False nếu không tìm thấy phiếu</returns>
     public bool CapNhatTienDo(string soPhieu, string trangThaiMoi)
     {
@@ -38,10 +38,6 @@ public class XuLyBaoHanhUseCase
     /// <summary>
     /// Cập nhật tiến độ xử lý của phiếu bảo hành (bất đồng bộ).
     /// </summary>
-    /// <param name="soPhieu">Số phiếu bảo hành</param>
-    /// <param name="trangThaiMoi">Trạng thái mới</param>
-    /// <param name="cancellationToken">Mã token theo dõi hủy tác vụ</param>
-    /// <returns>True nếu cập nhật thành công, False nếu không tìm thấy phiếu</returns>
     public async Task<bool> CapNhatTienDoAsync(string soPhieu, string trangThaiMoi, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(soPhieu) || string.IsNullOrWhiteSpace(trangThaiMoi))
@@ -61,8 +57,29 @@ public class XuLyBaoHanhUseCase
             return false;
         }
 
+        // Nếu trạng thái mới là DaHuy hoặc DaTraKhach, hoàn trả trạng thái sản phẩm sang DaBan
+        if (string.Equals(trangThaiMoi, "DaHuy", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trangThaiMoi, "DaTraKhach", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trangThaiMoi, "DaHoanTat", StringComparison.OrdinalIgnoreCase))
+        {
+            var sanPham = await _sanPhamRepo.TimTheoIdAsync(phieu.MaSanPham, cancellationToken);
+            if (sanPham != null && string.Equals(sanPham.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
+            {
+                sanPham.CapNhatTrangThai("DaBan");
+                await _sanPhamRepo.LuuSanPhamAsync(sanPham, cancellationToken);
+            }
+        }
+
         await _baoHanhRepo.CapNhatPhieuAsync(phieu, cancellationToken);
         return true;
+    }
+
+    /// <summary>
+    /// Kỹ thuật viên chuyển trạng thái phiếu từ Tiếp nhận sang Đang xử lý.
+    /// </summary>
+    public bool ChuyenSangDangXuLy(string soPhieu)
+    {
+        return CapNhatTienDo(soPhieu, "DangXuLy");
     }
 
     /// <summary>
@@ -98,7 +115,7 @@ public class XuLyBaoHanhUseCase
     }
 
     /// <summary>
-    /// Hoàn tất dịch vụ bảo hành khi khách hàng đến nhận lại trang sức (đồng bộ).
+    /// Hoàn tất dịch vụ bảo hành khi khách hàng đến nhận lại trang sức và thanh toán (đồng bộ).
     /// </summary>
     /// <param name="soPhieu">Số phiếu bảo hành</param>
     /// <param name="chiPhiBaoHanh">Chi phí thực tế (nếu chưa quyết toán trước đó)</param>

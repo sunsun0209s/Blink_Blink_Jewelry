@@ -23,6 +23,12 @@ public class PhieuBaoHanh
     public string MaKhachHang { get; set; } = string.Empty;
 
     /// <summary>
+    /// Số điện thoại liên hệ của khách hàng tiếp nhận bảo hành (áp dụng cho cả khách thành viên và khách vãng lai, có thể để trống).
+    /// Khớp thuộc tính: - _soDienThoai: string trong Diagram
+    /// </summary>
+    public string SoDienThoai { get; set; } = string.Empty;
+
+    /// <summary>
     /// Mã sản phẩm trang sức cần bảo hành
     /// Khớp thuộc tính: - _maSanPham: string trong Diagram
     /// </summary>
@@ -33,6 +39,18 @@ public class PhieuBaoHanh
     /// Khớp thuộc tính: - _lyDoBaoHanh: string trong Diagram
     /// </summary>
     public string LyDoBaoHanh { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Tình trạng sản phẩm khi tiếp nhận (ví dụ: móp méo, trầy xước, rơi đá phụ...)
+    /// Khớp thuộc tính: - _tinhTrangTiepNhan: string trong Diagram
+    /// </summary>
+    public string TinhTrangTiepNhan { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Ghi chú bổ sung của nhân viên bán hàng hoặc khách hàng
+    /// Khớp thuộc tính: - _ghiChu: string trong Diagram
+    /// </summary>
+    public string GhiChu { get; set; } = string.Empty;
 
     /// <summary>
     /// Chi phí bảo hành ước tính ban đầu khi tiếp nhận
@@ -60,10 +78,10 @@ public class PhieuBaoHanh
     }
 
     /// <summary>
-    /// Trạng thái xử lý: DangBaoHanh, DaXuLy, DaHoanTat, DaHuy
+    /// Trạng thái xử lý: TiepNhan, DangXuLy, DaXuLy, DaTraKhach, DaHuy (hoặc tương thích DangBaoHanh, DaHoanTat)
     /// Khớp thuộc tính: - _trangThaiXuLy: string trong Diagram
     /// </summary>
-    public string TrangThaiXuLy { get; set; } = "DangBaoHanh";
+    public string TrangThaiXuLy { get; set; } = "TiepNhan";
 
     /// <summary>
     /// Thời điểm lập phiếu tiếp nhận sản phẩm
@@ -87,10 +105,13 @@ public class PhieuBaoHanh
         string maSanPham,
         string lyDoBaoHanh,
         decimal chiPhiUocTinh = 0m,
-        string trangThaiXuLy = "DangBaoHanh",
+        string trangThaiXuLy = "TiepNhan",
         DateTime? ngayTiepNhan = null,
         DateTime? ngayHenTra = null,
-        decimal chiPhiThucTe = 0m)
+        decimal chiPhiThucTe = 0m,
+        string tinhTrangTiepNhan = "",
+        string ghiChu = "",
+        string soDienThoai = "")
     {
         SoPhieuBH = soPhieuBH;
         MaKhachHang = maKhachHang;
@@ -101,6 +122,9 @@ public class PhieuBaoHanh
         TrangThaiXuLy = trangThaiXuLy;
         NgayTiepNhan = ngayTiepNhan ?? DateTime.UtcNow;
         NgayHenTra = ngayHenTra;
+        TinhTrangTiepNhan = tinhTrangTiepNhan;
+        GhiChu = ghiChu;
+        SoDienThoai = soDienThoai ?? string.Empty;
     }
 
     /// <summary>
@@ -121,6 +145,15 @@ public class PhieuBaoHanh
     }
 
     /// <summary>
+    /// Chuyển trạng thái phiếu sang Đang xử lý (dành cho nhân viên kỹ thuật).
+    /// </summary>
+    public bool ChuyenSangDangXuLy()
+    {
+        TrangThaiXuLy = "DangXuLy";
+        return true;
+    }
+
+    /// <summary>
     /// Quyết toán chi phí thực tế cho phiếu bảo hành, chuyển trạng thái sang DaXuLy (chờ khách đến nhận).
     /// Khớp phương thức: + QuyetToan(chiPhi: decimal): bool trong Diagram.
     /// </summary>
@@ -135,13 +168,27 @@ public class PhieuBaoHanh
     }
 
     /// <summary>
-    /// Hoàn tất công tác bảo hành trang sức khi khách hàng đến nhận đồ, chuyển trạng thái sang DaHoanTat.
+    /// Hoàn tất công tác bảo hành trang sức khi khách hàng đến nhận đồ và thanh toán, chuyển trạng thái sang DaTraKhach.
     /// Khớp phương thức: + HoanTatBaoHanh(): bool trong Diagram.
     /// </summary>
     /// <returns>True nếu cập nhật thành công</returns>
     public bool HoanTatBaoHanh()
     {
-        TrangThaiXuLy = "DaHoanTat";
+        TrangThaiXuLy = "DaTraKhach";
+        return true;
+    }
+
+    /// <summary>
+    /// Hủy phiếu bảo hành theo yêu cầu của khách hàng hoặc nhân viên.
+    /// Không thể hủy nếu phiếu đã bàn giao trả khách hoặc đã bị hủy trước đó.
+    /// </summary>
+    public bool HuyPhieu()
+    {
+        if (TrangThaiXuLy == "DaTraKhach" || TrangThaiXuLy == "DaHoanTat" || TrangThaiXuLy == "DaHuy")
+        {
+            return false;
+        }
+        TrangThaiXuLy = "DaHuy";
         return true;
     }
 

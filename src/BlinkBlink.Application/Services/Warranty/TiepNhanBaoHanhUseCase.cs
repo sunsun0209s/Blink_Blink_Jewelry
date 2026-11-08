@@ -8,21 +8,24 @@ using BlinkBlink.Domain.Interfaces;
 namespace BlinkBlink.Application.Services.Warranty;
 
 /// <summary>
-/// Trường hợp sử dụng Tiếp nhận bảo hành (TiepNhanBaoHanhUseCase) dành cho nhân viên.
-/// Thực hiện tạo phiếu bảo hành mới và chuyển trạng thái món trang sức sang DangBaoHanh.
+/// Trường hợp sử dụng Tiếp nhận bảo hành (TiepNhanBaoHanhUseCase) dành cho nhân viên bán hàng.
+/// Thực hiện tạo phiếu bảo hành mới với trạng thái TiepNhan và ghi nhận tình trạng sản phẩm.
 /// Khớp 100% với Class Diagram kỹ thuật và XML sơ đồ phân hệ bảo hành.
 /// </summary>
 public class TiepNhanBaoHanhUseCase
 {
     private readonly IBaoHanhRepository _baoHanhRepo;
     private readonly ISanPhamRepository _sanPhamRepo;
+    private readonly IKhachHangRepository? _khachHangRepo;
 
     public TiepNhanBaoHanhUseCase(
         IBaoHanhRepository baoHanhRepo,
-        ISanPhamRepository sanPhamRepo)
+        ISanPhamRepository sanPhamRepo,
+        IKhachHangRepository? khachHangRepo = null)
     {
         _baoHanhRepo = baoHanhRepo ?? throw new ArgumentNullException(nameof(baoHanhRepo));
         _sanPhamRepo = sanPhamRepo ?? throw new ArgumentNullException(nameof(sanPhamRepo));
+        _khachHangRepo = khachHangRepo;
     }
 
     /// <summary>
@@ -49,15 +52,38 @@ public class TiepNhanBaoHanhUseCase
             return false;
         }
 
-        // Bắt buộc phải có mã khách hàng, mã sản phẩm và lý do tiếp nhận bảo hành
-        if (string.IsNullOrWhiteSpace(request.MaKhachHang) ||
-            string.IsNullOrWhiteSpace(request.MaSanPham) ||
+        // Bắt buộc phải có mã sản phẩm và lý do tiếp nhận bảo hành
+        if (string.IsNullOrWhiteSpace(request.MaSanPham) ||
             string.IsNullOrWhiteSpace(request.LyDoBaoHanh))
         {
             return false;
         }
 
-        // Kiểm tra sản phẩm có tồn tại trong hệ thống hay không
+        // Xác định mã khách hàng: Nếu để trống hoặc là '0', coi là khách vãng lai
+        var maKhachHang = string.IsNullOrWhiteSpace(request.MaKhachHang) ? "0" : request.MaKhachHang.Trim();
+        var soDienThoai = request.SoDienThoai?.Trim() ?? string.Empty;
+
+        // Nếu là khách vãng lai và có cung cấp số điện thoại, thử tìm xem khách đã có hồ sơ chưa
+        if (maKhachHang == "0" && !string.IsNullOrWhiteSpace(soDienThoai) && _khachHangRepo != null)
+        {
+            var existingKh = _khachHangRepo.TimTheoSoDienThoai(soDienThoai);
+            if (existingKh != null)
+            {
+                maKhachHang = !string.IsNullOrWhiteSpace(existingKh.MaNguoiDung) ? existingKh.MaNguoiDung : existingKh.MaKhachHang;
+            }
+        }
+        else if (maKhachHang != "0" && _khachHangRepo != null)
+        {
+            var existingKh = _khachHangRepo.TimTheoMa(maKhachHang);
+            if (existingKh != null && !string.IsNullOrWhiteSpace(existingKh.MaNguoiDung))
+            {
+                maKhachHang = existingKh.MaNguoiDung;
+            }
+        }
+
+        try
+        {
+            // Kiểm tra sản phẩm có tồn tại trong hệ thống hay không
         var sanPham = await _sanPhamRepo.TimTheoIdAsync(request.MaSanPham, cancellationToken);
         if (sanPham == null)
         {
@@ -69,22 +95,31 @@ public class TiepNhanBaoHanhUseCase
 
         var phieuBaoHanh = new PhieuBaoHanh(
             soPhieuBH: soPhieu,
-            maKhachHang: request.MaKhachHang.Trim(),
+            maKhachHang: maKhachHang,
             maSanPham: request.MaSanPham.Trim(),
             lyDoBaoHanh: request.LyDoBaoHanh.Trim(),
             chiPhiUocTinh: Math.Max(0m, request.ChiPhiBaoHanh),
-            trangThaiXuLy: "DangBaoHanh",
+            trangThaiXuLy: "TiepNhan",
             ngayTiepNhan: DateTime.UtcNow,
-            ngayHenTra: request.NgayHenTra
+            ngayHenTra: request.NgayHenTra,
+            chiPhiThucTe: 0m,
+            tinhTrangTiepNhan: request.TinhTrangTiepNhan?.Trim() ?? string.Empty,
+            ghiChu: request.GhiChu?.Trim() ?? string.Empty,
+            soDienThoai: soDienThoai
         );
 
-        // Chuyển trạng thái vòng đời sản phẩm trang sức sang đang bảo hành để ngăn chặn bán/giao dịch
+        // Chuyển trạng thái vòng đời sản phẩm trang sức kim hoàn sang đang bảo hành
         sanPham.CapNhatTrangThai("DangBaoHanh");
         await _sanPhamRepo.LuuSanPhamAsync(sanPham, cancellationToken);
 
         // Lưu phiếu bảo hành vào cơ sở dữ liệu
         await _baoHanhRepo.LuuPhieuAsync(phieuBaoHanh, cancellationToken);
 
-        return true;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
