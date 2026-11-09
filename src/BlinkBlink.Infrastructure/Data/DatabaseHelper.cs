@@ -191,10 +191,35 @@ public class DatabaseHelper
                     ALTER TABLE dbo.SanPhamTrangSuc ADD MaNhom NVARCHAR(50) NOT NULL CONSTRAINT DF_SanPhamTrangSuc_MaNhom DEFAULT '0';
                 END
 
-                -- Cột TrangThai cho PhieuNhapKho (1: Hợp lệ, 0: Vô hiệu hóa)
-                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuNhapKho') AND name = 'TrangThai')
+                -- Cột TyLeLoiNhuan cho SanPhamTrangSuc (% lợi nhuận)
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.SanPhamTrangSuc') AND name = 'TyLeLoiNhuan')
                 BEGIN
-                    ALTER TABLE dbo.PhieuNhapKho ADD TrangThai BIT NOT NULL CONSTRAINT DF_PhieuNhapKho_TrangThai DEFAULT 1;
+                    ALTER TABLE dbo.SanPhamTrangSuc ADD TyLeLoiNhuan DECIMAL(5, 2) NOT NULL CONSTRAINT DF_SanPhamTrangSuc_TyLeLoiNhuan DEFAULT 0;
+                    -- Tự động tính tỷ lệ lợi nhuận cho sản phẩm đã có sẵn giá nhập và giá bán
+                    UPDATE dbo.SanPhamTrangSuc
+                    SET TyLeLoiNhuan = ROUND(((GiaBan / GiaNhap) - 1.0) * 100.0, 2)
+                    WHERE GiaNhap > 0 AND GiaBan > GiaNhap;
+                END
+
+                -- Chuẩn hóa cột TrangThai cho PhieuNhapKho (ChoDuyet, DaDuyet, DaHuy)
+                IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuNhapKho') AND name = 'TrangThai' AND system_type_id = 104)
+                BEGIN
+                    DECLARE @dfName NVARCHAR(200);
+                    SELECT @dfName = d.name 
+                    FROM sys.default_constraints d 
+                    JOIN sys.columns c ON d.parent_column_id = c.column_id AND d.parent_object_id = c.object_id
+                    WHERE d.parent_object_id = OBJECT_ID(N'dbo.PhieuNhapKho') AND c.name = 'TrangThai';
+
+                    IF @dfName IS NOT NULL
+                        EXEC('ALTER TABLE dbo.PhieuNhapKho DROP CONSTRAINT ' + @dfName);
+
+                    ALTER TABLE dbo.PhieuNhapKho ALTER COLUMN TrangThai NVARCHAR(50) NOT NULL;
+                    UPDATE dbo.PhieuNhapKho SET TrangThai = CASE WHEN TrangThai = '1' THEN 'DaDuyet' ELSE 'DaHuy' END WHERE TrangThai IN ('0', '1');
+                    ALTER TABLE dbo.PhieuNhapKho ADD CONSTRAINT DF_PhieuNhapKho_TrangThai DEFAULT 'ChoDuyet' FOR TrangThai;
+                END
+                ELSE IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuNhapKho') AND name = 'TrangThai')
+                BEGIN
+                    ALTER TABLE dbo.PhieuNhapKho ADD TrangThai NVARCHAR(50) NOT NULL CONSTRAINT DF_PhieuNhapKho_TrangThai DEFAULT 'ChoDuyet';
                 END
 
                 -- Cột TrangThai, GhiChu và NgayDuyet cho PhieuKiemKe

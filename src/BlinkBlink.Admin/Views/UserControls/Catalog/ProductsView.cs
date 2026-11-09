@@ -296,6 +296,15 @@ public class ProductsView : UserControl
         };
         colGiaNhap.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
 
+        var colTyLeLoiNhuan = new DataGridViewTextBoxColumn 
+        { 
+            Name = "TyLeLoiNhuan", 
+            HeaderText = "% LỢI NHUẬN", 
+            Width = 115, 
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = UITheme.TabularNumericFont } 
+        };
+        colTyLeLoiNhuan.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
         var colGiaBan = new DataGridViewTextBoxColumn 
         { 
             Name = "GiaBan", 
@@ -341,7 +350,7 @@ public class ProductsView : UserControl
         };
         colHinhAnh.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-        _dgvProducts.Columns.AddRange(colMa, colTen, colMaNhom, colDm, colChatLieu, colSize, colGiaNhap, colGiaBan, colGiamGia, colTonKho, colTrangThai, colHinhAnh);
+        _dgvProducts.Columns.AddRange(colMa, colTen, colMaNhom, colDm, colChatLieu, colSize, colGiaNhap, colTyLeLoiNhuan, colGiaBan, colGiamGia, colTonKho, colTrangThai, colHinhAnh);
     }
 
     public void LoadProductsData()
@@ -428,6 +437,7 @@ public class ProductsView : UserControl
                 }
             }
             var discountText = p.PhanTramGiamGia > 0 ? $"{p.PhanTramGiamGia}%" : "0%";
+            var loiNhuanText = $"{p.TyLeLoiNhuan:0.##}%";
             var maNhomText = string.IsNullOrWhiteSpace(p.MaNhom) || p.MaNhom == "0" ? "0" : p.MaNhom;
             var rowIdx = _dgvProducts.Rows.Add(
                 p.MaSanPham,
@@ -437,6 +447,7 @@ public class ProductsView : UserControl
                 p.ChatLieu,
                 p.Size,
                 p.GiaNhap.ToString("N0", viVn),
+                loiNhuanText,
                 p.GiaBan.ToString("N0", viVn),
                 discountText,
                 p.SoLuongTon.ToString("N0", viVn),

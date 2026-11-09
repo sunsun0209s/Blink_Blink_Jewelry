@@ -80,11 +80,13 @@ public class BanHangOfflineUseCase
                 continue;
             }
 
-            var phanTramGiam = Math.Clamp(item.PhanTramGiamGia, 0, 100);
+            // Đơn giá lưu giá chưa giảm tại thời điểm mua; phần trăm giảm giá ghi nhận tỷ lệ ưu đãi
+            var donGiaGoc = item.DonGia > 0 ? item.DonGia : sp.GiaBan;
+            var phanTramGiam = Math.Clamp(item.PhanTramGiamGia > 0 ? item.PhanTramGiamGia : sp.PhanTramGiamGia, 0, 100);
             var ct = new ChiTietHoaDon(
                 soHoaDon: maHoaDonMoi,
                 maSanPham: item.MaSanPham,
-                donGia: item.DonGia > 0 ? item.DonGia : sp.GiaBan,
+                donGia: donGiaGoc,
                 soLuong: item.SoLuong > 0 ? item.SoLuong : 1,
                 phanTramGiamGia: phanTramGiam
             );
@@ -95,7 +97,8 @@ public class BanHangOfflineUseCase
             _sanPhamRepo.LuuSanPham(sp);
         }
 
-        // Tính lại tổng tiền sau khi đã chiết khấu toàn bộ mặt hàng
+        // Tính lại tổng tiền sau khi đã chiết khấu toàn bộ mặt hàng:
+        // TongTienHang: Tổng giá gốc, TienGiamGia: Tổng tiền giảm, TongThanhToan: Thực thu
         hoaDon.TinhTongTien();
 
         // 5. Lưu vào kho dữ liệu

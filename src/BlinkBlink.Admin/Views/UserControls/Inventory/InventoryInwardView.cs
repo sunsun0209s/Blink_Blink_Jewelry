@@ -24,6 +24,8 @@ public class InventoryInwardView : UserControl
     private TextBox _txtSearch = null!;
     private Button _btnCreateReceipt = null!;
     private Button _btnViewDetails = null!;
+    private Button _btnApprove = null!;
+    private Button _btnDeleteReceipt = null!;
     private Button _btnInvalidate = null!;
     private Button _btnRefresh = null!;
 
@@ -133,8 +135,19 @@ public class InventoryInwardView : UserControl
         _btnViewDetails.Margin = new Padding(0, 2, 8, 2);
         _btnViewDetails.Click += (s, e) => ShowReceiptDetailsDialog();
 
-        _btnInvalidate = UITheme.CreateFlatButton("🚫 Vô Hiệu Hóa Phiếu", Color.FromArgb(239, 68, 68), Color.White);
+        _btnApprove = UITheme.CreateFlatButton("✓ Duyệt Phiếu", Color.FromArgb(22, 101, 52), Color.White);
+        _btnApprove.Margin = new Padding(0, 2, 8, 2);
+        _btnApprove.Enabled = false;
+        _btnApprove.Click += (s, e) => ApproveSelectedReceipt();
+
+        _btnDeleteReceipt = UITheme.CreateFlatButton("🗑️ Xóa Phiếu", Color.FromArgb(239, 68, 68), Color.White);
+        _btnDeleteReceipt.Margin = new Padding(0, 2, 8, 2);
+        _btnDeleteReceipt.Enabled = false;
+        _btnDeleteReceipt.Click += (s, e) => DeleteSelectedReceipt();
+
+        _btnInvalidate = UITheme.CreateFlatButton("🚫 Vô Hiệu Hóa", Color.FromArgb(185, 28, 28), Color.White);
         _btnInvalidate.Margin = new Padding(0, 2, 8, 2);
+        _btnInvalidate.Enabled = false;
         _btnInvalidate.Click += (s, e) => InvalidateSelectedReceipt();
 
         _btnRefresh = UITheme.CreateFlatButton("⟳ Nạp Lại", Color.FromArgb(241, 245, 249), UITheme.TextPrimary);
@@ -145,6 +158,15 @@ public class InventoryInwardView : UserControl
         toolbarPanel.Controls.Add(_txtSearch);
         toolbarPanel.Controls.Add(_btnCreateReceipt);
         toolbarPanel.Controls.Add(_btnViewDetails);
+
+        // Duyệt phiếu dành riêng cho Quản trị viên ADMIN khi phiếu ở trạng thái Chờ duyệt
+        if (IsCurrentAdmin())
+        {
+            toolbarPanel.Controls.Add(_btnApprove);
+        }
+
+        // Xóa phiếu tồn kho: cả nhân viên và admin đều dùng được khi phiếu chưa duyệt
+        toolbarPanel.Controls.Add(_btnDeleteReceipt);
 
         // Nút vô hiệu hóa phiếu nhập kho dành riêng cho tài khoản Quản trị viên ADMIN
         if (IsCurrentAdmin())
@@ -167,6 +189,7 @@ public class InventoryInwardView : UserControl
         UITheme.ApplyGridViewStyle(_dgvReceipts);
         ConfigureReceiptGridColumns();
         _dgvReceipts.CellDoubleClick += (s, e) => ShowReceiptDetailsDialog();
+        _dgvReceipts.SelectionChanged += (s, e) => UpdateButtonStates();
         pnlReceiptsCard.Controls.Add(_dgvReceipts);
 
         pnlGridContainer.Controls.Add(pnlReceiptsCard);
@@ -263,9 +286,11 @@ public class InventoryInwardView : UserControl
     private void UpdateKpis()
     {
         var viVn = new CultureInfo("vi-VN");
+        bool IsApproved(PhieuNhapKho r) => string.Equals(r.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) || r.TrangThai == "1" || r.TrangThai == "True";
+
         _lblKpiTotalReceipts.Text = _allReceipts.Count.ToString("N0", viVn);
-        _lblKpiTotalQuantity.Text = _allReceipts.Where(r => r.TrangThai).Sum(r => r.TongSoSanPham).ToString("N0", viVn);
-        _lblKpiTotalValue.Text = _allReceipts.Where(r => r.TrangThai).Sum(r => r.TongGiaTri).ToString("N0", viVn);
+        _lblKpiTotalQuantity.Text = _allReceipts.Where(IsApproved).Sum(r => r.TongSoSanPham).ToString("N0", viVn);
+        _lblKpiTotalValue.Text = _allReceipts.Where(IsApproved).Sum(r => r.TongGiaTri).ToString("N0", viVn);
     }
 
     private void FilterReceipts()
@@ -284,6 +309,29 @@ public class InventoryInwardView : UserControl
 
         foreach (var r in filtered)
         {
+            string statusDisplay;
+            Color statusFg;
+            Color statusBg;
+
+            if (string.Equals(r.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) || r.TrangThai == "1" || r.TrangThai == "True")
+            {
+                statusDisplay = "✓ Đã duyệt";
+                statusFg = Color.FromArgb(22, 101, 52);
+                statusBg = Color.FromArgb(220, 252, 231);
+            }
+            else if (string.Equals(r.TrangThai, "DaHuy", StringComparison.OrdinalIgnoreCase) || string.Equals(r.TrangThai, "VoHieuHoa", StringComparison.OrdinalIgnoreCase) || r.TrangThai == "0" || r.TrangThai == "False")
+            {
+                statusDisplay = "🚫 Đã hủy";
+                statusFg = Color.FromArgb(153, 27, 27);
+                statusBg = Color.FromArgb(254, 226, 226);
+            }
+            else
+            {
+                statusDisplay = "⏳ Chờ duyệt";
+                statusFg = Color.FromArgb(146, 64, 14);
+                statusBg = Color.FromArgb(254, 243, 199);
+            }
+
             var rowIndex = _dgvReceipts.Rows.Add(
                 r.MaPhieuNhap,
                 r.NgayNhap.ToString("dd/MM/yyyy HH:mm"),
@@ -291,22 +339,137 @@ public class InventoryInwardView : UserControl
                 r.MaNhanVien,
                 r.TongSoSanPham.ToString("N0", viVn),
                 r.TongGiaTri.ToString("N0", viVn),
-                r.TrangThai ? "✓ Hợp lệ" : "🚫 Đã vô hiệu hóa"
+                statusDisplay
             );
 
             var cellTrangThai = _dgvReceipts.Rows[rowIndex].Cells["TrangThai"];
-            if (r.TrangThai)
-            {
-                cellTrangThai.Style.ForeColor = Color.FromArgb(22, 101, 52);
-                cellTrangThai.Style.BackColor = Color.FromArgb(220, 252, 231);
-                cellTrangThai.Style.Font = new Font(UITheme.RegularFont, FontStyle.Bold);
-            }
-            else
-            {
-                cellTrangThai.Style.ForeColor = Color.FromArgb(153, 27, 27);
-                cellTrangThai.Style.BackColor = Color.FromArgb(254, 226, 226);
-                cellTrangThai.Style.Font = new Font(UITheme.RegularFont, FontStyle.Bold);
-            }
+            cellTrangThai.Style.ForeColor = statusFg;
+            cellTrangThai.Style.BackColor = statusBg;
+            cellTrangThai.Style.Font = new Font(UITheme.RegularFont, FontStyle.Bold);
+        }
+
+        UpdateButtonStates();
+    }
+
+    private void UpdateButtonStates()
+    {
+        if (_dgvReceipts.SelectedRows.Count == 0)
+        {
+            _btnApprove.Enabled = false;
+            _btnDeleteReceipt.Enabled = false;
+            _btnInvalidate.Enabled = false;
+            return;
+        }
+
+        var maPhieu = _dgvReceipts.SelectedRows[0].Cells["MaPhieuNhap"].Value?.ToString();
+        var receipt = _allReceipts.FirstOrDefault(r => r.MaPhieuNhap == maPhieu);
+        if (receipt == null)
+        {
+            _btnApprove.Enabled = false;
+            _btnDeleteReceipt.Enabled = false;
+            _btnInvalidate.Enabled = false;
+            return;
+        }
+
+        bool isChoDuyet = string.Equals(receipt.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase);
+        bool isDaDuyet = string.Equals(receipt.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) || receipt.TrangThai == "1" || receipt.TrangThai == "True";
+
+        // Xóa phiếu tồn kho: cả nhân viên và admin đều dùng được khi phiếu chưa duyệt
+        _btnDeleteReceipt.Enabled = isChoDuyet;
+
+        // Phê duyệt phiếu: chỉ Admin khi phiếu ở trạng thái Chờ duyệt
+        _btnApprove.Enabled = IsCurrentAdmin() && isChoDuyet;
+
+        // Vô hiệu hóa phiếu: chỉ Admin khi phiếu đã được duyệt
+        _btnInvalidate.Enabled = IsCurrentAdmin() && isDaDuyet;
+    }
+
+    private void ApproveSelectedReceipt()
+    {
+        if (!IsCurrentAdmin())
+        {
+            MessageBox.Show("Chức năng duyệt phiếu nhập kho chỉ dành riêng cho tài khoản Quản trị viên (ADMIN).", "Quyền truy cập bị từ chối", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        if (_dgvReceipts.SelectedRows.Count == 0)
+        {
+            MessageBox.Show("Vui lòng chọn một phiếu nhập kho cần phê duyệt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var maPhieu = _dgvReceipts.SelectedRows[0].Cells["MaPhieuNhap"].Value?.ToString();
+        var receipt = _allReceipts.FirstOrDefault(r => r.MaPhieuNhap == maPhieu);
+        if (receipt == null) return;
+
+        if (!string.Equals(receipt.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show($"Phiếu nhập kho [{receipt.MaPhieuNhap}] không ở trạng thái Chờ duyệt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc chắn muốn phê duyệt phiếu nhập kho [{receipt.MaPhieuNhap}]?\n\n" +
+            "Sau khi duyệt, hệ thống sẽ:\n" +
+            "1. Chính thức cộng dồn số lượng hàng hóa vào tồn kho.\n" +
+            "2. Tự động tính toán lại đơn giá vốn bình quân gia quyền.\n" +
+            "3. Tự động cập nhật lại đơn giá bán niêm yết theo % lợi nhuận.",
+            "Xác nhận phê duyệt phiếu nhập kho",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question
+        );
+
+        if (confirm != DialogResult.Yes) return;
+
+        var adminId = _services.CurrentStaff?.MaNhanVien ?? _services.CurrentUser?.MaNguoiDung ?? "ADMIN";
+        var success = _services.XacNhanNhapKho.DuyetPhieuNhap(receipt.MaPhieuNhap, adminId, out var error);
+        if (success)
+        {
+            MessageBox.Show($"Phê duyệt thành công phiếu nhập kho [{receipt.MaPhieuNhap}]. Tồn kho và giá bán đã được cập nhật!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            LoadReceiptsData();
+        }
+        else
+        {
+            MessageBox.Show($"Không thể phê duyệt phiếu nhập kho:\n{error}", "Lỗi xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void DeleteSelectedReceipt()
+    {
+        if (_dgvReceipts.SelectedRows.Count == 0)
+        {
+            MessageBox.Show("Vui lòng chọn một phiếu nhập kho cần xóa.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var maPhieu = _dgvReceipts.SelectedRows[0].Cells["MaPhieuNhap"].Value?.ToString();
+        var receipt = _allReceipts.FirstOrDefault(r => r.MaPhieuNhap == maPhieu);
+        if (receipt == null) return;
+
+        if (!string.Equals(receipt.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show("Chỉ được phép xóa phiếu nhập kho chưa được phê duyệt (trạng thái Chờ duyệt).", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc chắn muốn xóa phiếu nhập kho [{receipt.MaPhieuNhap}] không?\nThao tác này sẽ xóa hoàn toàn phiếu chưa duyệt này khỏi hệ thống.",
+            "Xác nhận xóa phiếu nhập kho",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning
+        );
+
+        if (confirm != DialogResult.Yes) return;
+
+        var success = _services.XacNhanNhapKho.XoaPhieuNhap(receipt.MaPhieuNhap, out var error);
+        if (success)
+        {
+            MessageBox.Show($"Đã xóa thành công phiếu nhập kho [{receipt.MaPhieuNhap}].", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            LoadReceiptsData();
+        }
+        else
+        {
+            MessageBox.Show($"Không thể xóa phiếu nhập kho:\n{error}", "Lỗi xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -352,7 +515,19 @@ public class InventoryInwardView : UserControl
         };
 
         var viVn = new CultureInfo("vi-VN");
-        var statusText = receipt.TrangThai ? "HỢP LỆ" : "ĐÃ VÔ HIỆU HÓA";
+        string statusText;
+        if (string.Equals(receipt.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) || receipt.TrangThai == "1" || receipt.TrangThai == "True")
+        {
+            statusText = "ĐÃ DUYỆT (TỒN KHO ĐÃ CẬP NHẬT)";
+        }
+        else if (string.Equals(receipt.TrangThai, "DaHuy", StringComparison.OrdinalIgnoreCase) || string.Equals(receipt.TrangThai, "VoHieuHoa", StringComparison.OrdinalIgnoreCase) || receipt.TrangThai == "0" || receipt.TrangThai == "False")
+        {
+            statusText = "ĐÃ HỦY / VÔ HIỆU HÓA";
+        }
+        else
+        {
+            statusText = "CHỜ PHÊ DUYỆT (TỒN KHO CHƯA THAY ĐỔI)";
+        }
 
         var lblInfo = new Label
         {
@@ -446,9 +621,10 @@ public class InventoryInwardView : UserControl
         var receipt = _allReceipts.FirstOrDefault(r => r.MaPhieuNhap == maPhieu);
         if (receipt == null) return;
 
-        if (!receipt.TrangThai)
+        bool isDaDuyet = string.Equals(receipt.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) || receipt.TrangThai == "1" || receipt.TrangThai == "True";
+        if (!isDaDuyet)
         {
-            MessageBox.Show($"Phiếu nhập kho [{receipt.MaPhieuNhap}] đã bị vô hiệu hóa trước đó.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"Chỉ có thể vô hiệu hóa phiếu nhập kho đã được phê duyệt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -1068,7 +1244,7 @@ public class InventoryInwardView : UserControl
             try
             {
                 _services.XacNhanNhapKho.Execute(request);
-                MessageBox.Show($"Xác nhận phiếu nhập kho [{request.MaPhieuNhap}] thành công!\n\nToàn bộ sản phẩm trong phiếu đã được cập nhật sang trạng thái 'Sẵn sàng giao dịch'.", "Nhập kho thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Lập phiếu nhập kho [{request.MaPhieuNhap}] thành công!\n\nPhiếu đang ở trạng thái 'Chờ duyệt'. Sau khi Quản trị viên (Admin) phê duyệt, số lượng hàng sẽ được tính vào tồn kho và tự động cập nhật đơn giá bán theo % lợi nhuận.", "Lập phiếu thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 dialog.DialogResult = DialogResult.OK;
                 dialog.Close();
             }
