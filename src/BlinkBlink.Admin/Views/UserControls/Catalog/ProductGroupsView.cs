@@ -1091,23 +1091,10 @@ public class EditProductGroupModal : Form
             return;
         }
 
-        if (_group != null && !string.Equals(_group.TenNhom, newName, StringComparison.OrdinalIgnoreCase))
-        {
-            var confirmSync = MessageBox.Show(
-                $"Thay đổi tên nhóm thành '{newName}' sẽ đồng bộ đổi tên cho toàn bộ các sản phẩm trong nhóm này.\nBạn có chắc chắn muốn lưu thay đổi?",
-                "Xác nhận cập nhật tên nhóm",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-            if (confirmSync != DialogResult.Yes)
-            {
-                return;
-            }
-        }
-
         try
         {
             _services.QuanLyNhomSanPham.CapNhatTenNhom(_maNhom, newName, _txtDescription.Text.Trim());
-            MessageBox.Show("Cập nhật nhóm sản phẩm thành công! Tên tất cả sản phẩm trong nhóm đã được đồng bộ.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Cập nhật nhóm sản phẩm thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.DialogResult = DialogResult.OK;
             this.Close();
         }

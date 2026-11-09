@@ -102,14 +102,23 @@ public class HoaDon
     }
 
     /// <summary>
-    /// Tính toán tổng tiền hàng và tổng thanh toán dựa trên danh sách chi tiết hóa đơn.
+    /// Tính toán tổng tiền hàng, tiền giảm giá và tổng thanh toán dựa trên danh sách chi tiết hóa đơn.
+    /// - TongTienHang: Tổng tiền theo đơn giá gốc chưa giảm (DonGia * SoLuong).
+    /// - TienGiamGia: Tổng tiền ưu đãi giảm giá theo từng sản phẩm.
+    /// - TongThanhToan: Tổng số tiền thực tế khách cần thanh toán (TongTienHang - TienGiamGia).
     /// Khớp phương thức: + TinhTongTien(): decimal trong Diagram.
     /// </summary>
-    /// <returns>Tổng tiền thanh toán cuối cùng sau khi trừ giảm giá</returns>
+    /// <returns>Tổng tiền thanh toán cuối cùng sau khi trừ giảm giá của từng sản phẩm</returns>
     public decimal TinhTongTien()
     {
-        TongTienHang = ChiTietHoaDons?.Sum(c => c.TinhThanhTien()) ?? 0;
-        TongThanhToan = Math.Max(0, TongTienHang - TienGiamGia);
+        // 1. Tổng tiền hàng theo đơn giá niêm yết gốc chưa trừ chiết khấu
+        TongTienHang = ChiTietHoaDons?.Sum(c => c.DonGia * c.SoLuong) ?? 0m;
+
+        // 2. Tổng số tiền giảm giá tích lũy của từng sản phẩm
+        TienGiamGia = ChiTietHoaDons?.Sum(c => (c.DonGia * c.SoLuong) - c.TinhThanhTien()) ?? 0m;
+
+        // 3. Tổng thanh toán thực tế khách phải trả
+        TongThanhToan = Math.Max(0m, TongTienHang - TienGiamGia);
         return TongThanhToan;
     }
 

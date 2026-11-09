@@ -386,8 +386,20 @@ public class InMemoryDataContext
         public void VoHieuHoaPhieuNhap(string maPhieuNhap)
         {
             var p = TimTheoId(maPhieuNhap);
-            if (p != null) p.TrangThai = false;
+            if (p != null) p.TrangThai = "DaHuy";
         }
+        public void DuyetPhieuNhap(string maPhieuNhap)
+        {
+            var p = TimTheoId(maPhieuNhap);
+            if (p != null) p.TrangThai = "DaDuyet";
+        }
+        public void XoaPhieuNhap(string maPhieuNhap)
+        {
+            var p = TimTheoId(maPhieuNhap);
+            if (p != null) _ctx.PhieuNhapKhos.Remove(p);
+        }
+        public Task DuyetPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) { DuyetPhieuNhap(maPhieuNhap); return Task.CompletedTask; }
+        public Task XoaPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) { XoaPhieuNhap(maPhieuNhap); return Task.CompletedTask; }
     }
 
     private class MemoryPhieuKiemKeRepository : IPhieuKiemKeRepository

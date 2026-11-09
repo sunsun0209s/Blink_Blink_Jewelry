@@ -763,21 +763,13 @@ public class InventoryAuditView : UserControl
         btnClose.Click += (s, e) => dialog.Close();
         flpFoot.Controls.Add(btnClose);
 
-        Button? btnSave = null;
         Button? btnApprove = null;
         Button? btnInvalidate = null;
 
-        // Phân quyền hiển thị các nút hành động
+        // Phân quyền hiển thị các nút hành động (Theo yêu cầu mới: Bỏ tính năng chỉnh sửa phiếu kiểm kê chưa duyệt, nếu sai thì xóa tạo lại)
         if (isPending)
         {
-            // Khi chưa duyệt: cho phép lưu thay đổi (cả nhân viên và admin)
-            btnSave = UITheme.CreateFlatButton("💾 Lưu Thay Đổi", UITheme.PrimaryGold, Color.Black);
-            btnSave.Width = 150;
-            btnSave.Height = 36;
-            btnSave.Margin = new Padding(12, 0, 0, 0);
-            flpFoot.Controls.Add(btnSave);
-
-            // Với Admin: có thêm nút duyệt phiếu
+            // Với Admin: có nút duyệt phiếu
             if (isAdmin)
             {
                 btnApprove = UITheme.CreateFlatButton("✓ Duyệt Phiếu", Color.FromArgb(22, 101, 52), Color.White);
@@ -802,7 +794,7 @@ public class InventoryAuditView : UserControl
         // Body Content
         var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(24, 12, 24, 10) };
 
-        // Grid chi tiết
+        // Grid chi tiết (toàn bộ cột chỉ đọc - không cho phép sửa)
         var pnlGridHolder = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 5, 0, 10) };
         var dgv = new DataGridView();
         UITheme.ApplyGridViewStyle(dgv);
@@ -811,9 +803,9 @@ public class InventoryAuditView : UserControl
         var colTen = new DataGridViewTextBoxColumn { Name = "TenSanPham", HeaderText = "TÊN TRANG SỨC", FillWeight = 220, MinimumWidth = 200, ReadOnly = true };
         var colSize = new DataGridViewTextBoxColumn { Name = "Size", HeaderText = "SIZE", FillWeight = 80, MinimumWidth = 80, ReadOnly = true };
         var colTonSS = new DataGridViewTextBoxColumn { Name = "TonSoSach", HeaderText = "TỒN SỔ SÁCH", FillWeight = 100, MinimumWidth = 105, ReadOnly = true, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
-        var colTonTT = new DataGridViewTextBoxColumn { Name = "TonThucTe", HeaderText = "TỒN THỰC TẾ", FillWeight = 100, MinimumWidth = 105, ReadOnly = !isPending, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
+        var colTonTT = new DataGridViewTextBoxColumn { Name = "TonThucTe", HeaderText = "TỒN THỰC TẾ", FillWeight = 100, MinimumWidth = 105, ReadOnly = true, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
         var colChenhLech = new DataGridViewTextBoxColumn { Name = "ChenhLech", HeaderText = "CHÊNH LỆCH", FillWeight = 100, MinimumWidth = 105, ReadOnly = true, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
-        var colLyDo = new DataGridViewTextBoxColumn { Name = "LyDoChenhLech", HeaderText = "LÝ DO CHÊNH LỆCH", FillWeight = 180, MinimumWidth = 150, ReadOnly = !isPending };
+        var colLyDo = new DataGridViewTextBoxColumn { Name = "LyDoChenhLech", HeaderText = "LÝ DO CHÊNH LỆCH", FillWeight = 180, MinimumWidth = 150, ReadOnly = true };
 
         dgv.Columns.AddRange(colMa, colTen, colSize, colTonSS, colTonTT, colChenhLech, colLyDo);
 
@@ -847,29 +839,6 @@ public class InventoryAuditView : UserControl
 
         LoadDetailsToGrid();
 
-        // Tự động tính lại chênh lệch khi sửa cột Tồn thực tế
-        if (isPending)
-        {
-            dgv.CellValueChanged += (s, e) =>
-            {
-                if (e.RowIndex >= 0 && e.ColumnIndex == dgv.Columns["TonThucTe"].Index)
-                {
-                    var valStr = dgv.Rows[e.RowIndex].Cells["TonThucTe"].Value?.ToString();
-                    var tonSSVal = Convert.ToInt32(dgv.Rows[e.RowIndex].Cells["TonSoSach"].Value ?? 0);
-
-                    if (int.TryParse(valStr, out var tonTT) && tonTT >= 0)
-                    {
-                        var delta = tonTT - tonSSVal;
-                        var cellCl = dgv.Rows[e.RowIndex].Cells["ChenhLech"];
-                        cellCl.Value = delta > 0 ? $"+{delta}" : delta.ToString();
-                        if (delta > 0) cellCl.Style.ForeColor = Color.FromArgb(22, 101, 52);
-                        else if (delta < 0) cellCl.Style.ForeColor = Color.FromArgb(153, 27, 27);
-                        else cellCl.Style.ForeColor = UITheme.TextSecondary;
-                    }
-                }
-            };
-        }
-
         pnlGridHolder.Controls.Add(dgv);
 
         // Panel Ghi chú phía dưới
@@ -881,7 +850,7 @@ public class InventoryAuditView : UserControl
             Dock = DockStyle.Fill,
             Multiline = true,
             Height = 60,
-            ReadOnly = !isPending,
+            ReadOnly = true,
             ScrollBars = ScrollBars.Vertical
         };
         pnlGhiChu.Controls.Add(txtGhiChu);
@@ -894,56 +863,7 @@ public class InventoryAuditView : UserControl
         dialog.Controls.Add(pnlFoot);
         dialog.Controls.Add(pnlHead);
 
-        // 1. Xử lý nút LƯU THAY ĐỔI
-        if (btnSave != null)
-        {
-            btnSave.Click += (s, e) =>
-            {
-                var dtoList = new List<ChiTietKiemKeItemDTO>();
-                foreach (DataGridViewRow row in dgv.Rows)
-                {
-                    if (row.IsNewRow) continue;
-                    var maSp = row.Cells["MaSanPham"].Value?.ToString() ?? string.Empty;
-                    var tonSS = Convert.ToInt32(row.Cells["TonSoSach"].Value ?? 0);
-                    if (!int.TryParse(row.Cells["TonThucTe"].Value?.ToString(), out var tonTT) || tonTT < 0)
-                    {
-                        MessageBox.Show($"Tồn thực tế của sản phẩm [{maSp}] không hợp lệ.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                    var lyDo = row.Cells["LyDoChenhLech"].Value?.ToString() ?? string.Empty;
-
-                    dtoList.Add(new ChiTietKiemKeItemDTO
-                    {
-                        MaSanPham = maSp,
-                        TonSoSach = tonSS,
-                        TonThucTe = tonTT,
-                        LyDoChenhLech = lyDo
-                    });
-                }
-
-                var capNhatDto = new CapNhatPhieuKiemKeDTO
-                {
-                    MaPhieuKiemKe = phieu.MaPhieuKiemKe,
-                    ViTriKiemKe = phieu.ViTriKiemKe,
-                    GhiChu = txtGhiChu.Text.Trim(),
-                    DanhSachChiTiet = dtoList
-                };
-
-                var success = _services.QuanLyKiemKe.CapNhatPhieuKiemKe(capNhatDto, out var error);
-                if (success)
-                {
-                    MessageBox.Show("Đã lưu các thay đổi của biên bản kiểm kê.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    dialog.Close();
-                    LoadAuditData();
-                }
-                else
-                {
-                    MessageBox.Show($"Không thể cập nhật biên bản kiểm kê:\n{error}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            };
-        }
-
-        // 2. Xử lý nút DUYỆT PHIẾU (dành cho Admin)
+        // 1. Xử lý nút DUYỆT PHIẾU (dành cho Admin)
         if (btnApprove != null)
         {
             btnApprove.Click += (s, e) =>

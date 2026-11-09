@@ -31,6 +31,7 @@ public class ProductEditDialog : Form
     private TextBox _txtSize = null!;
     private TextBox _txtGiaNhap = null!;
     private TextBox _txtGiaBan = null!;
+    private NumericUpDown _nudTyLeLoiNhuan = null!;
     private NumericUpDown _nudPhanTramGiamGia = null!;
 
     private PictureBox _picPreview = null!;
@@ -54,7 +55,7 @@ public class ProductEditDialog : Form
     {
         this.Text = _isEditMode ? "Chỉnh Sửa Thông Tin Trang Sức - Blink Blink Jewelry" : "Thêm Mới Sản Phẩm Trang Sức - Blink Blink Jewelry";
         this.Width = 880;
-        this.Height = 700;
+        this.Height = 750;
         this.StartPosition = FormStartPosition.CenterParent;
         this.FormBorderStyle = FormBorderStyle.FixedDialog;
         this.MaximizeBox = false;
@@ -141,7 +142,7 @@ public class ProductEditDialog : Form
         {
             Location = new Point(24, 15),
             Width = 490,
-            Height = 490
+            Height = 550
         };
 
         int curY = 0;
@@ -162,7 +163,7 @@ public class ProductEditDialog : Form
 
             pnlLeft.Controls.Add(lbl);
             pnlLeft.Controls.Add(inputControl);
-            curY += 50;
+            curY += 46;
         }
 
         _txtMaSP = new TextBox { Height = 30 };
@@ -203,7 +204,7 @@ public class ProductEditDialog : Form
             }
             AddFormRow("Nhóm Sản Phẩm:", txtNhom);
 
-            // Trong chế độ Chỉnh sửa: Hiển thị giá nhập bình quân (chỉ xem), cho phép sửa giá bán và % giảm giá
+            // Trong chế độ Chỉnh sửa: Hiển thị giá nhập bình quân (chỉ xem), % lợi nhuận để tự động tính đơn giá bán
             _txtGiaNhap = new TextBox 
             { 
                 Height = 30, 
@@ -212,7 +213,32 @@ public class ProductEditDialog : Form
                 BackColor = Color.FromArgb(241, 245, 249),
                 ForeColor = UITheme.TextSecondary
             };
-            _txtGiaBan = new TextBox { Height = 30, Font = UITheme.TabularNumericFont };
+
+            _nudTyLeLoiNhuan = new NumericUpDown
+            {
+                Height = 30,
+                Font = UITheme.TabularNumericFont,
+                Minimum = 0,
+                Maximum = 1000,
+                DecimalPlaces = 1,
+                Value = 0,
+                Increment = 5
+            };
+            _nudTyLeLoiNhuan.ValueChanged += (s, e) =>
+            {
+                var gNhap = _targetProduct?.GiaNhap ?? 0;
+                var gBan = gNhap > 0 ? Math.Round(gNhap * (1 + _nudTyLeLoiNhuan.Value / 100m)) : 0;
+                _txtGiaBan.Text = gBan.ToString("0");
+            };
+
+            _txtGiaBan = new TextBox 
+            { 
+                Height = 30, 
+                Font = UITheme.TabularNumericFont,
+                ReadOnly = true,
+                BackColor = Color.FromArgb(241, 245, 249),
+                ForeColor = UITheme.PrimaryGold
+            };
             
             _nudPhanTramGiamGia = new NumericUpDown
             {
@@ -225,29 +251,54 @@ public class ProductEditDialog : Form
             };
 
             AddFormRow("Giá Nhập Bình Quân (VND):", _txtGiaNhap);
-            AddFormRow("Đơn Giá Bán (VND) (*):", _txtGiaBan);
+            AddFormRow("% Lợi Nhuận (0 - 1000%):", _nudTyLeLoiNhuan);
+            AddFormRow("Đơn Giá Bán (Tự Động) (*):", _txtGiaBan);
             AddFormRow("% Giảm Giá (0 - 100%):", _nudPhanTramGiamGia);
         }
         else
         {
-            // Trong chế độ Thêm mới: Bỏ nhập giá nhập và giá bán
+            // Trong chế độ Thêm mới: Tùy chỉnh % lợi nhuận (mặc định 0%), giá bán bị khóa không cho nhập tay
             _txtGiaNhap = new TextBox { Text = "0", Visible = false };
-            _txtGiaBan = new TextBox { Text = "0", Visible = false };
+
+            _nudTyLeLoiNhuan = new NumericUpDown
+            {
+                Height = 30,
+                Font = UITheme.TabularNumericFont,
+                Minimum = 0,
+                Maximum = 1000,
+                DecimalPlaces = 1,
+                Value = 0,
+                Increment = 5
+            };
+
+            _txtGiaBan = new TextBox 
+            { 
+                Height = 30, 
+                Font = UITheme.TabularNumericFont,
+                Text = "0",
+                ReadOnly = true,
+                BackColor = Color.FromArgb(241, 245, 249),
+                ForeColor = UITheme.PrimaryGold
+            };
+
             _nudPhanTramGiamGia = new NumericUpDown { Value = 0, Visible = false };
+
+            AddFormRow("% Lợi Nhuận Ban Đầu (%):", _nudTyLeLoiNhuan);
+            AddFormRow("Đơn Giá Bán (Tự Động):", _txtGiaBan);
 
             var pnlHint = new Panel
             {
-                Location = new Point(0, curY + 10),
+                Location = new Point(0, curY + 6),
                 Width = 480,
-                Height = 85,
+                Height = 90,
                 BackColor = Color.FromArgb(248, 250, 252),
-                Padding = new Padding(14)
+                Padding = new Padding(12)
             };
             var lblHint = new Label
             {
-                Text = "💡 Lưu ý định giá:\n- Giá nhập sẽ được tự động tính bình quân gia quyền từ các phiếu nhập kho.\n- Giá bán và % giảm giá có thể điều chỉnh sau khi nhập hàng vào kho.",
+                Text = "💡 Lưu ý cơ chế định giá tự động:\n- Giá nhập bình quân được tính tự động từ các phiếu nhập kho đã được Admin phê duyệt.\n- Giá bán tự động = Giá nhập bình quân × (1 + % Lợi nhuận).\n- Ô đơn giá bán bị khóa không cho nhập tay.",
                 ForeColor = UITheme.TextSecondary,
-                Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 Dock = DockStyle.Fill
             };
             pnlHint.Controls.Add(lblHint);
@@ -259,7 +310,7 @@ public class ProductEditDialog : Form
         {
             Location = new Point(535, 15),
             Width = 300,
-            Height = 490
+            Height = 550
         };
 
         var lblPicTitle = new Label
@@ -387,6 +438,7 @@ public class ProductEditDialog : Form
             _txtChatLieu.Text = _targetProduct.ChatLieu;
             _txtSize.Text = _targetProduct.Size;
             _txtGiaNhap.Text = _targetProduct.GiaNhap.ToString("N0", new CultureInfo("vi-VN"));
+            _nudTyLeLoiNhuan.Value = Math.Clamp(_targetProduct.TyLeLoiNhuan, 0, 1000);
             _txtGiaBan.Text = _targetProduct.GiaBan.ToString("0");
             _nudPhanTramGiamGia.Value = Math.Clamp(_targetProduct.PhanTramGiamGia, 0, 100);
 
@@ -636,44 +688,14 @@ public class ProductEditDialog : Form
                     return;
                 }
 
-                // 2. Kiểm tra thay đổi tên sản phẩm
-                if (!string.Equals(tenSP, _targetProduct.TenSanPham, StringComparison.OrdinalIgnoreCase))
-                {
-                    var confirm = MessageBox.Show(
-                        "Thay đổi tên sản phẩm sẽ đổi tên các sản phẩm khác trong cùng nhóm và tên nhóm",
-                        "Xác nhận thay đổi tên",
-                        MessageBoxButtons.OKCancel,
-                        MessageBoxIcon.Question
-                    );
-
-                    if (confirm != DialogResult.OK)
-                    {
-                        var nhom = _services.NhomSanPhamRepo.TimTheoId(_targetProduct.MaNhom);
-                        _txtTenSP.Text = nhom?.TenNhom ?? _targetProduct.TenSanPham;
-                        return;
-                    }
-                    else
-                    {
-                        _services.QuanLyNhomSanPham.DoiTenToanBoNhomTheoSanPham(_targetProduct.MaSanPham, tenSP);
-                    }
-                }
+                // Lưu ý: Theo yêu cầu mới, bỏ chức năng sửa tên sản phẩm trong nhóm sẽ làm thay đổi tên nhóm và các sản phẩm trong nhóm.
+                // Việc đổi tên sản phẩm ở đây chỉ cập nhật riêng cho sản phẩm này.
             }
 
-            if (!decimal.TryParse(_txtGiaBan.Text.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out var giaBan) &&
-                !decimal.TryParse(_txtGiaBan.Text.Trim(), out giaBan))
-            {
-                MessageBox.Show("Đơn giá bán không hợp lệ.", "Lỗi định dạng", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                _txtGiaBan.Focus();
-                return;
-            }
-
-            if (giaBan < 0)
-            {
-                MessageBox.Show("Đơn giá bán không được là số âm.", "Cảnh báo giá bán", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                _txtGiaBan.Focus();
-                return;
-            }
-
+            var tyLeLoiNhuan = _nudTyLeLoiNhuan.Value;
+            var giaNhap = _targetProduct?.GiaNhap ?? 0;
+            // Tự động tính giá bán theo tỷ lệ lợi nhuận: Giá bán = Giá nhập * (1 + % Lợi nhuận)
+            var giaBan = giaNhap > 0 ? Math.Round(giaNhap * (1 + tyLeLoiNhuan / 100m)) : 0;
             var phanTramGiamGia = (int)_nudPhanTramGiamGia.Value;
 
             var updateDto = new CapNhatSanPhamDTO
@@ -683,8 +705,9 @@ public class ProductEditDialog : Form
                 MaDanhMuc = maDM,
                 ChatLieu = chatLieu,
                 Size = size,
-                GiaNhap = _targetProduct?.GiaNhap ?? 0,
+                GiaNhap = giaNhap,
                 GiaBan = giaBan,
+                TyLeLoiNhuan = tyLeLoiNhuan,
                 HinhAnh = processedImage,
                 PhanTramGiamGia = phanTramGiamGia
             };
@@ -712,6 +735,7 @@ public class ProductEditDialog : Form
                 Size = size,
                 GiaNhap = 0,
                 GiaBan = 0,
+                TyLeLoiNhuan = _nudTyLeLoiNhuan.Value,
                 HinhAnh = processedImage,
                 PhanTramGiamGia = 0
             };
