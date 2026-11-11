@@ -16,20 +16,39 @@ public class PhieuNhapKho
     public string MaNhanVien { get; set; } = string.Empty;
     public int TongSoSanPham { get; set; }
     public decimal TongGiaTri { get; set; }
-    public bool TrangThai { get; set; } = true; // true: Hợp lệ / Hoạt động, false: Đã vô hiệu hóa bởi Admin
+    public string TrangThai { get; set; } = "ChoDuyet"; // ChoDuyet: Chờ Admin duyệt, DaDuyet: Đã duyệt (tính kho & giá), DaHuy: Đã hủy
 
     // Quan hệ hợp thành (Composition) 1-N: 1 Phiếu nhập kho sở hữu nhiều Chi tiết nhập kho
     public virtual ICollection<ChiTietNhapKho> ChiTietNhapKhos { get; set; } = new List<ChiTietNhapKho>();
 
     public PhieuNhapKho() { }
 
-    public PhieuNhapKho(string maPhieuNhap, string nhaCungCap, string maNhanVien, DateTime? ngayNhap = null, bool trangThai = true)
+    public PhieuNhapKho(string maPhieuNhap, string nhaCungCap, string maNhanVien, DateTime? ngayNhap = null, string trangThai = "ChoDuyet")
     {
         MaPhieuNhap = maPhieuNhap;
         NhaCungCap = nhaCungCap;
         MaNhanVien = maNhanVien;
         NgayNhap = ngayNhap ?? DateTime.UtcNow;
-        TrangThai = trangThai;
+        TrangThai = string.IsNullOrWhiteSpace(trangThai) ? "ChoDuyet" : trangThai;
+    }
+
+    public PhieuNhapKho(string maPhieuNhap, string nhaCungCap, string maNhanVien, DateTime? ngayNhap, bool isApproved)
+        : this(maPhieuNhap, nhaCungCap, maNhanVien, ngayNhap, isApproved ? "DaDuyet" : "DaHuy")
+    {
+    }
+
+    /// <summary>
+    /// Phê duyệt phiếu nhập kho (chuyển trạng thái từ ChoDuyet sang DaDuyet).
+    /// </summary>
+    public bool DuyetPhieu(string nguoiDuyet = "")
+    {
+        if (!string.Equals(TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase) || ChiTietNhapKhos.Count == 0)
+        {
+            return false;
+        }
+
+        TrangThai = "DaDuyet";
+        return true;
     }
 
     /// <summary>
