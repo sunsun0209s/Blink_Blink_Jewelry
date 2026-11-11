@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BlinkBlink.Application.DTOs.Inventory;
+using BlinkBlink.Domain.Entities.Catalog;
 using BlinkBlink.Domain.Entities.Inventory;
 using BlinkBlink.Domain.Interfaces;
 
@@ -43,7 +44,8 @@ public class XacNhanNhapKhoUseCase
             maPhieuNhap: maPhieu,
             nhaCungCap: request.NhaCungCap?.Trim() ?? string.Empty,
             maNhanVien: request.MaNhanVien?.Trim() ?? string.Empty,
-            ngayNhap: DateTime.UtcNow
+            ngayNhap: DateTime.UtcNow,
+            trangThai: "ChoDuyet"
         );
 
         if (request.DanhSachSanPham != null)
@@ -65,19 +67,132 @@ public class XacNhanNhapKhoUseCase
         // Xác nhận tính toán tổng tiền và số lượng
         phieu.XacNhanNhapKho();
 
-        // Lưu phiếu và danh sách chi tiết vào cơ sở dữ liệu
+        // Lưu phiếu và danh sách chi tiết ở trạng thái "ChoDuyet" (chưa tác động tồn kho và giá)
         _nhapKhoRepo.LuuPhieuNhap(phieu);
     }
 
     /// <summary>
-    /// Vô hiệu hóa phiếu nhập kho (dành riêng cho Quản trị viên Admin).
-    /// Tự động hoàn trừ số lượng tồn kho tương ứng và tính lại giá nhập bình quân như thể phiếu này chưa từng tồn tại.
-    /// Tuyệt đối không cho phép chỉnh sửa phiếu nhập.
+    /// Phê duyệt phiếu nhập kho (dành riêng cho Quản trị viên Admin).
+    /// Khi duyệt thành công, hệ thống mới chính thức cộng dồn số lượng tồn kho,
+    /// tính toán lại giá nhập bình quân gia quyền và tự động cập nhật lại đơn giá bán theo % lợi nhuận.
     /// </summary>
-    /// <param name="maPhieuNhap">Mã phiếu nhập cần vô hiệu hóa</param>
+    /// <param name="maPhieuNhap">Mã phiếu nhập cần duyệt</param>
+    /// <param name="maAdmin">Mã nhân sự quản trị duyệt phiếu</param>
+    /// <param name="error">Thông báo lỗi nếu không thể duyệt</param>
+    /// <returns>True nếu duyệt thành công</returns>
+    public bool DuyetPhieuNhap(string maPhieuNhap, string maAdmin, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(maPhieuNhap))
+        {
+            error = "Mã phiếu nhập không hợp lệ.";
+            return false;
+        }
+
+        var phieu = _nhapKhoRepo.TimTheoId(maPhieuNhap);
+        if (phieu == null)
+        {
+            error = $"Không tìm thấy phiếu nhập kho #{maPhieuNhap}.";
+            return false;
+        }
+
+        if (!string.Equals(phieu.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
+        {
+            error = $"Phiếu nhập kho #{maPhieuNhap} không ở trạng thái Chờ duyệt (Trạng thái hiện tại: {phieu.TrangThai}).";
+            return false;
+        }
+
+        // 1. Cập nhật trạng thái phiếu nhập sang "DaDuyet"
+        _nhapKhoRepo.DuyetPhieuNhap(maPhieuNhap);
+
+        // 2. Lấy toàn bộ phiếu đã duyệt (bao gồm phiếu vừa được duyệt) để tính lại tồn kho và giá bình quân
+        var allApprovedReceipts = _nhapKhoRepo.LayTatCa()
+            .Where(p => string.Equals(p.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) || p.MaPhieuNhap == maPhieuNhap)
+            .ToList();
+
+        if (phieu.ChiTietNhapKhos != null)
+        {
+            foreach (var ct in phieu.ChiTietNhapKhos)
+            {
+                var sp = _sanPhamRepo.TimTheoId(ct.MaSanPham);
+                if (sp != null)
+                {
+                    // Cộng dồn số lượng tồn kho
+                    sp.SoLuongTon += ct.SoLuong;
+                    if (string.Equals(sp.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase) && sp.SoLuongTon > 0)
+                    {
+                        sp.TrangThai = "SanSang";
+                    }
+
+                    // Tính toán lại giá nhập bình quân gia quyền từ tất cả các phiếu nhập đã duyệt
+                    var validDetailsForSp = allApprovedReceipts
+                        .SelectMany(r => r.ChiTietNhapKhos ?? Enumerable.Empty<ChiTietNhapKho>())
+                        .Where(c => c.MaSanPham == ct.MaSanPham && c.SoLuong > 0)
+                        .ToList();
+
+                    if (validDetailsForSp.Count > 0)
+                    {
+                        var tongGiaTri = validDetailsForSp.Sum(c => c.SoLuong * c.GiaVonNhap);
+                        var tongSoLuong = validDetailsForSp.Sum(c => c.SoLuong);
+                        if (tongSoLuong > 0)
+                        {
+                            sp.GiaNhap = Math.Round(tongGiaTri / tongSoLuong, 2);
+                        }
+                    }
+
+                    // TỰ ĐỘNG CẬP NHẬT GIÁ BÁN THEO TỶ LỆ LỢI NHUẬN:
+                    // Giá bán = Giá nhập bình quân * (1 + % Lợi nhuận)
+                    sp.GiaBan = sp.TinhGiaBanTheoLoiNhuan();
+
+                    _sanPhamRepo.LuuSanPham(sp);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Xóa phiếu nhập kho chưa được duyệt (cả nhân viên kho và admin đều dùng được).
+    /// </summary>
+    /// <param name="maPhieuNhap">Mã phiếu nhập cần xóa</param>
+    /// <param name="error">Lỗi nếu thất bại</param>
+    /// <returns>True nếu xóa thành công</returns>
+    public bool XoaPhieuNhap(string maPhieuNhap, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(maPhieuNhap))
+        {
+            error = "Mã phiếu nhập không hợp lệ.";
+            return false;
+        }
+
+        var phieu = _nhapKhoRepo.TimTheoId(maPhieuNhap);
+        if (phieu == null)
+        {
+            error = $"Không tìm thấy phiếu nhập kho #{maPhieuNhap}.";
+            return false;
+        }
+
+        if (!string.Equals(phieu.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
+        {
+            error = "Chỉ được phép xóa phiếu nhập kho chưa được phê duyệt (trạng thái Chờ duyệt).";
+            return false;
+        }
+
+        _nhapKhoRepo.XoaPhieuNhap(maPhieuNhap);
+        return true;
+    }
+
+    /// <summary>
+    /// Vô hiệu hóa / Hủy phiếu nhập kho (dành riêng cho Quản trị viên Admin).
+    /// Điều kiện ràng buộc: Khi tồn kho trừ đi số lượng của phiếu nhập đó,
+    /// tồn kho của bất kỳ sản phẩm nào trong phiếu sau khi trừ KHÔNG ĐƯỢC ÂM (< 0).
+    /// </summary>
+    /// <param name="maPhieuNhap">Mã phiếu nhập cần hủy</param>
     /// <param name="maAdmin">Mã tài khoản quản trị viên thực hiện</param>
     /// <param name="error">Thông điệp lỗi nếu thất bại</param>
-    /// <returns>True nếu vô hiệu hóa thành công</returns>
+    /// <returns>True nếu hủy thành công</returns>
     public bool VoHieuHoaPhieuNhap(string maPhieuNhap, string maAdmin, out string error)
     {
         error = string.Empty;
@@ -94,17 +209,41 @@ public class XacNhanNhapKhoUseCase
             return false;
         }
 
-        if (!phieu.TrangThai)
+        if (string.Equals(phieu.TrangThai, "DaHuy", StringComparison.OrdinalIgnoreCase))
         {
-            error = $"Phiếu nhập kho #{maPhieuNhap} đã bị vô hiệu hóa trước đó.";
+            error = $"Phiếu nhập kho #{maPhieuNhap} đã bị hủy trước đó.";
             return false;
         }
 
-        // 1. Đánh dấu vô hiệu hóa trong cơ sở dữ liệu
+        // Nếu phiếu chưa duyệt (ChoDuyet) mà hủy thì chỉ cần đổi trạng thái sang DaHuy
+        if (string.Equals(phieu.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
+        {
+            _nhapKhoRepo.VoHieuHoaPhieuNhap(maPhieuNhap);
+            return true;
+        }
+
+        // ĐỐI VỚI PHIẾU ĐÃ DUYỆT (DaDuyet): KIỂM TRA ĐIỀU KIỆN TỒN KHO SAU TRỪ KHÔNG ĐƯỢC ÂM
+        if (phieu.ChiTietNhapKhos != null)
+        {
+            foreach (var ct in phieu.ChiTietNhapKhos)
+            {
+                var sp = _sanPhamRepo.TimTheoId(ct.MaSanPham);
+                var tonKhoHienTai = sp?.SoLuongTon ?? 0;
+                if (tonKhoHienTai - ct.SoLuong < 0)
+                {
+                    error = $"Không thể hủy phiếu nhập: Sản phẩm [{ct.MaSanPham}] '{sp?.TenSanPham}' hiện chỉ còn tồn {tonKhoHienTai}, nếu trừ {ct.SoLuong} sẽ bị âm ({tonKhoHienTai - ct.SoLuong}).";
+                    return false;
+                }
+            }
+        }
+
+        // 1. Đánh dấu hủy phiếu trong cơ sở dữ liệu
         _nhapKhoRepo.VoHieuHoaPhieuNhap(maPhieuNhap);
 
         // 2. Cập nhật hoàn trừ tồn kho và tính lại giá vốn cho các sản phẩm trong phiếu
-        var allReceipts = _nhapKhoRepo.LayTatCa().Where(p => p.TrangThai && p.MaPhieuNhap != maPhieuNhap).ToList();
+        var allApprovedReceipts = _nhapKhoRepo.LayTatCa()
+            .Where(p => string.Equals(p.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) && p.MaPhieuNhap != maPhieuNhap)
+            .ToList();
 
         if (phieu.ChiTietNhapKhos != null)
         {
@@ -113,11 +252,15 @@ public class XacNhanNhapKhoUseCase
                 var sp = _sanPhamRepo.TimTheoId(ct.MaSanPham);
                 if (sp != null)
                 {
-                    // Trừ số lượng tồn kho tương ứng với đợt nhập bị vô hiệu hóa
+                    // Trừ số lượng tồn kho tương ứng với đợt nhập bị hủy
                     sp.SoLuongTon = Math.Max(0, sp.SoLuongTon - ct.SoLuong);
+                    if (sp.SoLuongTon == 0)
+                    {
+                        sp.TrangThai = "HetHang";
+                    }
 
-                    // Tính lại giá nhập bình quân theo các phiếu nhập còn hợp lệ
-                    var validDetailsForSp = allReceipts
+                    // Tính lại giá nhập bình quân theo các phiếu nhập đã duyệt còn lại
+                    var validDetailsForSp = allApprovedReceipts
                         .SelectMany(r => r.ChiTietNhapKhos ?? Enumerable.Empty<ChiTietNhapKho>())
                         .Where(c => c.MaSanPham == ct.MaSanPham && c.SoLuong > 0)
                         .ToList();
@@ -131,6 +274,9 @@ public class XacNhanNhapKhoUseCase
                             sp.GiaNhap = Math.Round(tongGiaTriConLai / tongSoLuongConLai, 2);
                         }
                     }
+
+                    // TÍNH LẠI GIÁ BÁN THEO TỶ LỆ LỢI NHUẬN:
+                    sp.GiaBan = sp.TinhGiaBanTheoLoiNhuan();
 
                     _sanPhamRepo.LuuSanPham(sp);
                 }
@@ -180,5 +326,30 @@ public class XacNhanNhapKhoUseCase
 
         phieu.XacNhanNhapKho();
         await _nhapKhoRepo.LuuPhieuNhapAsync(phieu, cancellationToken);
+    }
+}
+
+/// <summary>
+/// Hỗ trợ tính giá bán theo tỷ lệ lợi nhuận an toàn khi module Catalog đang được đồng bộ song song.
+/// Khi SanPhamTrangSuc được cập nhật phương thức instance, trình biên dịch C# sẽ tự động ưu tiên instance method.
+/// </summary>
+internal static class SanPhamTrangSucPricingExtensions
+{
+    public static decimal TinhGiaBanTheoLoiNhuan(this SanPhamTrangSuc sp)
+    {
+        var method = sp.GetType().GetMethod("TinhGiaBanTheoLoiNhuan");
+        if (method != null)
+        {
+            return (decimal)method.Invoke(sp, null)!;
+        }
+
+        var prop = sp.GetType().GetProperty("TyLeLoiNhuan");
+        if (prop != null)
+        {
+            var tyLe = (decimal)prop.GetValue(sp)!;
+            return Math.Round(sp.GiaNhap * (1m + (tyLe / 100m)), 0);
+        }
+
+        return sp.GiaBan;
     }
 }

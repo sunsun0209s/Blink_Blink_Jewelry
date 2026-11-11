@@ -31,8 +31,20 @@ public interface IPhieuNhapKhoRepository
     /// </summary>
     void VoHieuHoaPhieuNhap(string maPhieuNhap);
 
+    /// <summary>
+    /// Phê duyệt phiếu nhập kho (chuyển trạng thái sang DaDuyet).
+    /// </summary>
+    void DuyetPhieuNhap(string maPhieuNhap);
+
+    /// <summary>
+    /// Xóa phiếu nhập kho chưa duyệt khỏi hệ thống.
+    /// </summary>
+    void XoaPhieuNhap(string maPhieuNhap);
+
     // Mở rộng bất đồng bộ chuẩn .NET 8
     Task LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken cancellationToken = default);
     Task<PhieuNhapKho?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default);
     Task<List<PhieuNhapKho>> LayTatCaAsync(CancellationToken cancellationToken = default);
+    Task DuyetPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default);
+    Task XoaPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default);
 }

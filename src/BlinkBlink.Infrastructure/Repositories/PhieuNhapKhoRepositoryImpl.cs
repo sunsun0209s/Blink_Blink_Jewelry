@@ -66,7 +66,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                 cmdP.Parameters.Add(new SqlParameter("@MaNhanVien", SqlDbType.VarChar, 50) { Value = phieu.MaNhanVien });
                 cmdP.Parameters.Add(new SqlParameter("@TongSoSanPham", SqlDbType.Int) { Value = phieu.TongSoSanPham });
                 cmdP.Parameters.Add(new SqlParameter("@TongGiaTri", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = phieu.TongGiaTri });
-                cmdP.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.Bit) { Value = phieu.TrangThai });
+                cmdP.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.NVarChar, 50) { Value = phieu.TrangThai });
                 cmdP.ExecuteNonQuery();
             }
 
@@ -84,12 +84,12 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                     VALUES (@MaPhieuNhap, @MaSanPham, @SoLuong, @GiaVonNhap, @SoChungTu);";
 
                 const string sqlUpdateGiaBinhQuan = @"
-                    -- Tính số lượng tồn kho thực tế trước đợt nhập này (chỉ tính từ các phiếu nhập còn hợp lệ)
+                    -- Tính số lượng tồn kho thực tế trước đợt nhập này (chỉ tính từ các phiếu nhập đã duyệt)
                     DECLARE @TonKho INT = ISNULL((
                         SELECT ISNULL(SUM(ct.SoLuong), 0)
                         FROM dbo.ChiTietNhapKho ct
                         INNER JOIN dbo.PhieuNhapKho pn ON ct.MaPhieuNhap = pn.MaPhieuNhap
-                        WHERE ct.MaSanPham = @MaSanPham AND pn.TrangThai = 1
+                        WHERE ct.MaSanPham = @MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')
                     ), 0) - ISNULL((
                         SELECT ISNULL(SUM(chd.SoLuong), 0)
                         FROM dbo.ChiTietHoaDon chd
@@ -114,13 +114,14 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
 
                     UPDATE dbo.SanPhamTrangSuc
                     SET TrangThai = 'SanSang',
-                        GiaNhap = @GiaMoi
+                        GiaNhap = @GiaMoi,
+                        GiaBan = ROUND(@GiaMoi * (1.0 + (ISNULL(TyLeLoiNhuan, 0) / 100.0)), 0)
                     WHERE MaSanPham = @MaSanPham;";
 
                 foreach (var ct in phieu.ChiTietNhapKhos)
                 {
-                    // 1. Cập nhật trạng thái và giá nhập bình quân gia quyền vào sản phẩm trước khi thêm dòng chi tiết
-                    if (ct.SoLuong > 0)
+                    // 1. Chỉ cập nhật trạng thái và giá nhập bình quân + giá bán nếu phiếu ĐÃ ĐƯỢC DUYỆT (DaDuyet)
+                    if (string.Equals(phieu.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) && ct.SoLuong > 0)
                     {
                         using var cmdSp = new SqlCommand(sqlUpdateGiaBinhQuan, conn, tx);
                         cmdSp.Parameters.Add(new SqlParameter("@MaSanPham", SqlDbType.VarChar, 50) { Value = ct.MaSanPham });
@@ -164,7 +165,13 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
         while (reader.Read())
         {
             var trangThaiCol = reader.GetOrdinal("TrangThai");
-            var trangThai = !reader.IsDBNull(trangThaiCol) && reader.GetBoolean(trangThaiCol);
+            string trangThai = "ChoDuyet";
+            if (!reader.IsDBNull(trangThaiCol))
+            {
+                var rawVal = reader.GetValue(trangThaiCol);
+                if (rawVal is bool b) trangThai = b ? "DaDuyet" : "DaHuy";
+                else trangThai = rawVal.ToString() ?? "ChoDuyet";
+            }
 
             var p = new PhieuNhapKho(
                 maPhieuNhap: reader.GetString(reader.GetOrdinal("MaPhieuNhap")),
@@ -210,7 +217,13 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
             if (reader.Read())
             {
                 var trangThaiCol = reader.GetOrdinal("TrangThai");
-                var trangThai = !reader.IsDBNull(trangThaiCol) && reader.GetBoolean(trangThaiCol);
+                string trangThai = "ChoDuyet";
+                if (!reader.IsDBNull(trangThaiCol))
+                {
+                    var rawVal = reader.GetValue(trangThaiCol);
+                    if (rawVal is bool b) trangThai = b ? "DaDuyet" : "DaHuy";
+                    else trangThai = rawVal.ToString() ?? "ChoDuyet";
+                }
 
                 phieu = new PhieuNhapKho(
                     maPhieuNhap: reader.GetString(reader.GetOrdinal("MaPhieuNhap")),
@@ -234,11 +247,53 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
         return phieu;
     }
 
+    public void DuyetPhieuNhap(string maPhieuNhap)
+    {
+        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return;
+
+        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 'DaDuyet' WHERE MaPhieuNhap = @MaPhieuNhap;";
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
+        cmd.ExecuteNonQuery();
+    }
+
+    public void XoaPhieuNhap(string maPhieuNhap)
+    {
+        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return;
+
+        using var conn = _dbHelper.GetConnection();
+        using var tx = conn.BeginTransaction();
+        try
+        {
+            const string sqlDelCt = "DELETE FROM dbo.ChiTietNhapKho WHERE MaPhieuNhap = @MaPhieuNhap;";
+            using (var cmdCt = new SqlCommand(sqlDelCt, conn, tx))
+            {
+                cmdCt.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
+                cmdCt.ExecuteNonQuery();
+            }
+
+            const string sqlDelP = "DELETE FROM dbo.PhieuNhapKho WHERE MaPhieuNhap = @MaPhieuNhap;";
+            using (var cmdP = new SqlCommand(sqlDelP, conn, tx))
+            {
+                cmdP.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
+                cmdP.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
     public void VoHieuHoaPhieuNhap(string maPhieuNhap)
     {
         if (string.IsNullOrWhiteSpace(maPhieuNhap)) return;
 
-        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 0 WHERE MaPhieuNhap = @MaPhieuNhap;";
+        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 'DaHuy' WHERE MaPhieuNhap = @MaPhieuNhap;";
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
@@ -259,6 +314,18 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
     public Task<PhieuNhapKho?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(TimTheoId(maPhieu));
+    }
+
+    public Task DuyetPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default)
+    {
+        DuyetPhieuNhap(maPhieuNhap);
+        return Task.CompletedTask;
+    }
+
+    public Task XoaPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default)
+    {
+        XoaPhieuNhap(maPhieuNhap);
+        return Task.CompletedTask;
     }
 
     private List<ChiTietNhapKho> LayChiTietNhapKho(string maPhieuNhap)
