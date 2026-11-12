@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BlinkBlink.Application.DTOs.Warranty;
@@ -10,7 +10,7 @@ namespace BlinkBlink.Application.Services.Warranty;
 /// <summary>
 /// Trường hợp sử dụng Tiếp nhận bảo hành (TiepNhanBaoHanhUseCase) dành cho nhân viên bán hàng.
 /// Thực hiện tạo phiếu bảo hành mới với trạng thái TiepNhan và ghi nhận tình trạng sản phẩm.
-/// Khớp 100% với Class Diagram kỹ thuật và XML sơ đồ phân hệ bảo hành.
+/// Khớp 100% với Class Diagram kỹ thuật và XML sơ đồ phân hệ bảo hành (Đợt 4: Hoàn thiện đồng bộ dữ liệu nhóm sản phẩm và khách hàng).
 /// </summary>
 public class TiepNhanBaoHanhUseCase
 {
