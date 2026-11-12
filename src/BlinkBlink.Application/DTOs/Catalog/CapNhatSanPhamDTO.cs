@@ -50,4 +50,9 @@ public class CapNhatSanPhamDTO
     /// Tỉ lệ phần trăm giảm giá ưu đãi (0 - 100%)
     /// </summary>
     public int PhanTramGiamGia { get; set; } = 0;
+
+    /// <summary>
+    /// Tỉ lệ phần trăm lợi nhuận để định giá bán
+    /// </summary>
+    public decimal TyLeLoiNhuan { get; set; } = 0;
 }

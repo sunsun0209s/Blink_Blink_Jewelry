@@ -48,6 +48,27 @@ public class QuanLySanPhamUseCase
             return false;
         }
 
+        decimal giaBan;
+        decimal tyLeLoiNhuan = request.TyLeLoiNhuan;
+        if (request.TyLeLoiNhuan > 0)
+        {
+            giaBan = request.GiaNhap > 0
+                ? Math.Round(request.GiaNhap * (1m + (request.TyLeLoiNhuan / 100m)), 0)
+                : 0;
+        }
+        else if (request.GiaBan > 0)
+        {
+            giaBan = request.GiaBan;
+            if (request.GiaNhap > 0)
+            {
+                tyLeLoiNhuan = Math.Round((request.GiaBan - request.GiaNhap) / request.GiaNhap * 100m, 2);
+            }
+        }
+        else
+        {
+            giaBan = 0;
+        }
+
         var entity = new SanPhamTrangSuc(
             maSanPham: maSp,
             tenSanPham: request.TenSanPham.Trim(),
@@ -55,10 +76,12 @@ public class QuanLySanPhamUseCase
             chatLieu: request.ChatLieu?.Trim() ?? string.Empty,
             size: request.Size?.Trim() ?? string.Empty,
             giaNhap: request.GiaNhap,
-            giaBan: request.GiaBan,
+            giaBan: giaBan,
             trangThai: "HetHang",
             hinhAnh: request.HinhAnh?.Trim() ?? string.Empty,
-            phanTramGiamGia: Math.Clamp(request.PhanTramGiamGia, 0, 100)
+            phanTramGiamGia: Math.Clamp(request.PhanTramGiamGia, 0, 100),
+            maNhom: "0",
+            tyLeLoiNhuan: tyLeLoiNhuan
         );
 
         _sanPhamRepo.LuuSanPham(entity);
@@ -114,7 +137,24 @@ public class QuanLySanPhamUseCase
         sanPham.ChatLieu = request.ChatLieu?.Trim() ?? string.Empty;
         sanPham.Size = request.Size?.Trim() ?? string.Empty;
         if (request.GiaNhap >= 0) sanPham.GiaNhap = request.GiaNhap;
-        if (request.GiaBan >= 0) sanPham.GiaBan = request.GiaBan;
+        if (request.TyLeLoiNhuan > 0)
+        {
+            sanPham.TyLeLoiNhuan = request.TyLeLoiNhuan;
+            sanPham.GiaBan = sanPham.TinhGiaBanTheoLoiNhuan();
+        }
+        else if (request.GiaBan > 0)
+        {
+            sanPham.GiaBan = request.GiaBan;
+            if (sanPham.GiaNhap > 0)
+            {
+                sanPham.TyLeLoiNhuan = Math.Round((request.GiaBan - sanPham.GiaNhap) / sanPham.GiaNhap * 100m, 2);
+            }
+        }
+        else
+        {
+            sanPham.TyLeLoiNhuan = request.TyLeLoiNhuan;
+            sanPham.GiaBan = sanPham.TinhGiaBanTheoLoiNhuan();
+        }
         if (!string.IsNullOrWhiteSpace(request.HinhAnh)) sanPham.HinhAnh = request.HinhAnh.Trim();
         sanPham.PhanTramGiamGia = Math.Clamp(request.PhanTramGiamGia, 0, 100);
 
@@ -143,6 +183,27 @@ public class QuanLySanPhamUseCase
             return false;
         }
 
+        decimal giaBan;
+        decimal tyLeLoiNhuan = request.TyLeLoiNhuan;
+        if (request.TyLeLoiNhuan > 0)
+        {
+            giaBan = request.GiaNhap > 0
+                ? Math.Round(request.GiaNhap * (1m + (request.TyLeLoiNhuan / 100m)), 0)
+                : 0;
+        }
+        else if (request.GiaBan > 0)
+        {
+            giaBan = request.GiaBan;
+            if (request.GiaNhap > 0)
+            {
+                tyLeLoiNhuan = Math.Round((request.GiaBan - request.GiaNhap) / request.GiaNhap * 100m, 2);
+            }
+        }
+        else
+        {
+            giaBan = 0;
+        }
+
         var entity = new SanPhamTrangSuc(
             maSanPham: maSp,
             tenSanPham: request.TenSanPham.Trim(),
@@ -150,10 +211,12 @@ public class QuanLySanPhamUseCase
             chatLieu: request.ChatLieu?.Trim() ?? string.Empty,
             size: request.Size?.Trim() ?? string.Empty,
             giaNhap: request.GiaNhap,
-            giaBan: request.GiaBan,
+            giaBan: giaBan,
             trangThai: "HetHang",
             hinhAnh: request.HinhAnh?.Trim() ?? string.Empty,
-            phanTramGiamGia: Math.Clamp(request.PhanTramGiamGia, 0, 100)
+            phanTramGiamGia: Math.Clamp(request.PhanTramGiamGia, 0, 100),
+            maNhom: "0",
+            tyLeLoiNhuan: tyLeLoiNhuan
         );
 
         await _sanPhamRepo.LuuSanPhamAsync(entity, cancellationToken);
@@ -196,7 +259,24 @@ public class QuanLySanPhamUseCase
         sanPham.ChatLieu = request.ChatLieu?.Trim() ?? string.Empty;
         sanPham.Size = request.Size?.Trim() ?? string.Empty;
         if (request.GiaNhap >= 0) sanPham.GiaNhap = request.GiaNhap;
-        if (request.GiaBan >= 0) sanPham.GiaBan = request.GiaBan;
+        if (request.TyLeLoiNhuan > 0)
+        {
+            sanPham.TyLeLoiNhuan = request.TyLeLoiNhuan;
+            sanPham.GiaBan = sanPham.TinhGiaBanTheoLoiNhuan();
+        }
+        else if (request.GiaBan > 0)
+        {
+            sanPham.GiaBan = request.GiaBan;
+            if (sanPham.GiaNhap > 0)
+            {
+                sanPham.TyLeLoiNhuan = Math.Round((request.GiaBan - sanPham.GiaNhap) / sanPham.GiaNhap * 100m, 2);
+            }
+        }
+        else
+        {
+            sanPham.TyLeLoiNhuan = request.TyLeLoiNhuan;
+            sanPham.GiaBan = sanPham.TinhGiaBanTheoLoiNhuan();
+        }
         if (!string.IsNullOrWhiteSpace(request.HinhAnh)) sanPham.HinhAnh = request.HinhAnh.Trim();
         sanPham.PhanTramGiamGia = Math.Clamp(request.PhanTramGiamGia, 0, 100);
 

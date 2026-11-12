@@ -15,4 +15,5 @@ public class SanPhamDTO
     public decimal GiaBan { get; set; }
     public string HinhAnh { get; set; } = string.Empty;
     public int PhanTramGiamGia { get; set; } = 0;
+    public decimal TyLeLoiNhuan { get; set; } = 0;
 }

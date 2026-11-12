@@ -23,6 +23,7 @@ public class SanPhamTrangSuc
     public decimal GiaBan { get; set; }
     public string HinhAnh { get; set; } = string.Empty; // Đường dẫn tệp ảnh hoặc URL ảnh
     public int PhanTramGiamGia { get; set; } = 0; // Tỉ lệ phần trăm giảm giá (0 - 100%)
+    public decimal TyLeLoiNhuan { get; set; } = 0; // Tỉ lệ % lợi nhuận so với giá nhập bình quân để định giá bán
     public int SoLuongTon { get; set; } = 0; // Số lượng hiện tại có trong kho (khớp sơ đồ Class Diagram)
 
     public SanPhamTrangSuc() { }
@@ -38,7 +39,8 @@ public class SanPhamTrangSuc
         string trangThai = "HetHang",
         string hinhAnh = "",
         int phanTramGiamGia = 0,
-        string maNhom = "0")
+        string maNhom = "0",
+        decimal tyLeLoiNhuan = 0)
     {
         MaSanPham = maSanPham;
         TenSanPham = tenSanPham;
@@ -51,6 +53,16 @@ public class SanPhamTrangSuc
         HinhAnh = hinhAnh;
         PhanTramGiamGia = phanTramGiamGia;
         MaNhom = string.IsNullOrWhiteSpace(maNhom) ? "0" : maNhom;
+        TyLeLoiNhuan = tyLeLoiNhuan;
+    }
+
+    /// <summary>
+    /// Tính toán giá bán tự động dựa trên giá nhập bình quân và tỷ lệ lợi nhuận:
+    /// Giá bán = Giá nhập bình quân * (1 + % Lợi nhuận / 100).
+    /// </summary>
+    public decimal TinhGiaBanTheoLoiNhuan()
+    {
+        return Math.Round(GiaNhap * (1m + (TyLeLoiNhuan / 100m)), 0);
     }
 
     /// <summary>
