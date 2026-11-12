@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BlinkBlink.Application.DTOs.Inventory;
-using BlinkBlink.Domain.Entities.Catalog;
 using BlinkBlink.Domain.Entities.Inventory;
 using BlinkBlink.Domain.Interfaces;
 
@@ -326,30 +325,5 @@ public class XacNhanNhapKhoUseCase
 
         phieu.XacNhanNhapKho();
         await _nhapKhoRepo.LuuPhieuNhapAsync(phieu, cancellationToken);
-    }
-}
-
-/// <summary>
-/// Hỗ trợ tính giá bán theo tỷ lệ lợi nhuận an toàn khi module Catalog đang được đồng bộ song song.
-/// Khi SanPhamTrangSuc được cập nhật phương thức instance, trình biên dịch C# sẽ tự động ưu tiên instance method.
-/// </summary>
-internal static class SanPhamTrangSucPricingExtensions
-{
-    public static decimal TinhGiaBanTheoLoiNhuan(this SanPhamTrangSuc sp)
-    {
-        var method = sp.GetType().GetMethod("TinhGiaBanTheoLoiNhuan");
-        if (method != null)
-        {
-            return (decimal)method.Invoke(sp, null)!;
-        }
-
-        var prop = sp.GetType().GetProperty("TyLeLoiNhuan");
-        if (prop != null)
-        {
-            var tyLe = (decimal)prop.GetValue(sp)!;
-            return Math.Round(sp.GiaNhap * (1m + (tyLe / 100m)), 0);
-        }
-
-        return sp.GiaBan;
     }
 }

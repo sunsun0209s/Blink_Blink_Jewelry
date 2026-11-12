@@ -2,8 +2,10 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BlinkBlink.Application.Common;
 using BlinkBlink.Application.DTOs.Orders;
 using BlinkBlink.Domain.Entities.Orders;
+using BlinkBlink.Domain.Exceptions;
 using BlinkBlink.Domain.Interfaces;
 
 namespace BlinkBlink.Application.Services.Orders;
@@ -48,21 +50,33 @@ public class DatHangUseCase
     /// <returns>True nếu tạo hóa đơn thành công và làm sạch giỏ hàng, False nếu dữ liệu không hợp lệ</returns>
     public async Task<bool> ExecuteAsync(DatHangDTO request, CancellationToken cancellationToken = default)
     {
+        var result = await ExecuteWithResultAsync(request, cancellationToken);
+        return result.IsSuccess;
+    }
+
+    /// <summary>
+    /// Thực hiện tiếp nhận đơn hàng và trả về kết quả chuẩn hóa kèm mã lỗi chi tiết.
+    /// </summary>
+    /// <param name="request">Thông tin giao nhận và thanh toán của khách hàng</param>
+    /// <param name="cancellationToken">Mã token theo dõi hủy tác vụ</param>
+    /// <returns>AppResult chứa mã hóa đơn mới hoặc mã lỗi nghiệp vụ cụ thể</returns>
+    public async Task<AppResult<string>> ExecuteWithResultAsync(DatHangDTO request, CancellationToken cancellationToken = default)
+    {
         if (request == null || string.IsNullOrWhiteSpace(request.MaKhachHang))
         {
-            return false;
+            return AppResult<string>.Failure(ErrorCodes.InvalidInput, "Thông tin khách hàng đặt hàng không hợp lệ.");
         }
 
         // Kiểm tra thông tin liên lạc bắt buộc để đảm bảo giao nhận trang sức giá trị cao chính xác
         if (string.IsNullOrWhiteSpace(request.DiaChiGiaoHang) || string.IsNullOrWhiteSpace(request.SoDienThoaiNhan))
         {
-            return false;
+            return AppResult<string>.Failure(ErrorCodes.InvalidInput, "Vui lòng điền đầy đủ địa chỉ giao hàng và số điện thoại nhận hàng.");
         }
 
         var gioHang = await _gioHangRepo.LayGioHangAsync(request.MaKhachHang, cancellationToken);
         if (gioHang == null || gioHang.DanhSachSanPham == null || gioHang.DanhSachSanPham.Count == 0)
         {
-            return false;
+            return AppResult<string>.Failure(ErrorCodes.CartEmpty, "Giỏ hàng hiện đang trống, không thể tạo đơn hàng.");
         }
 
         // Sinh mã hóa đơn duy nhất kết hợp chuẩn hệ thống HD_ONLINE_, dấu thời gian và số ngẫu nhiên
@@ -86,7 +100,9 @@ public class DatHangUseCase
             if (sp == null || !sp.KiemTraTonKho())
             {
                 // Ngăn chặn tạo đơn nếu có sản phẩm đã hết hàng hoặc không khả dụng
-                return false;
+                return AppResult<string>.Failure(
+                    ErrorCodes.OutOfStock,
+                    $"Sản phẩm '{sp?.TenSanPham ?? item.MaSanPham}' hiện không đủ tồn kho hoặc đã ngừng bán.");
             }
 
             var chiTiet = new ChiTietHoaDon(
@@ -110,6 +126,6 @@ public class DatHangUseCase
         gioHang.DonDepGioHang();
         await _gioHangRepo.CapNhatGioHangAsync(gioHang, cancellationToken);
 
-        return true;
+        return AppResult<string>.Success(maHoaDon, "Đặt hàng thành công.");
     }
 }
