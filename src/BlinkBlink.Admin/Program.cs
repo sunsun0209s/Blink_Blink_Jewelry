@@ -1,5 +1,6 @@
 using System;
 using BlinkBlink.Admin.Forms;
+using BlinkBlink.Admin.Services;
 using WinFormsApp = System.Windows.Forms.Application;
 
 namespace BlinkBlink.Admin;
@@ -17,6 +18,9 @@ internal static class Program
     {
         // Khởi tạo cấu hình ứng dụng WinForms trong .NET 8 LTS (hỗ trợ High DPI, Visual Styles)
         ApplicationConfiguration.Initialize();
+
+        // Kích hoạt cơ chế bắt lỗi và ghi nhật ký tập trung toàn ứng dụng POS
+        AdminErrorHandler.RegisterGlobalHandlers();
 
         // Vòng lặp xác thực đăng nhập: khi người dùng đăng xuất sẽ quay lại màn hình LoginForm
         while (true)

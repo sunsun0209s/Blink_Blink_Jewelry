@@ -563,7 +563,7 @@ public class OrdersView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Xảy ra lỗi khi duyệt đơn hàng #{maHoaDon}: {ex.Message}", "Lỗi hệ thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            AdminErrorHandler.Handle(ex, $"{nameof(OrdersView)}.DuyetDonHang({maHoaDon})");
         }
     }
 
@@ -599,7 +599,7 @@ public class OrdersView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Xảy ra lỗi khi cập nhật trạng thái đơn hàng #{maHoaDon}: {ex.Message}", "Lỗi hệ thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            AdminErrorHandler.Handle(ex, $"{nameof(OrdersView)}.CapNhatTrangThai({maHoaDon})");
         }
     }
 
@@ -638,7 +638,7 @@ public class OrdersView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Xảy ra lỗi khi hủy đơn hàng #{maHoaDon}: {ex.Message}", "Lỗi hệ thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            AdminErrorHandler.Handle(ex, $"{nameof(OrdersView)}.HuyDonHang({maHoaDon})");
         }
     }
 }
