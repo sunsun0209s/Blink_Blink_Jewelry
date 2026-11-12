@@ -3,7 +3,9 @@ using System.Drawing;
 using System.Windows.Forms;
 using BlinkBlink.Admin.Services;
 using BlinkBlink.Admin.Views.Helpers;
+using BlinkBlink.Application.Common.Logging;
 using BlinkBlink.Domain.Entities.Identity;
+using BlinkBlink.Domain.Exceptions;
 
 namespace BlinkBlink.Admin.Forms;
 
@@ -229,6 +231,7 @@ public class LoginForm : Form
             var user = AdminServiceScope.Instance.NguoiDungRepo.TimTheoTenDangNhap(username);
             if (user == null || user.MatKhau != password)
             {
+                AdminServiceScope.Instance.Logger.LogWarning(nameof(LoginForm), $"Đăng nhập thất bại cho tài khoản '{_txtUsername.Text.Trim()}'.", ErrorCodes.InvalidCredentials);
                 ShowError("Tên đăng nhập hoặc mật khẩu không chính xác.");
                 _txtPassword.SelectAll();
                 _txtPassword.Focus();
@@ -237,6 +240,7 @@ public class LoginForm : Form
 
             if (!user.TrangThai)
             {
+                AdminServiceScope.Instance.Logger.LogWarning(nameof(LoginForm), $"Từ chối đăng nhập tài khoản bị khóa '{user.TenDangNhap}'.", ErrorCodes.AccountLocked);
                 ShowError("Tài khoản này hiện đang bị khóa quyền truy cập.");
                 return;
             }
@@ -244,6 +248,7 @@ public class LoginForm : Form
             var roleCode = user.MaVaiTro?.ToUpperInvariant();
             if (roleCode != "ADMIN" && roleCode != "SALE" && roleCode != "WAREHOUSE")
             {
+                AdminServiceScope.Instance.Logger.LogWarning(nameof(LoginForm), $"Tài khoản '{user.TenDangNhap}' không có quyền truy cập WinForms ({roleCode}).", ErrorCodes.AccountLocked);
                 ShowError("Tài khoản của bạn không có quyền truy cập vào phần mềm quản trị.");
                 return;
             }
@@ -256,12 +261,14 @@ public class LoginForm : Form
                 AdminServiceScope.Instance.CurrentStaff = nv;
             }
 
+            AdminServiceScope.Instance.Logger.LogInfo(nameof(LoginForm), $"Nhân sự '{user.TenDangNhap}' [{user.MaVaiTro}] đăng nhập thành công.");
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
         catch (Exception ex)
         {
-            ShowError($"Lỗi xác thực hệ thống: {ex.Message}");
+            var traceId = AdminErrorHandler.Handle(ex, nameof(LoginForm), showDialog: false);
+            ShowError($"Lỗi xác thực hệ thống (Mã tra cứu: {traceId}).");
         }
     }
 

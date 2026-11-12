@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +23,7 @@
     <ProjectReference Include="..\..\src\BlinkBlink.Infrastructure\BlinkBlink.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\BlinkBlink.Application\BlinkBlink.Application.csproj" />
     <ProjectReference Include="..\..\src\BlinkBlink.Domain\BlinkBlink.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BlinkBlink.Admin\BlinkBlink.Admin.csproj" />
   </ItemGroup>
 
 </Project>
