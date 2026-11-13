@@ -1,8 +1,244 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Trang Chủ - Kiệt Tác Kim Hoàn Thủ Công";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- ====================================================================================
+     PHẦN 1: HERO SECTION - BỐ CỤC TẠP CHÍ TÔN VINH KIỆT TÁC KIM HOÀN
+     ==================================================================================== -->
+<section class="hero-editorial">
+    <div class="hero-text-block">
+        <span class="hero-pretitle">Haute Joaillerie Atelier 2026</span>
+        <h1 class="hero-heading">
+            Tuyệt Tác Kim Hoàn & Vẻ Đẹp <span>Vĩnh Cửu</span>
+        </h1>
+        <p class="hero-lead">
+            Chào mừng quý khách đến với không gian trang sức Blink Blink — nơi mỗi thiết kế là một kiệt tác thủ công độc bản được tạo tác từ kim cương thiên nhiên, vàng 18K và đá quý thượng hạng bởi bàn tay nghệ nhân bậc thầy.
+        </p>
+        <div class="hero-btn-group">
+            <a href="#catalog" class="btn-luxury-primary">Khám Phá Tuyệt Tác</a>
+            <a href="#warranty" class="btn-luxury-outline">Tra Cứu Bảo Hành</a>
+        </div>
+    </div>
+    <div class="hero-visual-frame">
+        <img src="~/images/hero-jewelry.jpg" alt="Kiệt tác dây chuyền kim cương và nhẫn Solitaire cao cấp" />
+        <div class="hero-floating-badge">
+            <div class="floating-badge-category">Bộ Sưu Tập Mới</div>
+            <div class="floating-badge-name">Nhẫn Solitaire & Chuỗi Kim Cương</div>
+            <div class="floating-badge-detail">Vàng trắng 18K • Giác cắt kim cương Round Brilliant</div>
+        </div>
+    </div>
+</section>
+
+<!-- ====================================================================================
+     PHẦN 2: CÁC TRỤ CỘT GIÁ TRỊ THƯƠNG HIỆU (BRAND VALUE PILLARS)
+     ==================================================================================== -->
+<section class="pillars-ribbon">
+    <div class="pillars-grid">
+        <div class="pillar-item">
+            <div class="pillar-icon-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="6 3 18 3 22 9 12 22 2 9" />
+                </svg>
+            </div>
+            <div>
+                <h4 class="pillar-title">Kim Cương Tự Nhiên GIA</h4>
+                <p class="pillar-desc">Tuyển chọn nghiêm ngặt theo tiêu chuẩn 4C toàn cầu với giấy kiểm định quốc tế uy tín.</p>
+            </div>
+        </div>
+        <div class="pillar-item">
+            <div class="pillar-icon-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            </div>
+            <div>
+                <h4 class="pillar-title">Vàng Chuẩn Tuổi 18K & Bạch Kim</h4>
+                <p class="pillar-desc">Cam kết hàm lượng vàng chuẩn tuổi tuyệt đối, lưu giữ giá trị bền vững theo thời gian.</p>
+            </div>
+        </div>
+        <div class="pillar-item">
+            <div class="pillar-icon-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                </svg>
+            </div>
+            <div>
+                <h4 class="pillar-title">Chế Tác Thủ Công Độc Bản</h4>
+                <p class="pillar-desc">Gia công tinh xảo dưới kính hiển vi quang học bởi nghệ nhân kim hoàn trên 20 năm tuổi nghề.</p>
+            </div>
+        </div>
+        <div class="pillar-item">
+            <div class="pillar-icon-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <div>
+                <h4 class="pillar-title">Bảo Dưỡng Siêu Âm Trọn Đời</h4>
+                <p class="pillar-desc">Dịch vụ làm sạch, kiểm tra chấu đá và đánh bóng xi mạ miễn phí trọn đời cho mọi kiệt tác.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ====================================================================================
+     PHẦN 3: BỘ SƯU TẬP TIÊU BIỂU (EDITORIAL COLLECTIONS SHOWCASE)
+     ==================================================================================== -->
+<section class="editorial-showcase-section" id="collections">
+    <div class="section-header-editorial">
+        <span class="section-pretitle">Bộ Sưu Tập Nổi Bật</span>
+        <h2 class="section-main-heading">Ánh Lửa Vĩnh Cửu & Đẳng Cấp Thượng Lưu</h2>
+        <p class="section-lead-text">
+            Khám phá những câu chuyện kiệt tác được chuyển hóa thành ngôn ngữ của vàng, bạch kim và đá quý tự nhiên.
+        </p>
+    </div>
+
+    <div class="collections-asymmetric-grid">
+        <!-- Thẻ lớn: Dạ yến kim cương -->
+        <div class="collection-card">
+            <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1200&q=80" alt="Dạ yến kim cương Solitaire" />
+            <div class="collection-overlay">
+                <span class="collection-meta">Atelier Collection</span>
+                <h3 class="collection-title">Dạ Yến Kim Cương Solitaire</h3>
+                <p style="font-size: 0.9rem; color: #D0D4DA; max-width: 480px; line-height: 1.6;">
+                    Đỉnh cao của sự thuần khiết với kim cương giác cắt tròn và giác cắt trái tim, hội tụ ánh sáng đa chiều lộng lẫy.
+                </p>
+                <a href="#catalog" class="collection-link-btn">
+                    Khám phá mẫu nhẫn
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Thẻ nhỏ: Sắc đỏ tình yêu Ruby -->
+        <div class="collection-card">
+            <img src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80" alt="Sắc đỏ tình yêu Ruby" />
+            <div class="collection-overlay">
+                <span class="collection-meta">Romance Heritage</span>
+                <h3 class="collection-title">Sắc Đỏ Tình Yêu • Ruby & Vàng Hồng</h3>
+                <p style="font-size: 0.88rem; color: #D0D4DA; line-height: 1.6;">
+                    Màu đỏ nồng nàn của đá Ruby huyết bồ câu tự nhiên hòa quyện cùng sắc vàng hồng 18K ấm áp.
+                </p>
+                <a href="#catalog" class="collection-link-btn">
+                    Xem chi tiết
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ====================================================================================
+     PHẦN 4: DANH MỤC TRANG SỨC & BỘ LỌC TƯƠNG TÁC (CATALOG SECTION)
+     ==================================================================================== -->
+<section class="catalog-section" id="catalog">
+    <div class="section-header-editorial">
+        <span class="section-pretitle">Tuyển Tập Trang Sức</span>
+        <h2 class="section-main-heading">Kiệt Tác Kim Hoàn Blink Blink</h2>
+        <p class="section-lead-text">
+            Mỗi thiết kế đều được niêm yết rõ ràng thông số kích cỡ, chất liệu vàng và giá bán chính thức.
+        </p>
+    </div>
+
+    <!-- Thanh công cụ danh mục kiệt tác & liên kết tìm kiếm nâng cao -->
+    <div class="catalog-toolbar catalog-home-toolbar">
+        <!-- Bộ lọc danh mục kiệt tác -->
+        <div class="catalog-toolbar-categories">
+            <span class="catalog-toolbar-label">Danh mục:</span>
+            <div class="category-filter-group" id="category-filter-group">
+                <button type="button" class="filter-pill-btn active" data-category="ALL">Tất Cả</button>
+                <button type="button" class="filter-pill-btn" data-category="DM01">Nhẫn Kim Cương</button>
+                <button type="button" class="filter-pill-btn" data-category="DM02">Dây Chuyền & Mặt Dây</button>
+                <button type="button" class="filter-pill-btn" data-category="DM03">Bông Tai Quý Phái</button>
+                <button type="button" class="filter-pill-btn" data-category="DM04">Vòng Tay & Lắc Kim Cương</button>
+            </div>
+            <!-- Nút điều hướng sang trang Tìm Kiếm Nâng Cao riêng biệt -->
+            <a href="/TimKiem" class="btn-goto-advanced-search" title="Mở trang tìm kiếm & bộ lọc nâng cao">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Tìm Kiếm Nâng Cao & Bộ Lọc
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Lưới sản phẩm kim hoàn động -->
+    <div class="products-editorial-grid" id="products-grid">
+        <!-- JavaScript sẽ tự động render các thẻ trang sức tại đây -->
+    </div>
+
+    <!-- Thanh phân trang kiệt tác kim hoàn chuẩn Taste Skill -->
+    <div class="catalog-pagination-wrap" id="products-pagination" style="display: none;"></div>
+</section>
+
+<!-- ====================================================================================
+     PHẦN 5: TRA CỨU BẢO HÀNH TRANG SỨC TRỰC TUYẾN (WARRANTY LOOKUP SECTION)
+     ==================================================================================== -->
+<section class="warranty-lookup-section" id="warranty">
+    <div class="warranty-container">
+        <div class="warranty-header">
+            <span class="section-pretitle" style="color: var(--gold-primary);">Hệ Thống Dịch Vụ Hậu Mãi</span>
+            <h2>Tra Cứu Dịch Vụ & Tiến Độ Bảo Hành</h2>
+            <p>
+                Quý khách có thể dễ dàng kiểm tra tình trạng phục hồi, tiến độ đánh bóng và thời gian hẹn trả của kiệt tác trang sức bằng mã phiếu bảo hành.
+            </p>
+        </div>
+
+        <!-- Thanh tìm kiếm phiếu bảo hành -->
+        <div class="warranty-search-bar">
+            <input type="text" id="warranty-search-input" placeholder="Nhập mã phiếu bảo hành (VD: BH2001, BH2002)..." />
+            <button type="button" id="btn-search-warranty">Tra Cứu Tiến Độ</button>
+        </div>
+
+        <!-- Các mã phiếu mẫu để kiểm thử nhanh -->
+        <div class="warranty-sample-pills">
+            <span>Phiếu mẫu có sẵn:</span>
+            <span class="warranty-pill-tag" onclick="lookupWarranty('BH2001')">BH2001 (Đã hoàn tất)</span>
+            <span class="warranty-pill-tag" onclick="lookupWarranty('BH2002')">BH2002 (Đang xử lý)</span>
+        </div>
+
+        <!-- Thẻ kết quả tra cứu chi tiết -->
+        <div class="warranty-result-card" id="warranty-result-card">
+            <div class="warranty-ticket-head">
+                <div>
+                    <span style="font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-primary);">Phiếu Dịch Vụ Kim Hoàn</span>
+                    <h3 class="ticket-number-title" id="wb-ticket-no">BH2001</h3>
+                </div>
+                <div>
+                    <span id="wb-status-badge" class="badge-status-completed">Đã Hoàn Tất Dịch Vụ</span>
+                </div>
+            </div>
+
+            <div class="ticket-grid-details">
+                <div>
+                    <div class="detail-item-title">Khách hàng tiếp nhận</div>
+                    <div class="detail-item-val" id="wb-customer">Phạm Bích Ngọc</div>
+                </div>
+                <div>
+                    <div class="detail-item-title">Kiệt tác trang sức</div>
+                    <div class="detail-item-val" id="wb-product">Nhẫn Solitaire Diamond 18K</div>
+                </div>
+                <div>
+                    <div class="detail-item-title">Chi phí bảo dưỡng</div>
+                    <div class="detail-item-val" id="wb-cost">Miễn phí dịch vụ</div>
+                </div>
+                <div>
+                    <div class="detail-item-title">Ngày tiếp nhận</div>
+                    <div class="detail-item-val" id="wb-date-in">12/03/2026</div>
+                </div>
+                <div>
+                    <div class="detail-item-title">Ngày hẹn giao trả</div>
+                    <div class="detail-item-val" id="wb-date-out">14/03/2026</div>
+                </div>
+                <div>
+                    <div class="detail-item-title">Địa điểm bàn giao</div>
+                    <div class="detail-item-val">Showroom Quận 1, TP.HCM</div>
+                </div>
+            </div>
+
+            <div class="ticket-service-note">
+                <strong style="color: var(--gold-primary);">Nội dung gia công & Lưu ý kỹ thuật:</strong><br />
+                <span id="wb-note">Làm sạch, đánh bóng siêu âm và kiểm tra chấu giữ viên kim cương chủ.</span>
+            </div>
+        </div>
+    </div>
+</section>
