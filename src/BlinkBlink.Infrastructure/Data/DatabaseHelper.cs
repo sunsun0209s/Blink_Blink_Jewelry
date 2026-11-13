@@ -4,6 +4,9 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
+using BlinkBlink.Application.Common.Logging;
+using BlinkBlink.Domain.Exceptions;
+using BlinkBlink.Infrastructure.Logging;
 
 namespace BlinkBlink.Infrastructure.Data;
 
@@ -14,6 +17,7 @@ namespace BlinkBlink.Infrastructure.Data;
 public class DatabaseHelper
 {
     private readonly string _connectionString;
+    private readonly IAppLogger _logger;
 
     /// <summary>
     /// Chuỗi kết nối tới SQL Server
@@ -21,12 +25,14 @@ public class DatabaseHelper
     public string ConnectionString => _connectionString;
 
     /// <summary>
-    /// Khởi tạo DatabaseHelper với chuỗi kết nối SQL Server
+    /// Khởi tạo DatabaseHelper với chuỗi kết nối SQL Server và bộ ghi nhật ký tùy chọn
     /// </summary>
     /// <param name="connectionString">Chuỗi kết nối</param>
-    public DatabaseHelper(string connectionString)
+    /// <param name="logger">Bộ ghi nhật ký thích ứng</param>
+    public DatabaseHelper(string connectionString, IAppLogger? logger = null)
     {
         _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+        _logger = logger ?? NullAppLogger.Instance;
     }
 
     /// <summary>
@@ -55,8 +61,11 @@ public class DatabaseHelper
             conn.Open();
             return conn.State == ConnectionState.Open;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogDebug(
+                nameof(DatabaseHelper),
+                $"Kiểm tra kết nối thất bại tới {AdaptiveFileLogger.MaskConnectionString(_connectionString)}: {ex.Message}");
             return false;
         }
     }
@@ -239,10 +248,23 @@ public class DatabaseHelper
                 END";
 
             ExecuteNonQuery(migrationSql);
+            _logger.LogInfo(nameof(DatabaseHelper), "Kiểm tra tương thích lược đồ cơ sở dữ liệu hoàn tất.");
         }
-        catch
+        catch (SqlException sqlEx)
         {
-            // Bỏ qua nếu không có quyền DDL hoặc database ngoại tuyến
+            _logger.LogWarning(
+                nameof(DatabaseHelper),
+                "Không thể chạy nâng cấp lược đồ tự động (có thể thiếu quyền DDL hoặc bảng chưa tồn tại).",
+                ErrorCodes.DatabaseQueryError,
+                sqlEx);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                nameof(DatabaseHelper),
+                "Bỏ qua bước kiểm tra tương thích lược đồ do lỗi môi trường.",
+                ErrorCodes.DatabaseUnavailable,
+                ex);
         }
     }
 
@@ -250,11 +272,15 @@ public class DatabaseHelper
     /// Thử tự động khởi tạo cơ sở dữ liệu và nạp dữ liệu mẫu từ kịch bản SQL Server nếu máy chủ SQL đang hoạt động
     /// nhưng chưa có database BlinkBlinkJewelryDb.
     /// </summary>
-    /// <param name="targetConnectionString">Chuỗi kết nối mục tiêu tới BlinkBlinkJewelryDb</param>
-    /// <param name="helper">Đối tượng DatabaseHelper đã kết nối thành công sau khi khởi tạo</param>
-    /// <returns>true nếu CSDL đã sẵn sàng hoạt động, false nếu không thể kết nối tới máy chủ SQL Server</returns>
     public static bool TryProvisionDatabase(string targetConnectionString, out DatabaseHelper? helper)
+        => TryProvisionDatabase(targetConnectionString, out helper, null);
+
+    /// <summary>
+    /// Thử tự động khởi tạo cơ sở dữ liệu kèm bộ ghi nhật ký chẩn đoán.
+    /// </summary>
+    public static bool TryProvisionDatabase(string targetConnectionString, out DatabaseHelper? helper, IAppLogger? logger)
     {
+        var activeLogger = logger ?? NullAppLogger.Instance;
         helper = null;
         try
         {
@@ -262,7 +288,7 @@ public class DatabaseHelper
             var dbName = string.IsNullOrWhiteSpace(targetBuilder.InitialCatalog) ? "BlinkBlinkJewelryDb" : targetBuilder.InitialCatalog;
 
             // Bước 1: Kiểm tra xem đã kết nối trực tiếp được vào database mục tiêu chưa
-            var directHelper = new DatabaseHelper(targetConnectionString);
+            var directHelper = new DatabaseHelper(targetConnectionString, activeLogger);
             if (directHelper.TestConnection())
             {
                 // Nếu database đã tồn tại nhưng có thể chưa nạp bảng, kiểm tra bảng NguoiDung
@@ -272,10 +298,10 @@ public class DatabaseHelper
                     var count = Convert.ToInt32(checkCmd.ExecuteScalar());
                     if (count == 0)
                     {
-                        var script = LoadInitializationScript();
+                        var script = LoadInitializationScript(activeLogger);
                         if (!string.IsNullOrWhiteSpace(script))
                         {
-                            ExecuteScriptBatches(conn, script);
+                            ExecuteScriptBatches(conn, script, activeLogger);
                         }
                     }
                 }
@@ -302,7 +328,7 @@ public class DatabaseHelper
             }
 
             // Bước 3: Kết nối vào database mới tạo và kiểm tra xem bảng chính (NguoiDung) đã có chưa
-            var newDbHelper = new DatabaseHelper(targetConnectionString);
+            var newDbHelper = new DatabaseHelper(targetConnectionString, activeLogger);
             using (var dbConn = newDbHelper.GetConnection())
             {
                 using var checkTableCmd = new SqlCommand("SELECT COUNT(*) FROM sys.tables WHERE name = 'NguoiDung'", dbConn);
@@ -311,10 +337,10 @@ public class DatabaseHelper
                 // Nếu chưa có bảng NguoiDung, thực thi kịch bản SQL khởi tạo toàn bộ
                 if (tableCount == 0)
                 {
-                    var sqlScript = LoadInitializationScript();
+                    var sqlScript = LoadInitializationScript(activeLogger);
                     if (!string.IsNullOrWhiteSpace(sqlScript))
                     {
-                        ExecuteScriptBatches(dbConn, sqlScript);
+                        ExecuteScriptBatches(dbConn, sqlScript, activeLogger);
                     }
                 }
             }
@@ -324,13 +350,18 @@ public class DatabaseHelper
 
             if (newDbHelper.TestConnection())
             {
+                activeLogger.LogInfo(nameof(DatabaseHelper), $"Đã tự động khởi tạo cơ sở dữ liệu thành công tại {AdaptiveFileLogger.MaskConnectionString(targetConnectionString)}.");
                 helper = newDbHelper;
                 return true;
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DatabaseHelper.TryProvisionDatabase] {ex.Message}");
+            activeLogger.LogWarning(
+                nameof(DatabaseHelper),
+                $"Không thể tự động khởi tạo CSDL với chuỗi {AdaptiveFileLogger.MaskConnectionString(targetConnectionString)}.",
+                ErrorCodes.DatabaseUnavailable,
+                ex);
         }
 
         return false;
@@ -341,7 +372,14 @@ public class DatabaseHelper
     /// </summary>
     /// <returns>Chuỗi văn bản kịch bản SQL UTF-8</returns>
     public static string LoadInitializationScript()
+        => LoadInitializationScript(null);
+
+    /// <summary>
+    /// Đọc nội dung kịch bản SQL khởi tạo CSDL kèm ghi nhật ký chẩn đoán.
+    /// </summary>
+    public static string LoadInitializationScript(IAppLogger? logger)
     {
+        var activeLogger = logger ?? NullAppLogger.Instance;
         // 1. Tìm kiếm file vật lý tại các thư mục tương đối của solution
         var searchPaths = new[]
         {
@@ -365,7 +403,10 @@ public class DatabaseHelper
                     return File.ReadAllText(fullPath, Encoding.UTF8);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                activeLogger.LogDebug(nameof(DatabaseHelper), $"Không đọc được kịch bản SQL tại '{path}': {ex.Message}");
+            }
         }
 
         // 2. Dự phòng: Đọc từ tài nguyên nhúng (EmbeddedResource) đã được biên dịch thẳng vào DLL
@@ -384,7 +425,10 @@ public class DatabaseHelper
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            activeLogger.LogWarning(nameof(DatabaseHelper), "Lỗi khi đọc tài nguyên nhúng BlinkBlinkJewelry.sql.", ErrorCodes.DatabaseQueryError, ex);
+        }
 
         return string.Empty;
     }
@@ -395,8 +439,10 @@ public class DatabaseHelper
     /// </summary>
     /// <param name="conn">Kết nối đã mở đến cơ sở dữ liệu mục tiêu</param>
     /// <param name="script">Toàn văn kịch bản SQL</param>
-    public static void ExecuteScriptBatches(SqlConnection conn, string script)
+    /// <param name="logger">Bộ ghi nhật ký tùy chọn</param>
+    public static void ExecuteScriptBatches(SqlConnection conn, string script, IAppLogger? logger = null)
     {
+        var activeLogger = logger ?? NullAppLogger.Instance;
         if (string.IsNullOrWhiteSpace(script) || conn == null || conn.State != ConnectionState.Open) return;
 
         var batches = Regex.Split(
@@ -426,7 +472,7 @@ public class DatabaseHelper
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ExecuteScriptBatches] Lỗi tại batch: {ex.Message}");
+                activeLogger.LogWarning(nameof(DatabaseHelper), $"Lỗi thực thi batch SQL khởi tạo: {ex.Message}", ErrorCodes.DatabaseQueryError, ex);
             }
         }
     }
