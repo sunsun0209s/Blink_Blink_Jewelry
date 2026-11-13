@@ -1,0 +1,108 @@
+@{
+    ViewData["Title"] = "Tìm Kiếm & Tuyển Tập Kiệt Tác Kim Hoàn | Blink Blink Jewelry";
+}
+
+<!-- ====================================================================================
+     TRANG TÌM KIẾM & BỘ LỌC KIỆT TÁC KIM HOÀN CHUYÊN BIỆT (DEDICATED SEARCH PAGE)
+     ==================================================================================== -->
+<div class="search-page-container">
+    <!-- Breadcrumb Điều Hướng Sang Trọng -->
+    <nav class="search-breadcrumb" aria-label="Đường dẫn trang">
+        <a href="/">Trang Chủ</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Tìm Kiếm Kiệt Tác</span>
+    </nav>
+
+    <!-- Tiêu Đề Editorial Cho Trang Tìm Kiếm -->
+    <header class="search-page-header">
+        <span class="section-pretitle">Tra Cứu & Tuyển Tập Độc Bản</span>
+        <h1 class="search-page-title">Bộ Sưu Tập & Tìm Kiếm Kiệt Tác Kim Hoàn</h1>
+        <p class="search-page-lead">
+            Tìm kiếm theo tên kiệt tác, mã định danh, chất liệu vàng nguyên khối, kim cương tự nhiên hoặc tùy chỉnh khoảng giá ngân sách.
+        </p>
+    </header>
+
+    <!-- Thanh công cụ tìm kiếm và lọc đa chiều nâng cao -->
+    <div class="catalog-toolbar search-page-toolbar">
+        <!-- Hàng 1: Bộ lọc danh mục kiệt tác -->
+        <div class="catalog-toolbar-categories">
+            <span class="catalog-toolbar-label">Danh mục:</span>
+            <div class="category-filter-group" id="category-filter-group">
+                <button type="button" class="filter-pill-btn active" data-category="ALL">Tất Cả</button>
+                <button type="button" class="filter-pill-btn" data-category="DM01">Nhẫn Kim Cương</button>
+                <button type="button" class="filter-pill-btn" data-category="DM02">Dây Chuyền & Mặt Dây</button>
+                <button type="button" class="filter-pill-btn" data-category="DM03">Bông Tai Quý Phái</button>
+                <button type="button" class="filter-pill-btn" data-category="DM04">Vòng Tay & Lắc Kim Cương</button>
+            </div>
+        </div>
+
+        <!-- Hàng 2: Ô tìm kiếm từ khóa và các bộ lọc thông số chi tiết -->
+        <div class="catalog-toolbar-controls">
+            <!-- Ô tìm kiếm từ khóa với icon kim hoàn và nút xóa nhanh -->
+            <div class="catalog-search-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold-primary)" stroke-width="2" style="margin-right: 8px; flex-shrink: 0;">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="catalog-search-input" placeholder="Tìm theo tên kiệt tác, chất liệu, mã SP..." autocomplete="off" />
+                <button type="button" id="catalog-search-clear" class="btn-search-clear" title="Xóa từ khóa" style="display: none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <!-- Nhóm bộ lọc mở rộng: Giá bán, Chất liệu, Sắp xếp -->
+            <div class="catalog-filter-dropdowns">
+                <div class="filter-select-wrapper">
+                    <label for="catalog-filter-price" class="filter-select-label">Mức giá</label>
+                    <select id="catalog-filter-price" class="catalog-select-control">
+                        <option value="ALL">Mọi mức giá</option>
+                        <option value="UNDER_20M">Dưới 20 triệu</option>
+                        <option value="20M_40M">Từ 20 - 40 triệu</option>
+                        <option value="OVER_40M">Trên 40 triệu</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrapper">
+                    <label for="catalog-filter-material" class="filter-select-label">Chất liệu</label>
+                    <select id="catalog-filter-material" class="catalog-select-control">
+                        <option value="ALL">Mọi chất liệu</option>
+                        <option value="KIM_CUONG">Kim Cương Tự Nhiên</option>
+                        <option value="VANG_18K">Vàng 18K / Vàng Ý</option>
+                        <option value="BACH_KIM">Bạch Kim Platin</option>
+                        <option value="RUBY_SAPPHIRE">Đá Quý Ruby / Sapphire</option>
+                        <option value="NGOC_TRAI">Ngọc Trai Biển</option>
+                    </select>
+                </div>
+
+                <div class="filter-select-wrapper">
+                    <label for="catalog-sort-order" class="filter-select-label">Sắp xếp</label>
+                    <select id="catalog-sort-order" class="catalog-select-control">
+                        <option value="DEFAULT">Mặc định</option>
+                        <option value="PRICE_ASC">Giá: Thấp đến Cao</option>
+                        <option value="PRICE_DESC">Giá: Cao đến Thấp</option>
+                        <option value="DISCOUNT">Ưu đãi nhiều nhất</option>
+                    </select>
+                </div>
+
+                <!-- Nút đặt lại tất cả bộ lọc -->
+                <button type="button" id="btn-reset-catalog-filters" class="btn-filter-reset" onclick="resetAllFilters()" title="Đặt lại bộ lọc về mặc định">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Đặt Lại
+                </button>
+            </div>
+        </div>
+
+        <!-- Thanh chỉ báo trạng thái tìm kiếm -->
+        <div class="catalog-filter-status" id="catalog-filter-status">
+            <span>Hiển thị <strong id="filtered-count" class="highlight-count">0</strong> kiệt tác trang sức</span>
+            <span id="active-filter-tags" class="active-filter-tags"></span>
+        </div>
+    </div>
+
+    <!-- Lưới sản phẩm kim hoàn động (kết quả tìm kiếm) -->
+    <div class="products-editorial-grid" id="products-grid">
+        <!-- JavaScript sẽ tự động render các thẻ trang sức tại đây -->
+    </div>
+
+    <!-- Thanh phân trang kết quả tìm kiếm chuẩn Taste Skill -->
+    <div class="catalog-pagination-wrap" id="products-pagination" style="display: none;"></div>
+</div>
