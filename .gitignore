@@ -492,3 +492,9 @@ XML/
 xml/
 *.pdf
 *.xml
+
+# Playwright
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
