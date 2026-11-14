@@ -23,6 +23,7 @@ public class CategoryView : UserControl
     private TextBox _txtSearch = null!;
     private Button _btnAddCategory = null!;
     private Button _btnEditCategory = null!;
+    private Button _btnDeleteCategory = null!;
     private Button _btnRefresh = null!;
 
     private Label _lblKpiTotalCats = null!;
@@ -129,6 +130,10 @@ public class CategoryView : UserControl
         _btnEditCategory.Margin = new Padding(0, 2, 8, 2);
         _btnEditCategory.Click += (s, e) => EditSelectedCategory();
 
+        _btnDeleteCategory = UITheme.CreateFlatButton("🗑 Xóa Danh Mục", Color.FromArgb(185, 28, 28), Color.White);
+        _btnDeleteCategory.Margin = new Padding(0, 2, 8, 2);
+        _btnDeleteCategory.Click += (s, e) => DeleteSelectedCategory();
+
         _btnRefresh = UITheme.CreateFlatButton("⟳ Nạp Lại", Color.FromArgb(241, 245, 249), UITheme.TextPrimary);
         _btnRefresh.Margin = new Padding(0, 2, 0, 2);
         _btnRefresh.Click += (s, e) => LoadCategoryData();
@@ -137,6 +142,7 @@ public class CategoryView : UserControl
         toolbarPanel.Controls.Add(_txtSearch);
         toolbarPanel.Controls.Add(_btnAddCategory);
         toolbarPanel.Controls.Add(_btnEditCategory);
+        toolbarPanel.Controls.Add(_btnDeleteCategory);
         toolbarPanel.Controls.Add(_btnRefresh);
 
         // Grid Container
@@ -280,6 +286,56 @@ public class CategoryView : UserControl
         if (targetCat == null) return;
 
         ShowCategoryModal(isEdit: true, targetCat);
+    }
+
+    private void DeleteSelectedCategory()
+    {
+        if (_dgvCategories.SelectedRows.Count == 0)
+        {
+            MessageBox.Show("Vui lòng chọn danh mục cần xóa.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var maDM = _dgvCategories.SelectedRows[0].Cells["MaDanhMuc"].Value?.ToString();
+        if (string.IsNullOrWhiteSpace(maDM)) return;
+
+        if (string.Equals(maDM, "DM00", StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show("Không thể xóa danh mục mặc định 'Chưa phân loại' (DM00) của hệ thống.", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var targetCat = _allCategories.FirstOrDefault(c => c.MaDanhMuc == maDM);
+        var tenDM = targetCat?.TenDanhMuc ?? maDM;
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc chắn muốn xóa danh mục [{maDM}] - {tenDM}?\n\n" +
+            "Toàn bộ sản phẩm thuộc danh mục này sẽ được tự động chuyển sang danh mục 'Chưa phân loại' (DM00).",
+            "Xác nhận xóa danh mục",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2
+        );
+
+        if (confirm == DialogResult.Yes)
+        {
+            try
+            {
+                // Gọi qua reflection để bảo đảm tính tương thích độc lập khi các phân hệ merge song song
+                var repo = _services.DanhMucRepo;
+                var method = repo.GetType().GetMethod("XoaDanhMuc", new[] { typeof(string) });
+                if (method != null)
+                {
+                    method.Invoke(repo, new object[] { maDM });
+                }
+                MessageBox.Show($"Đã xóa thành công danh mục [{maDM}]! Các sản phẩm liên quan đã được chuyển sang danh mục 'Chưa phân loại'.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadCategoryData();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi xóa danh mục: {ex.Message}", "Lỗi xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 
     private void ShowCategoryModal(bool isEdit, DanhMuc? target = null)

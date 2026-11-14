@@ -876,8 +876,17 @@ public class WarrantyView : UserControl
             PlaceholderText = "Số điện thoại..."
         };
 
-        pnlBody.Controls.AddRange(new Control[] { lblKhach, txtSearchKhach, cboKhach, lblSdt, txtSdt });
-        top += rowSpacing;
+        var lblCustomerLookupStatus = new Label
+        {
+            Location = new Point(140, top + 32),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+            ForeColor = UITheme.TextSecondary,
+            Text = "Nhập SĐT để tự động nhận diện khách hàng hoặc để trống cho khách vãng lai"
+        };
+
+        pnlBody.Controls.AddRange(new Control[] { lblKhach, txtSearchKhach, cboKhach, lblSdt, txtSdt, lblCustomerLookupStatus });
+        top += rowSpacing + 16;
 
         // 2. Hàng chọn Sản phẩm (Search + ComboBox)
         var lblSp = new Label
@@ -1034,21 +1043,84 @@ public class WarrantyView : UserControl
         PopulateKhach(string.Empty);
         txtSearchKhach.TextChanged += (s, e) => PopulateKhach(txtSearchKhach.Text);
 
+        bool isSyncingPhone = false;
+
+        void CheckPhoneLookup()
+        {
+            if (isSyncingPhone) return;
+            var phone = txtSdt.Text.Trim();
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                lblCustomerLookupStatus.Text = "Khách vãng lai không bắt buộc nhập SĐT (sẽ liên kết nếu nhập SĐT sau)";
+                lblCustomerLookupStatus.ForeColor = UITheme.TextSecondary;
+                return;
+            }
+
+            var existingKh = _services.KhachHangRepo.TimTheoSoDienThoai(phone);
+            if (existingKh != null)
+            {
+                isSyncingPhone = true;
+                try
+                {
+                    var foundIdx = -1;
+                    for (int i = 0; i < cboKhach.Items.Count; i++)
+                    {
+                        if (cboKhach.Items[i] is CustomerComboItem item &&
+                            (item.MaKhachHang == existingKh.MaKhachHang || item.MaNguoiDung == existingKh.MaNguoiDung))
+                        {
+                            foundIdx = i;
+                            break;
+                        }
+                    }
+
+                    if (foundIdx >= 0)
+                    {
+                        cboKhach.SelectedIndex = foundIdx;
+                    }
+
+                    lblCustomerLookupStatus.Text = $"✓ Đã nhận diện khách hàng: [{existingKh.MaKhachHang}] {existingKh.HoTen}";
+                    lblCustomerLookupStatus.ForeColor = UITheme.SuccessColor;
+                }
+                finally
+                {
+                    isSyncingPhone = false;
+                }
+            }
+            else
+            {
+                lblCustomerLookupStatus.Text = "ℹ Khách vãng lai. Phiếu bảo hành sẽ tự động liên kết khi khách đăng ký tài khoản";
+                lblCustomerLookupStatus.ForeColor = UITheme.PrimaryGold;
+            }
+        }
+
+        txtSdt.Leave += (s, e) => CheckPhoneLookup();
+        txtSdt.TextChanged += (s, e) =>
+        {
+            if (txtSdt.Text.Trim().Length >= 10)
+            {
+                CheckPhoneLookup();
+            }
+        };
+
         cboKhach.SelectedIndexChanged += (s, e) =>
         {
+            if (isSyncingPhone) return;
             if (cboKhach.SelectedItem is CustomerComboItem selected)
             {
                 if (selected.MaKhachHang == "0")
                 {
                     txtSdt.ReadOnly = false;
                     txtSdt.BackColor = Color.White;
-                    txtSdt.Text = string.Empty;
+                    lblCustomerLookupStatus.Text = "Nhập SĐT để tự động nhận diện khách hàng hoặc để trống cho khách vãng lai";
+                    lblCustomerLookupStatus.ForeColor = UITheme.TextSecondary;
                 }
                 else
                 {
                     txtSdt.Text = selected.SoDienThoai;
                     txtSdt.ReadOnly = true;
                     txtSdt.BackColor = Color.FromArgb(241, 245, 249);
+                    lblCustomerLookupStatus.Text = $"✓ Khách hàng thành viên: {selected.DisplayText}";
+                    lblCustomerLookupStatus.ForeColor = UITheme.SuccessColor;
                 }
             }
         };
@@ -1101,6 +1173,10 @@ public class WarrantyView : UserControl
             if (cboKhach.SelectedItem is CustomerComboItem selectedKh)
             {
                 maKhachHang = !string.IsNullOrWhiteSpace(selectedKh.MaNguoiDung) ? selectedKh.MaNguoiDung : selectedKh.MaKhachHang;
+            }
+            if (string.Equals(maKhachHang, "KH_GUEST_POS", StringComparison.OrdinalIgnoreCase))
+            {
+                maKhachHang = "0";
             }
 
             DateTime.TryParseExact(txtHenTra.Text.Trim(), "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var henTraDate);

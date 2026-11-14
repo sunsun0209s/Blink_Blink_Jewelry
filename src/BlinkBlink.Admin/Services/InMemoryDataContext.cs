@@ -81,6 +81,7 @@ public class InMemoryDataContext
 
         // 3. Danh mục sản phẩm kim hoàn
         DanhMucs.Clear();
+        DanhMucs.Add(new DanhMuc("DM00", "Chưa phân loại", "Danh mục mặc định cho sản phẩm chưa phân loại hoặc danh mục cũ bị xóa"));
         DanhMucs.Add(new DanhMuc("DM01", "Nhẫn Kim Cương", "Bộ sưu tập nhẫn đính hôn và nhẫn cưới"));
         DanhMucs.Add(new DanhMuc("DM02", "Dây Chuyền & Mặt Dây", "Thiết kế vàng 18K và đá quý thiên nhiên"));
         DanhMucs.Add(new DanhMuc("DM03", "Bông Tai Quý Phái", "Bông tai bạch kim và sapphire"));
@@ -201,6 +202,35 @@ public class InMemoryDataContext
         public Task<DanhMuc?> TimTheoIdAsync(string id, CancellationToken ct = default) => Task.FromResult(TimTheoId(id));
         public List<DanhMuc> LayTatCa() => _ctx.DanhMucs.ToList();
         public Task<List<DanhMuc>> LayTatCaAsync(CancellationToken ct = default) => Task.FromResult(LayTatCa());
+        public void XoaDanhMuc(string maDanhMuc)
+        {
+            if (string.IsNullOrWhiteSpace(maDanhMuc)) return;
+            var cleanMa = maDanhMuc.Trim();
+            if (string.Equals(cleanMa, "DM00", StringComparison.OrdinalIgnoreCase)) return;
+
+            // Đảm bảo DM00 tồn tại
+            if (!_ctx.DanhMucs.Any(d => d.MaDanhMuc == "DM00"))
+            {
+                _ctx.DanhMucs.Add(new DanhMuc("DM00", "Chưa phân loại", "Danh mục mặc định cho sản phẩm chưa phân loại hoặc danh mục cũ bị xóa"));
+            }
+
+            // Chuyển toàn bộ sản phẩm thuộc danh mục này sang DM00
+            foreach (var sp in _ctx.SanPhams.Where(s => string.Equals(s.MaDanhMuc, cleanMa, StringComparison.OrdinalIgnoreCase)))
+            {
+                sp.MaDanhMuc = "DM00";
+            }
+
+            var dm = _ctx.DanhMucs.FirstOrDefault(d => string.Equals(d.MaDanhMuc, cleanMa, StringComparison.OrdinalIgnoreCase));
+            if (dm != null)
+            {
+                _ctx.DanhMucs.Remove(dm);
+            }
+        }
+        public Task XoaDanhMucAsync(string maDanhMuc, CancellationToken ct = default)
+        {
+            XoaDanhMuc(maDanhMuc);
+            return Task.CompletedTask;
+        }
     }
 
     private class MemoryHoaDonRepository : IHoaDonRepository

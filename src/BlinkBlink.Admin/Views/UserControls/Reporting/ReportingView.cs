@@ -115,7 +115,8 @@ public class ReportingView : UserControl
         {
             Width = 130,
             Format = DateTimePickerFormat.Short,
-            Value = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1),
+            // Mặc định lấy từ đầu năm để hiển thị đầy đủ toàn bộ hóa đơn phát sinh trong năm
+            Value = new DateTime(DateTime.Now.Year, 1, 1),
             Margin = new Padding(0, 4, 15, 4)
         };
 

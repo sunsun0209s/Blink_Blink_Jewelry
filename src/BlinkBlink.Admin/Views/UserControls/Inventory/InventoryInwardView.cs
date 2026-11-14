@@ -783,9 +783,11 @@ public class InventoryInwardView : UserControl
             Font = UITheme.RegularFont,
             Margin = new Padding(0, 6, 8, 0)
         };
+        // Lấy mã người dùng của tài khoản hiện tại (khớp khóa ngoại FK_PhieuNhapKho_NhanVien -> dbo.NguoiDung.MaNguoiDung)
+        var staffId = _services.CurrentUser?.MaNguoiDung ?? _services.CurrentStaff?.MaNguoiDung ?? "USER_ADMIN01";
         var txtNv = new TextBox
         {
-            Text = "USER_NV002",
+            Text = staffId,
             Width = 190,
             Height = 30,
             Font = UITheme.RegularFont,
@@ -1077,6 +1079,13 @@ public class InventoryInwardView : UserControl
                     isSyncingSelection = true;
                     try
                     {
+                        // Theo CONGVIECTIEPTHEO: Làm trống ô tìm kiếm để tránh lỗi lọc làm mất sản phẩm thuộc size mới
+                        if (!string.IsNullOrWhiteSpace(txtSearchSp.Text))
+                        {
+                            txtSearchSp.Text = string.Empty;
+                            PopulateProductDropdown(string.Empty);
+                        }
+
                         for (int i = 0; i < cboSp.Items.Count; i++)
                         {
                             if ((cboSp.Items[i] as ProductComboItem)?.MaSP == matchSp.MaSanPham)

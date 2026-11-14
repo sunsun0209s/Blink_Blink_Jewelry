@@ -71,10 +71,10 @@ public class DatabaseWorkflowIntegrationTests
         // Xác minh mã khách hàng trong DB được lưu thành công là USER_KH001 (khớp FK dbo.NguoiDung)
         Assert.Equal("USER_KH001", ticketTv.MaKhachHang);
 
-        // Kiểm tra sản phẩm được cập nhật trạng thái DangBaoHanh
+        // Kiểm tra sản phẩm bảo toàn trạng thái kinh doanh (SanSang nếu còn tồn kho), không bị gán nhầm DangBaoHanh
         var spSauTiepNhan = await sanPhamRepo.TimTheoIdAsync(testSp.MaSanPham);
         Assert.NotNull(spSauTiepNhan);
-        Assert.Equal("DangBaoHanh", spSauTiepNhan.TrangThai);
+        Assert.Equal("SanSang", spSauTiepNhan.TrangThai);
 
         // 3. Tiến độ: Tiếp Nhận -> Đang Xử Lý (Kỹ thuật viên bắt đầu sửa)
         var okDangXuLy = xuLyUseCase.CapNhatTienDo(ticketTv.SoPhieuBH, "DangXuLy");
@@ -98,10 +98,10 @@ public class DatabaseWorkflowIntegrationTests
         Assert.NotNull(ticketHoanTat);
         Assert.Equal("DaTraKhach", ticketHoanTat.TrangThaiXuLy);
 
-        // Sản phẩm được chuyển trạng thái về DaBan
+        // Sản phẩm được khôi phục trạng thái kinh doanh tương ứng với tồn kho (SanSang nếu còn tồn, DaBan nếu hết tồn)
         var spSauHoanTat = await sanPhamRepo.TimTheoIdAsync(testSp.MaSanPham);
         Assert.NotNull(spSauHoanTat);
-        Assert.Equal("DaBan", spSauHoanTat.TrangThai);
+        Assert.Equal(testSp.SoLuongTon > 0 ? "SanSang" : "DaBan", spSauHoanTat.TrangThai);
 
         // 6. Test Tạo phiếu cho Khách vãng lai (MaKhachHang = "0")
         var reqVangLai = new TaoBaoHanhDTO

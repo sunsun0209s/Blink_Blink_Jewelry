@@ -387,8 +387,10 @@ public class ProductsView : UserControl
     private void UpdateKpis()
     {
         var viVn = new CultureInfo("vi-VN");
-        var inStock = _allProducts.Count(p => string.Equals(p.TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase));
-        var outOfStock = _allProducts.Count(p => string.Equals(p.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase));
+        // Sẵn sàng bán: Các sản phẩm có tồn kho thực tế > 0 và trạng thái là SanSang
+        var inStock = _allProducts.Count(p => p.SoLuongTon > 0 && string.Equals(p.TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase));
+        // Chờ nhập / Hết hàng: Tất cả các sản phẩm có tồn kho thực tế <= 0 (bao gồm cả trạng thái HetHang hoặc DaBan hết)
+        var outOfStock = _allProducts.Count(p => p.SoLuongTon <= 0 || string.Equals(p.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase) || string.Equals(p.TrangThai, "DaBan", StringComparison.OrdinalIgnoreCase));
 
         _lblKpiTotalSku.Text = _allProducts.Count.ToString("N0", viVn);
         _lblKpiInStock.Text = inStock.ToString("N0", viVn);
@@ -409,7 +411,8 @@ public class ProductsView : UserControl
                               p.ChatLieu.ToLowerInvariant().Contains(query);
 
             var matchCat = selectedCat == "Tất Cả Danh Mục" ||
-                           string.Equals(p.MaDanhMuc, selectedCat, StringComparison.OrdinalIgnoreCase);
+                           string.Equals(p.MaDanhMuc, selectedCat, StringComparison.OrdinalIgnoreCase) ||
+                           (string.Equals(selectedCat, "DM00", StringComparison.OrdinalIgnoreCase) && (string.IsNullOrWhiteSpace(p.MaDanhMuc) || p.MaDanhMuc == "0"));
 
             return matchSearch && matchCat;
         }).ToList();
