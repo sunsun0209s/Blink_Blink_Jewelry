@@ -1,0 +1,67 @@
+# ========================================================
+# DOCKER COMPOSE CHO MÔI TRƯỜNG LẬP TRÌNH VIÊN (DEVELOPMENT)
+# Tính năng nổi bật:
+# 1. Tự động nạp lại mã nguồn khi sửa code (Hot Reload qua dotnet watch).
+# 2. Mở cổng CSDL 1433 ra máy thật để lập trình viên dùng SSMS và WinForms Admin kết nối trực tiếp.
+# 3. Kích hoạt giao diện tài liệu API Swagger và log chi tiết Debug.
+# ========================================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: blinkblink_web_dev
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000;http://+:5095
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+      - ConnectionStrings__DefaultConnection=Server=db;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=30;
+    ports:
+      - "5000:5000"
+      - "5095:5095"
+    volumes:
+      - ./src:/app/src
+      - ./BlinkBlinkJewelry.sql:/app/BlinkBlinkJewelry.sql
+      - ./BlinkBlinkJewelry.sql:/BlinkBlinkJewelry.sql
+      # Giữ các thư mục nhị phân biên dịch độc lập trong container Linux, tránh xung đột với máy Windows
+      - /app/src/BlinkBlink.Domain/bin
+      - /app/src/BlinkBlink.Domain/obj
+      - /app/src/BlinkBlink.Application/bin
+      - /app/src/BlinkBlink.Application/obj
+      - /app/src/BlinkBlink.Infrastructure/bin
+      - /app/src/BlinkBlink.Infrastructure/obj
+      - /app/src/BlinkBlink.Web/bin
+      - /app/src/BlinkBlink.Web/obj
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - blinkblink_dev_net
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: blinkblink_sql_dev
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=BlinkBlink@Dev2026
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433" # Mở cổng 1433 để SSMS, Azure Data Studio và ứng dụng WinForms Desktop Admin kết nối
+    volumes:
+      - mssql_dev_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'BlinkBlink@Dev2026' -C -Q 'SELECT 1' 2>/dev/null || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'BlinkBlink@Dev2026' -Q 'SELECT 1' 2>/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - blinkblink_dev_net
+
+networks:
+  blinkblink_dev_net:
+    driver: bridge
+
+volumes:
+  mssql_dev_data:

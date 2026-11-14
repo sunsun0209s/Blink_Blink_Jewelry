@@ -47,7 +47,7 @@ jobs:
       - name: 5. Biên dịch toàn bộ Solution (Build Release)
         run: dotnet build BlinkBlinkJewelry.slnx --configuration Release --no-restore
 
-      - name: 6. Chạy toàn bộ 72 Unit Tests & Integration Tests
+      - name: 6. Chạy toàn bộ Unit Tests & Integration Tests
         run: dotnet test BlinkBlinkJewelry.slnx --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
       - name: 7. Lưu trữ báo cáo kết quả kiểm thử (Upload Test Results)
@@ -112,14 +112,14 @@ jobs:
         run: |
           dotnet publish src/BlinkBlink.Admin/BlinkBlink.Admin.csproj --configuration Release -r win-x64 --self-contained false --output ./publish/admin
 
-      - name: 5. Xuất bản Artifact: Gói Web Khách Hàng & API
+      - name: "5. Xuất bản Artifact: Gói Web Khách Hàng & API"
         uses: actions/upload-artifact@v4
         with:
           name: blinkblink-web-production-release
           path: ./publish/web
           retention-days: 30
 
-      - name: 6. Xuất bản Artifact: Gói WinForms Admin POS
+      - name: "6. Xuất bản Artifact: Gói WinForms Admin POS"
         uses: actions/upload-artifact@v4
         with:
           name: blinkblink-admin-winforms-release

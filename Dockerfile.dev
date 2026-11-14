@@ -1,0 +1,36 @@
+# ========================================================
+# DOCKERFILE CHO MÔI TRƯỜNG LẬP TRÌNH VIÊN (DEVELOPMENT)
+# Hệ sinh thái: .NET 8 SDK (Bao gồm đầy đủ bộ công cụ biên dịch và hot-reload)
+# ========================================================
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dev
+
+WORKDIR /app
+
+# Thiết lập các biến môi trường phát triển
+ENV ASPNETCORE_ENVIRONMENT=Development
+ENV ASPNETCORE_URLS=http://+:5000;http://+:5095
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true
+
+# Mở cổng kết nối dịch vụ Web và API
+EXPOSE 5000
+EXPOSE 5095
+
+# Sao chép tệp kịch bản CSDL và các tệp định nghĩa dự án để khôi phục gói thư viện trước
+COPY BlinkBlinkJewelry.sql /
+COPY BlinkBlinkJewelry.sql /app/
+COPY src/BlinkBlink.Domain/*.csproj ./src/BlinkBlink.Domain/
+COPY src/BlinkBlink.Application/*.csproj ./src/BlinkBlink.Application/
+COPY src/BlinkBlink.Infrastructure/*.csproj ./src/BlinkBlink.Infrastructure/
+COPY src/BlinkBlink.Web/*.csproj ./src/BlinkBlink.Web/
+
+# Khôi phục các gói thư viện NuGet
+RUN dotnet restore src/BlinkBlink.Web/BlinkBlink.Web.csproj
+
+# Sao chép toàn bộ mã nguồn
+COPY src/ ./src/
+
+# Chuyển vào thư mục khởi chạy chính của tầng Web
+WORKDIR /app/src/BlinkBlink.Web
+
+# Khởi chạy bằng dotnet watch để tự động biên dịch lại khi lập trình viên chỉnh sửa mã nguồn
+ENTRYPOINT ["dotnet", "watch", "run", "--no-launch-profile", "--urls", "http://0.0.0.0:5000;http://0.0.0.0:5095"]

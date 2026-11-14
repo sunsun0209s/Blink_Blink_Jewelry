@@ -1,0 +1,58 @@
+# ========================================================
+# DOCKER COMPOSE CHO MÔI TRƯỜNG NGƯỜI DÙNG TRIỂN KHAI (PRODUCTION)
+# Tính năng nổi bật:
+# 1. Đóng gói đa tầng siêu nhẹ và tối ưu hóa hiệu năng biên dịch Release.
+# 2. Bảo mật tuyệt đối: CSDL SQL Server được đóng kín trong mạng nội bộ, KHÔNG mở cổng 1433 ra ngoài.
+# 3. Kích hoạt cơ chế xử lý lỗi thích ứng: Chỉ hiển thị mã lỗi nghiệp vụ, ẩn toàn bộ vết lỗi hệ thống.
+# 4. Tự động phục hồi khi có sự cố (restart: unless-stopped) và lưu trữ nhật ký/dữ liệu bền vững qua Volume.
+# ========================================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blinkblink_web_prod
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=db;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Prod2026Secret!;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=30;
+    ports:
+      - "8080:8080" # Cổng phục vụ người dùng truy cập web mua sắm và API
+    volumes:
+      - web_prod_logs:/app/logs # Lưu trữ các tệp nhật ký xoay vòng theo ngày bền vững
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - blinkblink_prod_net
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: blinkblink_sql_prod
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=BlinkBlink@Prod2026Secret!
+      - MSSQL_PID=Standard
+    # Lưu ý bảo mật Production: KHÔNG ánh xạ cổng 1433 ra máy chủ bên ngoài.
+    # Chỉ có container "web" trong mạng nội bộ "blinkblink_prod_net" mới có quyền truy cập.
+    volumes:
+      - mssql_prod_data:/var/opt/mssql # Đảm bảo dữ liệu CSDL được lưu giữ an toàn và lâu dài
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'BlinkBlink@Prod2026Secret!' -C -Q 'SELECT 1' 2>/dev/null || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'BlinkBlink@Prod2026Secret!' -Q 'SELECT 1' 2>/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - blinkblink_prod_net
+
+networks:
+  blinkblink_prod_net:
+    driver: bridge
+
+volumes:
+  mssql_prod_data:
+  web_prod_logs:
