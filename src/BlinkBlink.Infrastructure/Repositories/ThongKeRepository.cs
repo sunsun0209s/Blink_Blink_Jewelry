@@ -39,10 +39,14 @@ public class ThongKeRepository : IThongKeRepository
             WHERE h.NgayLap >= @TuNgay AND h.NgayLap <= @DenNgay
             ORDER BY h.NgayLap ASC;";
 
+        // Chuẩn hóa cận thời gian an toàn, chống lỗi tràn số khi denNgay là DateTime.MaxValue (ví dụ khi gọi Top Bán Chạy)
+        var tuNgayChuan = tuNgay <= DateTime.MinValue.AddDays(1) ? DateTime.MinValue : tuNgay.Date;
+        var denNgayChuan = denNgay >= DateTime.MaxValue.AddDays(-1) ? DateTime.MaxValue : denNgay.Date.AddDays(1).AddTicks(-1);
+
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
-        cmd.Parameters.Add(new SqlParameter("@TuNgay", SqlDbType.DateTime2) { Value = tuNgay });
-        cmd.Parameters.Add(new SqlParameter("@DenNgay", SqlDbType.DateTime2) { Value = denNgay });
+        cmd.Parameters.Add(new SqlParameter("@TuNgay", SqlDbType.DateTime2) { Value = tuNgayChuan });
+        cmd.Parameters.Add(new SqlParameter("@DenNgay", SqlDbType.DateTime2) { Value = denNgayChuan });
 
         using (var reader = cmd.ExecuteReader())
         {

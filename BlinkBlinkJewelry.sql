@@ -283,6 +283,7 @@ GO
 
 -- 5. Nạp danh mục trang sức cao cấp Blink Blink Jewelry
 INSERT INTO dbo.DanhMuc (MaDanhMuc, TenDanhMuc, MoTa) VALUES
+('DM00', N'Chưa phân loại', N'Danh mục mặc định cho sản phẩm chưa phân loại hoặc danh mục cũ bị xóa'),
 ('DM01', N'Nhẫn Kim Cương', N'Các dòng nhẫn đính hôn, nhẫn cưới và nhẫn kim cương tự nhiên tinh xảo'),
 ('DM02', N'Dây Chuyền & Mặt Dây', N'Dây chuyền vàng Ý 18K và mặt dây đính đá quý phong thủy'),
 ('DM03', N'Bông Tai Quý Phái', N'Bông tai đính đá Sapphire, Ruby và ngọc trai thiên nhiên thượng hạng'),

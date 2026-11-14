@@ -87,7 +87,8 @@ public class SanPhamRepository : ISanPhamRepository
                    d.TenDanhMuc, d.MoTa AS MoTaDanhMuc,
                    n.TenNhom, n.MoTa AS MoTaNhom,
                    (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = s.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
-                    - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = s.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) AS SoLuongTonKho
+                    - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = s.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)
+                    + ISNULL((SELECT SUM(ctk.ChenhLech) FROM dbo.ChiTietKiemKe ctk INNER JOIN dbo.PhieuKiemKe pk ON ctk.MaPhieuKiemKe = pk.MaPhieuKiemKe WHERE ctk.MaSanPham = s.MaSanPham AND (pk.TrangThai = 'DaDuyet' OR pk.TrangThaiDuyet = 1)), 0)) AS SoLuongTonKho
             FROM dbo.SanPhamTrangSuc s
             LEFT JOIN dbo.DanhMuc d ON s.MaDanhMuc = d.MaDanhMuc
             LEFT JOIN dbo.NhomSanPham n ON s.MaNhom = n.MaNhom
@@ -114,7 +115,8 @@ public class SanPhamRepository : ISanPhamRepository
                    d.TenDanhMuc, d.MoTa AS MoTaDanhMuc,
                    n.TenNhom, n.MoTa AS MoTaNhom,
                    (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = s.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
-                    - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = s.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) AS SoLuongTonKho
+                    - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = s.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)
+                    + ISNULL((SELECT SUM(ctk.ChenhLech) FROM dbo.ChiTietKiemKe ctk INNER JOIN dbo.PhieuKiemKe pk ON ctk.MaPhieuKiemKe = pk.MaPhieuKiemKe WHERE ctk.MaSanPham = s.MaSanPham AND (pk.TrangThai = 'DaDuyet' OR pk.TrangThaiDuyet = 1)), 0)) AS SoLuongTonKho
             FROM dbo.SanPhamTrangSuc s
             LEFT JOIN dbo.DanhMuc d ON s.MaDanhMuc = d.MaDanhMuc
             LEFT JOIN dbo.NhomSanPham n ON s.MaNhom = n.MaNhom
@@ -142,7 +144,8 @@ public class SanPhamRepository : ISanPhamRepository
                    d.TenDanhMuc, d.MoTa AS MoTaDanhMuc,
                    n.TenNhom, n.MoTa AS MoTaNhom,
                    (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = s.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
-                    - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = s.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) AS SoLuongTonKho
+                    - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = s.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)
+                    + ISNULL((SELECT SUM(ctk.ChenhLech) FROM dbo.ChiTietKiemKe ctk INNER JOIN dbo.PhieuKiemKe pk ON ctk.MaPhieuKiemKe = pk.MaPhieuKiemKe WHERE ctk.MaSanPham = s.MaSanPham AND (pk.TrangThai = 'DaDuyet' OR pk.TrangThaiDuyet = 1)), 0)) AS SoLuongTonKho
             FROM dbo.SanPhamTrangSuc s
             LEFT JOIN dbo.DanhMuc d ON s.MaDanhMuc = d.MaDanhMuc
             LEFT JOIN dbo.NhomSanPham n ON s.MaNhom = n.MaNhom

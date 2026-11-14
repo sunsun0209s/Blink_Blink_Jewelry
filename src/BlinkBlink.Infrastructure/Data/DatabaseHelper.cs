@@ -245,7 +245,51 @@ public class DatabaseHelper
                 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuKiemKe') AND name = 'NgayDuyet')
                 BEGIN
                     ALTER TABLE dbo.PhieuKiemKe ADD NgayDuyet DATETIME2 NULL;
-                END";
+                END
+
+                -- Bổ sung danh mục mặc định 'Chưa phân loại' (DM00) nếu chưa tồn tại
+                IF NOT EXISTS (SELECT 1 FROM dbo.DanhMuc WHERE MaDanhMuc = 'DM00')
+                BEGIN
+                    INSERT INTO dbo.DanhMuc (MaDanhMuc, TenDanhMuc, MoTa)
+                    VALUES ('DM00', N'Chưa phân loại', N'Danh mục mặc định cho sản phẩm chưa phân loại hoặc danh mục cũ bị xóa');
+                END
+
+                -- Tự động khôi phục trạng thái SanSang cho các sản phẩm còn tồn kho > 0 nhưng bị đánh dấu nhầm là DaBan hoặc DangBaoHanh
+                UPDATE dbo.SanPhamTrangSuc
+                SET TrangThai = 'SanSang'
+                WHERE (TrangThai = 'DaBan' OR TrangThai = 'DangBaoHanh') AND (
+                    (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
+                     - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) > 0
+                );
+
+                -- Tự động khôi phục trạng thái DaBan cho các sản phẩm hết hàng nhưng bị đánh dấu DangBaoHanh
+                UPDATE dbo.SanPhamTrangSuc
+                SET TrangThai = 'DaBan'
+                WHERE TrangThai = 'DangBaoHanh' AND (
+                    (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
+                     - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) <= 0
+                );
+
+                -- Tự động hoàn nguyên Giá Nhập và Giá Bán về 0 đối với các sản phẩm có toàn bộ phiếu nhập bị hủy và tồn kho = 0
+                UPDATE dbo.SanPhamTrangSuc
+                SET GiaNhap = 0, GiaBan = 0, TrangThai = 'HetHang'
+                WHERE MaSanPham IN (
+                    SELECT DISTINCT ct.MaSanPham
+                    FROM dbo.ChiTietNhapKho ct
+                    INNER JOIN dbo.PhieuNhapKho pn ON ct.MaPhieuNhap = pn.MaPhieuNhap
+                    WHERE pn.TrangThai = 'DaHuy'
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM dbo.ChiTietNhapKho ct2
+                    INNER JOIN dbo.PhieuNhapKho pn2 ON ct2.MaPhieuNhap = pn2.MaPhieuNhap
+                    WHERE ct2.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham
+                      AND (pn2.TrangThai = 'DaDuyet' OR pn2.TrangThai = '1')
+                )
+                AND (
+                    (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
+                     - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) <= 0
+                );";
 
             ExecuteNonQuery(migrationSql);
             _logger.LogInfo(nameof(DatabaseHelper), "Kiểm tra tương thích lược đồ cơ sở dữ liệu hoàn tất.");

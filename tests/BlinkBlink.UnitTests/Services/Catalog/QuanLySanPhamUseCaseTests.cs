@@ -47,6 +47,12 @@ public class QuanLySanPhamUseCaseTests
     private class FakeDanhMucRepository : IDanhMucRepository
     {
         public readonly Dictionary<string, DanhMuc> Data = new();
+        private readonly FakeSanPhamRepository? _spRepo;
+
+        public FakeDanhMucRepository(FakeSanPhamRepository? spRepo = null)
+        {
+            _spRepo = spRepo;
+        }
 
         public void LuuDanhMuc(DanhMuc dm)
         {
@@ -72,6 +78,25 @@ public class QuanLySanPhamUseCaseTests
 
         public List<DanhMuc> LayTatCa() => new List<DanhMuc>(Data.Values);
         public Task<List<DanhMuc>> LayTatCaAsync(CancellationToken cancellationToken = default) => Task.FromResult(LayTatCa());
+
+        public void XoaDanhMuc(string maDanhMuc)
+        {
+            if (string.Equals(maDanhMuc, "DM00", StringComparison.OrdinalIgnoreCase)) return;
+            Data.Remove(maDanhMuc);
+            if (_spRepo != null)
+            {
+                foreach (var sp in _spRepo.Data.Values.Where(s => string.Equals(s.MaDanhMuc, maDanhMuc, StringComparison.OrdinalIgnoreCase)))
+                {
+                    sp.MaDanhMuc = "DM00";
+                }
+            }
+        }
+
+        public Task XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default)
+        {
+            XoaDanhMuc(maDanhMuc);
+            return Task.CompletedTask;
+        }
     }
 
     [Fact]
@@ -281,5 +306,37 @@ public class QuanLySanPhamUseCaseTests
 
         // Assert sau cập nhật
         Assert.Equal(5, sp.SoLuongTon);
+    }
+
+    [Fact]
+    public void XoaDanhMuc_ChuyenSanPhamThuocDanhMucBiXoaSangDM00_VaChanXoaDM00()
+    {
+        // Sắp đặt
+        var fakeSpRepo = new FakeSanPhamRepository();
+        var fakeDmRepo = new FakeDanhMucRepository(fakeSpRepo);
+
+        var dmChuaPhanLoai = new DanhMuc("DM00", "Chưa phân loại", "Mặc định");
+        var dmNhan = new DanhMuc("DM_NHAN", "Nhẫn thời trang", "Danh mục nhẫn");
+        fakeDmRepo.LuuDanhMuc(dmChuaPhanLoai);
+        fakeDmRepo.LuuDanhMuc(dmNhan);
+
+        var sp1 = new SanPhamTrangSuc("SP_01", "Nhẫn vàng 18K", "DM_NHAN", "Vàng 18K", "12", 10000000, 15000000);
+        var sp2 = new SanPhamTrangSuc("SP_02", "Nhẫn kim cương", "DM_NHAN", "Bạch kim", "14", 20000000, 30000000);
+        fakeSpRepo.LuuSanPham(sp1);
+        fakeSpRepo.LuuSanPham(sp2);
+
+        // Hành động 1: Xóa DM_NHAN
+        fakeDmRepo.XoaDanhMuc("DM_NHAN");
+
+        // Kiểm tra 1: DM_NHAN đã bị xóa, hai sản phẩm được chuyển sang DM00
+        Assert.Null(fakeDmRepo.TimTheoId("DM_NHAN"));
+        Assert.Equal("DM00", fakeSpRepo.TimTheoId("SP_01")!.MaDanhMuc);
+        Assert.Equal("DM00", fakeSpRepo.TimTheoId("SP_02")!.MaDanhMuc);
+
+        // Hành động 2: Cố gắng xóa DM00
+        fakeDmRepo.XoaDanhMuc("DM00");
+
+        // Kiểm tra 2: DM00 được bảo vệ và không bị xóa
+        Assert.NotNull(fakeDmRepo.TimTheoId("DM00"));
     }
 }
