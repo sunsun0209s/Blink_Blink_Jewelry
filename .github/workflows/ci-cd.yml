@@ -1,0 +1,127 @@
+name: Blink Blink Jewelry - CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'refactor/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # =========================================================================
+  # GIAI ĐOẠN 1: TÍCH HỢP LIÊN TỤC (CI) - BIÊN DỊCH VÀ KIỂM THỬ TOÀN DIỆN
+  # Môi trường: windows-latest (Hỗ trợ cả .NET 8 WinForms Admin và ASP.NET Core Web)
+  # =========================================================================
+  build_and_test:
+    name: CI - Build & Kiểm Thử (.NET 8 Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: 1. Tải mã nguồn kho lưu trữ (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. Thiết lập môi trường .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 3. Khởi tạo bộ nhớ đệm gói NuGet (Cache NuGet Packages)
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'BlinkBlinkJewelry.slnx') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: 4. Nạp các gói phụ thuộc (Restore Dependencies)
+        run: dotnet restore BlinkBlinkJewelry.slnx
+
+      - name: 5. Biên dịch toàn bộ Solution (Build Release)
+        run: dotnet build BlinkBlinkJewelry.slnx --configuration Release --no-restore
+
+      - name: 6. Chạy toàn bộ 72 Unit Tests & Integration Tests
+        run: dotnet test BlinkBlinkJewelry.slnx --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+      - name: 7. Lưu trữ báo cáo kết quả kiểm thử (Upload Test Results)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ket-qua-kiem-thu-trx
+          path: tests/**/TestResults/test-results.trx
+          retention-days: 14
+
+  # =========================================================================
+  # GIAI ĐOẠN 2: XÁC THỰC MÔI TRƯỜNG DOCKER CONTAINER
+  # Môi trường: ubuntu-latest (Kiểm tra Dockerfile và kịch bản Compose)
+  # =========================================================================
+  docker_validation:
+    name: CI - Kiểm Tra Docker Container (.NET 8 Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Tải mã nguồn kho lưu trữ (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. Thiết lập Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: 3. Biên dịch thử nghiệm Dockerfile Production (Web & API)
+        run: |
+          docker build -t blinkblink-web:ci-test -f Dockerfile .
+
+      - name: 4. Kiểm tra cấu hình Docker Compose Production
+        run: |
+          docker compose -f docker-compose.prod.yml config
+
+      - name: 5. Kiểm tra cấu hình Docker Compose Development
+        run: |
+          docker compose -f docker-compose.dev.yml config
+
+  # =========================================================================
+  # GIAI ĐOẠN 3: PHÂN PHỐI LIÊN TỤC (CD) - ĐÓNG GÓI THÀNH PHẨM (ARTIFACTS)
+  # Kích hoạt: Chỉ chạy khi mã nguồn đã được merge an toàn vào nhánh 'main'
+  # =========================================================================
+  release_and_package:
+    name: CD - Đóng Gói Thành Phẩm (Release Artifacts)
+    needs: [build_and_test, docker_validation]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: windows-latest
+
+    steps:
+      - name: 1. Tải mã nguồn kho lưu trữ (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. Thiết lập môi trường .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 3. Đóng gói ứng dụng Web khách hàng & RESTful API (BlinkBlink.Web)
+        run: |
+          dotnet publish src/BlinkBlink.Web/BlinkBlink.Web.csproj --configuration Release --output ./publish/web
+
+      - name: 4. Đóng gói ứng dụng Quản trị WinForms Admin (BlinkBlink.Admin)
+        run: |
+          dotnet publish src/BlinkBlink.Admin/BlinkBlink.Admin.csproj --configuration Release -r win-x64 --self-contained false --output ./publish/admin
+
+      - name: 5. Xuất bản Artifact: Gói Web Khách Hàng & API
+        uses: actions/upload-artifact@v4
+        with:
+          name: blinkblink-web-production-release
+          path: ./publish/web
+          retention-days: 30
+
+      - name: 6. Xuất bản Artifact: Gói WinForms Admin POS
+        uses: actions/upload-artifact@v4
+        with:
+          name: blinkblink-admin-winforms-release
+          path: ./publish/admin
+          retention-days: 30
