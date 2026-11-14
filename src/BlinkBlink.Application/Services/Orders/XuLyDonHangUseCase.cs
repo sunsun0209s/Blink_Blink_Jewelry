@@ -72,7 +72,16 @@ public class XuLyDonHangUseCase
                 var sp = await _sanPhamRepo.TimTheoIdAsync(item.MaSanPham, cancellationToken);
                 if (sp != null)
                 {
-                    sp.CapNhatTrangThai("DaBan");
+                    var tonConLai = sp.SoLuongTon - item.SoLuong;
+                    sp.SoLuongTon = Math.Max(0, tonConLai);
+                    if (tonConLai <= 0)
+                    {
+                        sp.CapNhatTrangThai("DaBan");
+                    }
+                    else
+                    {
+                        sp.CapNhatTrangThai("SanSang");
+                    }
                     await _sanPhamRepo.LuuSanPhamAsync(sp, cancellationToken);
                 }
             }

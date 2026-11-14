@@ -33,10 +33,12 @@ var appLogger = new AdaptiveFileLogger(
     writeToConsole: builder.Environment.IsDevelopment());
 builder.Services.AddSingleton<IAppLogger>(appLogger);
 
-// Cấu hình chuỗi kết nối và tiện ích truy xuất CSDL ADO.NET thuần (Tự động dò tìm SQL Server cục bộ)
+// Cấu hình chuỗi kết nối và tiện ích truy xuất CSDL ADO.NET thuần (Ưu tiên CSDL Docker SQL Server)
 var candidateConnections = new[]
 {
     builder.Configuration.GetConnectionString("DefaultConnection"),
+    "Server=localhost,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
+    "Server=127.0.0.1,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
     "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
     "Server=localhost;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
     "Server=.\\MSSQL;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
@@ -46,6 +48,13 @@ var candidateConnections = new[]
 DatabaseHelper? dbHelper = null;
 foreach (var connStr in candidateConnections)
 {
+    // Tối ưu tốc độ khởi động: Nếu là chuỗi kết nối Docker trên cổng 1433, kiểm tra nhanh cổng bằng Socket (timeout 150ms).
+    // Nếu Docker chưa bật (cổng 1433 đóng), bỏ qua ngay lập tức để không bị treo 4-8 giây chờ SqlClient timeout!
+    if (connStr!.Contains(",1433") && !IsPortOpen("127.0.0.1", 1433, 150))
+    {
+        continue;
+    }
+
     try
     {
         var helper = new DatabaseHelper(connStr!, appLogger);
@@ -69,6 +78,11 @@ if (dbHelper == null)
 {
     foreach (var connStr in candidateConnections)
     {
+        if (connStr!.Contains(",1433") && !IsPortOpen("127.0.0.1", 1433, 150))
+        {
+            continue;
+        }
+
         try
         {
             if (DatabaseHelper.TryProvisionDatabase(connStr!, out var provisionedHelper, appLogger) && provisionedHelper != null)
@@ -166,7 +180,12 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Chỉ ép chuyển hướng HTTPS trong môi trường Production; ở Development cho phép truy cập HTTP mượt mà trên cả 5095 và 5000
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -182,3 +201,23 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+// =========================================================================
+// TIỆN ÍCH HỖ TRỢ THĂM DÒ CỔNG MẠNG TỨC THÌ (FAST SOCKET PROBE)
+// =========================================================================
+static bool IsPortOpen(string host, int port, int timeoutMs = 150)
+{
+    try
+    {
+        using var client = new System.Net.Sockets.TcpClient();
+        var result = client.BeginConnect(host, port, null, null);
+        var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(timeoutMs));
+        if (!success) return false;
+        client.EndConnect(result);
+        return true;
+    }
+    catch
+    {
+        return false;
+    }
+}

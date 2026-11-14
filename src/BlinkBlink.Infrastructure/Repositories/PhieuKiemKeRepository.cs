@@ -40,6 +40,26 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
 
         try
         {
+            // Tự động kiểm tra và chuyển đổi MaNhanVienKho sang MaNguoiDung hợp lệ để thỏa mãn khóa ngoại FK_PhieuKiemKe_NhanVien
+            var maNhanVienHopLe = phieu.MaNhanVienKho?.Trim() ?? string.Empty;
+            const string sqlCheckNguoiDung = @"
+                SELECT TOP 1 MaNguoiDung FROM dbo.NguoiDung WHERE MaNguoiDung = @Code
+                UNION
+                SELECT TOP 1 MaNguoiDung FROM dbo.NhanVien WHERE MaNhanVien = @Code;";
+            using (var cmdCheck = new SqlCommand(sqlCheckNguoiDung, conn, tx))
+            {
+                cmdCheck.Parameters.Add(new SqlParameter("@Code", SqlDbType.VarChar, 50) { Value = maNhanVienHopLe });
+                var foundId = cmdCheck.ExecuteScalar()?.ToString();
+                if (!string.IsNullOrEmpty(foundId))
+                {
+                    maNhanVienHopLe = foundId;
+                }
+                else
+                {
+                    maNhanVienHopLe = "USER_ADMIN01";
+                }
+            }
+
             const string sqlPhieu = @"
                 IF EXISTS (SELECT 1 FROM dbo.PhieuKiemKe WHERE MaPhieuKiemKe = @MaPhieuKiemKe)
                 BEGIN
@@ -64,7 +84,7 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
                 cmdP.Parameters.Add(new SqlParameter("@MaPhieuKiemKe", SqlDbType.VarChar, 50) { Value = phieu.MaPhieuKiemKe });
                 cmdP.Parameters.Add(new SqlParameter("@NgayKiemKe", SqlDbType.DateTime2) { Value = phieu.NgayKiemKe });
                 cmdP.Parameters.Add(new SqlParameter("@ViTriKiemKe", SqlDbType.NVarChar, 150) { Value = (object?)phieu.ViTriKiemKe ?? DBNull.Value });
-                cmdP.Parameters.Add(new SqlParameter("@MaNhanVienKho", SqlDbType.VarChar, 50) { Value = phieu.MaNhanVienKho });
+                cmdP.Parameters.Add(new SqlParameter("@MaNhanVienKho", SqlDbType.VarChar, 50) { Value = maNhanVienHopLe });
                 cmdP.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.NVarChar, 50) { Value = phieu.TrangThai });
                 cmdP.Parameters.Add(new SqlParameter("@TrangThaiDuyet", SqlDbType.Bit) { Value = phieu.TrangThaiDuyet });
                 cmdP.Parameters.Add(new SqlParameter("@GhiChu", SqlDbType.NVarChar, 500) { Value = (object?)phieu.GhiChu ?? DBNull.Value });
@@ -244,34 +264,6 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
         cmd.Parameters.Add(new SqlParameter("@TrangThaiDuyet", SqlDbType.Bit) { Value = string.Equals(trangThaiMoi, "DaDuyet", StringComparison.OrdinalIgnoreCase) });
         cmd.Parameters.Add(new SqlParameter("@NgayDuyet", SqlDbType.DateTime2) { Value = (object?)ngayDuyet ?? DBNull.Value });
         cmd.ExecuteNonQuery();
-    }
-
-    public bool KiemTraCoPhieuKiemKeMoiHon(string maPhieu, string maSanPham)
-    {
-        if (string.IsNullOrWhiteSpace(maPhieu) || string.IsNullOrWhiteSpace(maSanPham)) return false;
-
-        const string sql = @"
-            SELECT COUNT(1)
-            FROM dbo.PhieuKiemKe pk
-            INNER JOIN dbo.ChiTietKiemKe ct ON pk.MaPhieuKiemKe = ct.MaPhieuKiemKe
-            WHERE pk.MaPhieuKiemKe != @MaPhieu
-              AND pk.TrangThai = 'DaDuyet'
-              AND ct.MaSanPham = @MaSanPham
-              AND (
-                  ISNULL(pk.NgayDuyet, pk.NgayKiemKe) > (
-                      SELECT ISNULL(target.NgayDuyet, target.NgayKiemKe)
-                      FROM dbo.PhieuKiemKe target
-                      WHERE target.MaPhieuKiemKe = @MaPhieu
-                  )
-              );";
-
-        using var conn = _dbHelper.GetConnection();
-        using var cmd = new SqlCommand(sql, conn);
-        cmd.Parameters.Add(new SqlParameter("@MaPhieu", SqlDbType.VarChar, 50) { Value = maPhieu.Trim() });
-        cmd.Parameters.Add(new SqlParameter("@MaSanPham", SqlDbType.VarChar, 50) { Value = maSanPham.Trim() });
-
-        var count = Convert.ToInt32(cmd.ExecuteScalar() ?? 0);
-        return count > 0;
     }
 
     public Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default)

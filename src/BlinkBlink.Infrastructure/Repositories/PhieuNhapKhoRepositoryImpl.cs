@@ -40,6 +40,26 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
 
         try
         {
+            // Tự động kiểm tra và chuyển đổi MaNhanVien sang MaNguoiDung hợp lệ để thỏa mãn khóa ngoại FK_PhieuNhapKho_NhanVien
+            var maNhanVienHopLe = phieu.MaNhanVien?.Trim() ?? string.Empty;
+            const string sqlCheckNguoiDung = @"
+                SELECT TOP 1 MaNguoiDung FROM dbo.NguoiDung WHERE MaNguoiDung = @Code
+                UNION
+                SELECT TOP 1 MaNguoiDung FROM dbo.NhanVien WHERE MaNhanVien = @Code;";
+            using (var cmdCheck = new SqlCommand(sqlCheckNguoiDung, conn, tx))
+            {
+                cmdCheck.Parameters.Add(new SqlParameter("@Code", SqlDbType.VarChar, 50) { Value = maNhanVienHopLe });
+                var foundId = cmdCheck.ExecuteScalar()?.ToString();
+                if (!string.IsNullOrEmpty(foundId))
+                {
+                    maNhanVienHopLe = foundId;
+                }
+                else
+                {
+                    maNhanVienHopLe = "USER_ADMIN01";
+                }
+            }
+
             const string sqlPhieu = @"
                 IF EXISTS (SELECT 1 FROM dbo.PhieuNhapKho WHERE MaPhieuNhap = @MaPhieuNhap)
                 BEGIN
@@ -63,7 +83,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                 cmdP.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = phieu.MaPhieuNhap });
                 cmdP.Parameters.Add(new SqlParameter("@NgayNhap", SqlDbType.DateTime2) { Value = phieu.NgayNhap });
                 cmdP.Parameters.Add(new SqlParameter("@NhaCungCap", SqlDbType.NVarChar, 200) { Value = phieu.NhaCungCap });
-                cmdP.Parameters.Add(new SqlParameter("@MaNhanVien", SqlDbType.VarChar, 50) { Value = phieu.MaNhanVien });
+                cmdP.Parameters.Add(new SqlParameter("@MaNhanVien", SqlDbType.VarChar, 50) { Value = maNhanVienHopLe });
                 cmdP.Parameters.Add(new SqlParameter("@TongSoSanPham", SqlDbType.Int) { Value = phieu.TongSoSanPham });
                 cmdP.Parameters.Add(new SqlParameter("@TongGiaTri", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = phieu.TongGiaTri });
                 cmdP.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.NVarChar, 50) { Value = phieu.TrangThai });

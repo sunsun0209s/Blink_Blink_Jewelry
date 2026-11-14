@@ -34,15 +34,9 @@ public interface IPhieuKiemKeRepository
     void XoaPhieuKiemKe(string maPhieu);
 
     /// <summary>
-    /// Cập nhật trạng thái phiếu kiểm kê (ChoDuyet, DaDuyet, VoHieuHoa).
+    /// Cập nhật trạng thái phiếu kiểm kê (ChoDuyet, DaDuyet).
     /// </summary>
     void CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null);
-
-    /// <summary>
-    /// Kiểm tra xem có phiếu kiểm kê nào khác chứa sản phẩm này được duyệt sau phiếu chỉ định hay không.
-    /// Dùng để ràng buộc chống chồng chéo khi vô hiệu hóa phiếu kiểm kê.
-    /// </summary>
-    bool KiemTraCoPhieuKiemKeMoiHon(string maPhieu, string maSanPham);
 
     // Mở rộng bất đồng bộ chuẩn .NET 8
     Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default);
