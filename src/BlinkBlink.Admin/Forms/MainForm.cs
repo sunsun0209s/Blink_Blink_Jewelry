@@ -187,6 +187,12 @@ public partial class MainForm : Form
         panelContent.ResumeLayout(true);
 
         _currentView = view;
+
+        // Tự động làm mới dữ liệu tồn kho mới nhất khi mở màn hình Bán hàng tại quầy POS
+        if (view is OfflineSalesView osv)
+        {
+            osv.LoadProductsList();
+        }
     }
 
     private void HighlightNavButton(Button btn)

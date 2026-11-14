@@ -420,11 +420,23 @@ public class ProductEditDialog : Form
             {
                 _cboDanhMuc.Items.Add(new ComboBoxItem(cat.TenDanhMuc, cat.MaDanhMuc));
             }
-            _cboDanhMuc.SelectedIndex = 0;
+
+            // Mặc định khi tạo sản phẩm mới sẽ để là 'Chưa phân loại' (DM00) theo CONGVIECTIEPTHEO
+            var defaultIdx = -1;
+            for (int i = 0; i < _cboDanhMuc.Items.Count; i++)
+            {
+                if (_cboDanhMuc.Items[i] is ComboBoxItem item &&
+                    string.Equals(item.Value, "DM00", StringComparison.OrdinalIgnoreCase))
+                {
+                    defaultIdx = i;
+                    break;
+                }
+            }
+            _cboDanhMuc.SelectedIndex = defaultIdx >= 0 ? defaultIdx : 0;
         }
         else
         {
-            _cboDanhMuc.Items.Add(new ComboBoxItem("Mặc định (DM01)", "DM01"));
+            _cboDanhMuc.Items.Add(new ComboBoxItem("Chưa phân loại (DM00)", "DM00"));
             _cboDanhMuc.SelectedIndex = 0;
         }
     }

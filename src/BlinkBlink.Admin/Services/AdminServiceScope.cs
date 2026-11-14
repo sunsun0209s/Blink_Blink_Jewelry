@@ -115,8 +115,12 @@ public class AdminServiceScope
             writeToConsole: false);
 
         // Danh sách các chuỗi kết nối máy chủ SQL Server theo thứ tự ưu tiên
+        // Ưu tiên 1: CSDL Docker SQL Server trên cổng 1433 theo chuẩn docker-compose
+        // Ưu tiên 2: CSDL cục bộ trên máy phát triển
         var candidateConnections = new[]
         {
+            "Server=localhost,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
+            "Server=127.0.0.1,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
             "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
             "Server=localhost;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
             "Server=.\\MSSQL;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
@@ -126,6 +130,13 @@ public class AdminServiceScope
         DatabaseHelper? dbHelper = null;
         foreach (var connStr in candidateConnections)
         {
+            // Tối ưu tốc độ khởi động: Nếu là chuỗi kết nối Docker trên cổng 1433, kiểm tra nhanh cổng bằng Socket (timeout 150ms).
+            // Nếu Docker chưa bật (cổng 1433 đóng), bỏ qua ngay lập tức để không bị treo 4-8 giây chờ SqlClient timeout!
+            if (connStr.Contains(",1433") && !IsPortOpen("127.0.0.1", 1433, 150))
+            {
+                continue;
+            }
+
             try
             {
                 var helper = new DatabaseHelper(connStr, Logger);
@@ -148,6 +159,11 @@ public class AdminServiceScope
         {
             foreach (var connStr in candidateConnections)
             {
+                if (connStr.Contains(",1433") && !IsPortOpen("127.0.0.1", 1433, 150))
+                {
+                    continue;
+                }
+
                 try
                 {
                     if (DatabaseHelper.TryProvisionDatabase(connStr, out var provisionedHelper, Logger) && provisionedHelper != null)
@@ -225,5 +241,26 @@ public class AdminServiceScope
         ThongKeDoanhThu = new ThongKeDoanhThuUseCase(ThongKeRepo);
         ThongKeKhoHang = new ThongKeKhoHangUseCase(ThongKeRepo);
         QuanLyKiemKe = new QuanLyKiemKeUseCase(PhieuKiemKeRepo, SanPhamRepo);
+    }
+
+    /// <summary>
+    /// Kiểm tra nhanh trạng thái cổng TCP (Socket thăm dò với timeout siêu ngắn) để phát hiện Docker có đang chạy hay không.
+    /// Giúp loại bỏ hoàn toàn độ trễ 4-8 giây khi Docker chưa bật.
+    /// </summary>
+    private static bool IsPortOpen(string host, int port, int timeoutMs = 150)
+    {
+        try
+        {
+            using var client = new System.Net.Sockets.TcpClient();
+            var result = client.BeginConnect(host, port, null, null);
+            var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(timeoutMs));
+            if (!success) return false;
+            client.EndConnect(result);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

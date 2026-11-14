@@ -414,10 +414,20 @@ public class OfflineSalesView : UserControl
 
     public void LoadProductsList()
     {
-        // Chỉ nạp các sản phẩm được phép kinh doanh (Trạng thái SanSang và tồn kho > 0)
+        // Chỉ nạp các sản phẩm được phép kinh doanh có tồn kho khả dụng (> 0) và không ngừng kinh doanh
         _allAvailableProducts = _services.SanPhamRepo.LayTatCa()
-            .Where(p => string.Equals(p.TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase) && p.SoLuongTon > 0)
+            .Where(p => p.SoLuongTon > 0 && !string.Equals(p.TrangThai, "NgungKinhDoanh", StringComparison.OrdinalIgnoreCase))
             .ToList();
+
+        // Đồng bộ trạng thái SanSang cho các sản phẩm còn tồn kho khả dụng
+        foreach (var p in _allAvailableProducts)
+        {
+            if (p.TrangThai != "SanSang")
+            {
+                p.TrangThai = "SanSang";
+            }
+        }
+
         FilterProductsList(string.Empty);
     }
 
@@ -553,6 +563,13 @@ public class OfflineSalesView : UserControl
             _isSyncingPosSize = true;
             try
             {
+                // Làm trống ô tìm kiếm nếu đang có ký tự để nạp đầy đủ danh sách sản phẩm trong nhóm
+                if (!string.IsNullOrWhiteSpace(_txtSearchProduct.Text))
+                {
+                    _txtSearchProduct.Text = string.Empty;
+                    FilterProductsList(string.Empty);
+                }
+
                 for (int i = 0; i < _cboProducts.Items.Count; i++)
                 {
                     if ((_cboProducts.Items[i] as ProductComboItem)?.Key == matchSp.MaSanPham)

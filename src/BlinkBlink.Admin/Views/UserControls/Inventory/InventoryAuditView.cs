@@ -31,7 +31,6 @@ public class InventoryAuditView : UserControl
     private Label _lblKpiTotalAudits = null!;
     private Label _lblKpiPendingAudits = null!;
     private Label _lblKpiApprovedAudits = null!;
-    private Label _lblKpiInvalidatedAudits = null!;
 
     private DataGridView _dgvAudits = null!;
 
@@ -60,7 +59,7 @@ public class InventoryAuditView : UserControl
         var pnlKpis = new FlowLayoutPanel
         {
             Dock = DockStyle.Right,
-            Width = 640,
+            Width = 480,
             Height = 85,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = false
@@ -69,7 +68,6 @@ public class InventoryAuditView : UserControl
         pnlKpis.Controls.Add(CreateKpiCard("Tổng Biên Bản", out _lblKpiTotalAudits, UITheme.TextPrimary));
         pnlKpis.Controls.Add(CreateKpiCard("Chờ Phê Duyệt", out _lblKpiPendingAudits, Color.FromArgb(217, 119, 6))); // amber-600
         pnlKpis.Controls.Add(CreateKpiCard("Đã Phê Duyệt", out _lblKpiApprovedAudits, Color.FromArgb(22, 101, 52))); // green-800
-        pnlKpis.Controls.Add(CreateKpiCard("Đã Vô Hiệu Hóa", out _lblKpiInvalidatedAudits, Color.FromArgb(153, 27, 27))); // red-800
 
         var pnlTitleContainer = new Panel
         {
@@ -277,7 +275,6 @@ public class InventoryAuditView : UserControl
         _lblKpiTotalAudits.Text = _allAudits.Count.ToString("N0", viVn);
         _lblKpiPendingAudits.Text = _allAudits.Count(a => string.Equals(a.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase)).ToString("N0", viVn);
         _lblKpiApprovedAudits.Text = _allAudits.Count(a => string.Equals(a.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase)).ToString("N0", viVn);
-        _lblKpiInvalidatedAudits.Text = _allAudits.Count(a => string.Equals(a.TrangThai, "VoHieuHoa", StringComparison.OrdinalIgnoreCase)).ToString("N0", viVn);
     }
 
     private void FilterAudits()
@@ -307,12 +304,6 @@ public class InventoryAuditView : UserControl
                 statusDisplay = "✓ Đã duyệt";
                 statusFg = Color.FromArgb(22, 101, 52);
                 statusBg = Color.FromArgb(220, 252, 231);
-            }
-            else if (string.Equals(a.TrangThai, "VoHieuHoa", StringComparison.OrdinalIgnoreCase))
-            {
-                statusDisplay = "🚫 Đã vô hiệu hóa";
-                statusFg = Color.FromArgb(153, 27, 27);
-                statusBg = Color.FromArgb(254, 226, 226);
             }
             else
             {
@@ -457,51 +448,219 @@ public class InventoryAuditView : UserControl
         var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(24, 12, 24, 10) };
 
         // Top info controls: Mã phiếu, Vị trí, Người kiểm kê
-        var pnlTopInfo = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 68, FlowDirection = FlowDirection.LeftToRight, WrapContents = false };
+        var pnlTopInfo = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 52,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            Margin = new Padding(0, 0, 0, 8)
+        };
 
-        var lblMaP = new Label { Text = "Mã Biên Bản:", AutoSize = true, ForeColor = UITheme.TextSecondary, Margin = new Padding(0, 6, 8, 0) };
+        var lblMaP = new Label
+        {
+            Text = "Mã Biên Bản:",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
         var txtMaP = new TextBox
         {
             Text = $"PKK{DateTime.Now:yyyyMMdd}_{_allAudits.Count + 1:D2}",
-            Width = 160,
+            Width = 170,
             ReadOnly = true,
             BackColor = Color.FromArgb(241, 245, 249),
+            Font = UITheme.RegularFont,
             Margin = new Padding(0, 2, 25, 0)
         };
 
-        var lblViTri = new Label { Text = "Vị Trí Kiểm Kê (*):", AutoSize = true, ForeColor = UITheme.TextSecondary, Margin = new Padding(0, 6, 8, 0) };
-        var txtViTri = new TextBox { Text = "Kho Tổng Blink Blink", Width = 200, Margin = new Padding(0, 2, 25, 0) };
+        var lblViTri = new Label
+        {
+            Text = "Vị Trí Kiểm Kê (*):",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
+        var txtViTri = new TextBox
+        {
+            Text = "Kho Tổng Blink Blink",
+            Width = 220,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 2, 25, 0)
+        };
 
-        var currentStaffId = _services.CurrentStaff?.MaNhanVien ?? _services.CurrentUser?.MaNguoiDung ?? "NV_KHO";
-        var lblNguoiLap = new Label { Text = "Thủ Kho Lập:", AutoSize = true, ForeColor = UITheme.TextSecondary, Margin = new Padding(0, 6, 8, 0) };
-        var txtNguoiLap = new TextBox { Text = currentStaffId, Width = 150, ReadOnly = true, BackColor = Color.FromArgb(241, 245, 249), Margin = new Padding(0, 2, 0, 0) };
+        // Lấy mã người dùng của tài khoản hiện hành (khớp khóa ngoại FK_PhieuKiemKe_NhanVien -> dbo.NguoiDung.MaNguoiDung)
+        var currentStaffId = _services.CurrentUser?.MaNguoiDung ?? _services.CurrentStaff?.MaNguoiDung ?? "USER_ADMIN01";
+        var lblNguoiLap = new Label
+        {
+            Text = "Thủ Kho Lập:",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
+        var txtNguoiLap = new TextBox
+        {
+            Text = currentStaffId,
+            Width = 160,
+            ReadOnly = true,
+            BackColor = Color.FromArgb(241, 245, 249),
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 2, 0, 0)
+        };
 
         pnlTopInfo.Controls.AddRange(new Control[] { lblMaP, txtMaP, lblViTri, txtViTri, lblNguoiLap, txtNguoiLap });
 
-        // Search and Select Product Panel
-        var pnlSelectSp = new Panel { Dock = DockStyle.Top, Height = 100, BackColor = Color.FromArgb(248, 250, 252), Padding = new Padding(14, 10, 14, 10) };
+        // Bố cục khung chọn sản phẩm kiểm kê: 2 hàng FlowLayoutPanel chuẩn hóa, chống đè nhãn trên mọi độ phân giải
+        var pnlSelectSp = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 110,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            BackColor = Color.FromArgb(248, 250, 252),
+            Padding = new Padding(16, 10, 16, 10),
+            Margin = new Padding(0, 0, 0, 10)
+        };
 
-        var lblSearchSp = new Label { Text = "Tìm sản phẩm:", Location = new Point(12, 12), AutoSize = true, ForeColor = UITheme.TextSecondary };
-        var txtSearchSp = new TextBox { Location = new Point(110, 9), Width = 175, PlaceholderText = "Mã hoặc tên..." };
+        // Hàng 1: Tìm kiếm nhanh và chọn sản phẩm trang sức
+        var rowSelect1 = new FlowLayoutPanel
+        {
+            Width = 980,
+            Height = 42,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = Color.Transparent,
+            Margin = new Padding(0)
+        };
 
-        var lblCboSp = new Label { Text = "Sản phẩm:", Location = new Point(305, 12), AutoSize = true, ForeColor = UITheme.TextSecondary };
-        var cboSp = new ComboBox { Location = new Point(375, 9), Width = 330, DropDownStyle = ComboBoxStyle.DropDownList };
+        var lblSearchSp = new Label
+        {
+            Text = "Tìm SP:",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
+        var txtSearchSp = new TextBox
+        {
+            Width = 140,
+            Font = UITheme.RegularFont,
+            PlaceholderText = "🔍 Tìm SP...",
+            Margin = new Padding(0, 2, 25, 0)
+        };
 
-        // Textbox chỉ đọc tồn sổ sách và textbox nhập tồn thực tế
-        var lblTonSoSach = new Label { Text = "Tồn sổ sách:", Location = new Point(12, 54), AutoSize = true, ForeColor = UITheme.TextSecondary };
-        var txtTonSoSach = new TextBox { Location = new Point(110, 50), Width = 85, ReadOnly = true, BackColor = Color.FromArgb(241, 245, 249), Font = UITheme.TabularNumericFont };
+        var lblCboSp = new Label
+        {
+            Text = "Sản phẩm (*):",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
+        var cboSp = new ComboBox
+        {
+            Width = 520,
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 2, 0, 0)
+        };
 
-        var lblTonThucTe = new Label { Text = "Tồn thực tế (*):", Location = new Point(210, 54), AutoSize = true, ForeColor = UITheme.TextSecondary };
-        var txtTonThucTe = new TextBox { Location = new Point(310, 50), Width = 85, Font = UITheme.TabularNumericFont };
+        rowSelect1.Controls.AddRange(new Control[] { lblSearchSp, txtSearchSp, lblCboSp, cboSp });
 
-        var lblLyDo = new Label { Text = "Lý do lệch:", Location = new Point(415, 54), AutoSize = true, ForeColor = UITheme.TextSecondary };
-        var txtLyDo = new TextBox { Location = new Point(485, 50), Width = 220, PlaceholderText = "Thất thoát, thừa hàng..." };
+        // Hàng 2: Tồn sổ sách, Tồn thực tế, Lý do lệch và nút Thêm
+        var rowSelect2 = new FlowLayoutPanel
+        {
+            Width = 980,
+            Height = 44,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = Color.Transparent,
+            Margin = new Padding(0)
+        };
+
+        var lblTonSoSach = new Label
+        {
+            Text = "Tồn sổ sách:",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
+        var txtTonSoSach = new TextBox
+        {
+            Width = 90,
+            ReadOnly = true,
+            BackColor = Color.FromArgb(241, 245, 249),
+            ForeColor = UITheme.TextPrimary,
+            Font = UITheme.TabularNumericFont,
+            Margin = new Padding(0, 2, 20, 0)
+        };
+
+        var lblTonThucTe = new Label
+        {
+            Text = "Tồn thực tế (*):",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
+        var txtTonThucTe = new TextBox
+        {
+            Width = 90,
+            Font = UITheme.TabularNumericFont,
+            Margin = new Padding(0, 2, 20, 0)
+        };
+
+        var lblLyDo = new Label
+        {
+            Text = "Lý do lệch:",
+            AutoSize = true,
+            ForeColor = UITheme.TextSecondary,
+            Font = UITheme.RegularFont,
+            Margin = new Padding(0, 6, 8, 0)
+        };
+        var txtLyDo = new TextBox
+        {
+            Width = 230,
+            Font = UITheme.RegularFont,
+            PlaceholderText = "Thất thoát, thừa hàng...",
+            Margin = new Padding(0, 2, 20, 0)
+        };
 
         var btnAddToList = UITheme.CreateFlatButton("+ Thêm vào danh sách", UITheme.PrimaryGold, Color.Black);
-        btnAddToList.Location = new Point(725, 47);
-        btnAddToList.Size = new Size(220, 34);
+        btnAddToList.Height = 32;
+        btnAddToList.AutoSize = true;
+        btnAddToList.Padding = new Padding(14, 2, 14, 2);
+        btnAddToList.Margin = new Padding(0, 0, 0, 0);
 
-        pnlSelectSp.Controls.AddRange(new Control[] { lblSearchSp, txtSearchSp, lblCboSp, cboSp, lblTonSoSach, txtTonSoSach, lblTonThucTe, txtTonThucTe, lblLyDo, txtLyDo, btnAddToList });
+        rowSelect2.Controls.AddRange(new Control[] { lblTonSoSach, txtTonSoSach, lblTonThucTe, txtTonThucTe, lblLyDo, txtLyDo, btnAddToList });
+
+        pnlSelectSp.Controls.Add(rowSelect1);
+        pnlSelectSp.Controls.Add(rowSelect2);
+
+        // Hàm cập nhật tồn kho sổ sách theo thời gian thực từ CSDL
+        void CapNhatTonKhoSoSach()
+        {
+            if (cboSp.SelectedItem is ProductComboItem selected)
+            {
+                // Luôn truy vấn tồn kho mới nhất từ CSDL qua SanPhamRepo
+                var spMoiNhat = _services.SanPhamRepo.TimTheoId(selected.Product.MaSanPham) ?? selected.Product;
+                txtTonSoSach.Text = spMoiNhat.SoLuongTon.ToString();
+                txtTonThucTe.Text = spMoiNhat.SoLuongTon.ToString();
+            }
+            else
+            {
+                txtTonSoSach.Text = "0";
+                txtTonThucTe.Text = "0";
+            }
+        }
+
+        // Đăng ký sự kiện cập nhật tồn kho sổ sách khi thay đổi sản phẩm
+        cboSp.SelectedIndexChanged += (s, e) => CapNhatTonKhoSoSach();
+        cboSp.SelectionChangeCommitted += (s, e) => CapNhatTonKhoSoSach();
 
         // Helper populate combobox
         void PopulateCombobox(string filter)
@@ -524,23 +683,11 @@ public class InventoryAuditView : UserControl
             {
                 cboSp.SelectedIndex = 0;
             }
-            else
-            {
-                txtTonSoSach.Text = "0";
-                txtTonThucTe.Text = "0";
-            }
+            CapNhatTonKhoSoSach();
         }
 
+        // Nạp danh sách ban đầu và kích hoạt hiển thị tồn kho sản phẩm đầu tiên
         PopulateCombobox(string.Empty);
-
-        cboSp.SelectedIndexChanged += (s, e) =>
-        {
-            if (cboSp.SelectedItem is ProductComboItem selected)
-            {
-                txtTonSoSach.Text = selected.Product.SoLuongTon.ToString();
-                txtTonThucTe.Text = selected.Product.SoLuongTon.ToString();
-            }
-        };
 
         // Khi gõ ô search: lọc combobox, sản phẩm tìm thấy đầu tiên hiện trong combobox
         txtSearchSp.TextChanged += (s, e) =>
@@ -605,6 +752,21 @@ public class InventoryAuditView : UserControl
             }
 
             var sp = selected.Product;
+
+            // Yêu cầu kiểm soát tính hợp lệ: Bắt buộc giải trình nếu phát hiện chênh lệch giữa thực tế và sổ sách
+            if (tonThucTe != sp.SoLuongTon && string.IsNullOrWhiteSpace(txtLyDo.Text.Trim()))
+            {
+                MessageBox.Show(
+                    $"Phát hiện chênh lệch giữa Tồn thực tế ({tonThucTe}) và Tồn sổ sách ({sp.SoLuongTon}).\n" +
+                    "Vui lòng nhập 'Lý do lệch' (ví dụ: hao hụt, hư hỏng, thất thoát, tìm thấy hàng thừa...) để phục vụ kiểm toán trước khi thêm vào biên bản.",
+                    "Yêu cầu giải trình chênh lệch",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                txtLyDo.Focus();
+                return;
+            }
+
             var existing = auditItemsList.FirstOrDefault(x => x.MaSanPham == sp.MaSanPham);
             if (existing != null)
             {
@@ -652,10 +814,11 @@ public class InventoryAuditView : UserControl
         };
 
         var pnlGhiChu = new Panel { Dock = DockStyle.Bottom, Height = 56, Padding = new Padding(0, 6, 0, 0) };
-        var lblGhiChu = new Label { Text = "Ghi chú kiểm kê:", Dock = DockStyle.Left, Width = 135, ForeColor = UITheme.TextSecondary };
-        var txtGhiChu = new TextBox { Dock = DockStyle.Fill, Multiline = true, Height = 48, ScrollBars = ScrollBars.Vertical };
-        pnlGhiChu.Controls.Add(txtGhiChu);
+        var lblGhiChu = new Label { Text = "Ghi chú kiểm kê:", Dock = DockStyle.Left, Width = 140, ForeColor = UITheme.TextSecondary, Font = UITheme.RegularFont };
+        var txtGhiChu = new TextBox { Dock = DockStyle.Fill, Multiline = true, Height = 48, ScrollBars = ScrollBars.Vertical, Font = UITheme.RegularFont };
         pnlGhiChu.Controls.Add(lblGhiChu);
+        pnlGhiChu.Controls.Add(txtGhiChu);
+        txtGhiChu.SendToBack();
 
         pnlBottomActions.Controls.Add(btnRemoveItem);
         pnlBottomActions.Controls.Add(pnlGhiChu);
@@ -720,7 +883,6 @@ public class InventoryAuditView : UserControl
 
         var isPending = string.Equals(phieu.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase);
         var isApproved = string.Equals(phieu.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase);
-        var isInvalidated = string.Equals(phieu.TrangThai, "VoHieuHoa", StringComparison.OrdinalIgnoreCase);
         var isAdmin = IsCurrentAdmin();
 
         using var dialog = new Form
@@ -740,7 +902,7 @@ public class InventoryAuditView : UserControl
         var pnlHead = new Panel { Dock = DockStyle.Top, Height = 95, BackColor = UITheme.DarkHeader, Padding = new Padding(24, 14, 24, 10) };
         var lblTitle = new Label { Text = $"BIÊN BẢN KIỂM KÊ #{phieu.MaPhieuKiemKe}", Font = UITheme.HeaderFont, ForeColor = UITheme.PrimaryGold, Dock = DockStyle.Top, Height = 24 };
 
-        string statusText = isApproved ? "ĐÃ PHÊ DUYỆT (TỒN KHO ĐÃ CÂN BẰNG)" : (isInvalidated ? "ĐÃ VÔ HIỆU HÓA" : "CHỜ PHÊ DUYỆT (TỒN KHO CHƯA THAY ĐỔI)");
+        string statusText = isApproved ? "ĐÃ PHÊ DUYỆT (TỒN KHO ĐÃ CÂN BẰNG)" : "CHỜ PHÊ DUYỆT (TỒN KHO CHƯA THAY ĐỔI)";
         var lblSub = new Label
         {
             Text = $"Trạng thái: {statusText} | Ngày lập: {phieu.NgayKiemKe:dd/MM/yyyy HH:mm} | Thủ kho: {phieu.MaNhanVienKho} | Vị trí: {phieu.ViTriKiemKe}" +
@@ -764,29 +926,15 @@ public class InventoryAuditView : UserControl
         flpFoot.Controls.Add(btnClose);
 
         Button? btnApprove = null;
-        Button? btnInvalidate = null;
 
-        // Phân quyền hiển thị các nút hành động (Theo yêu cầu mới: Bỏ tính năng chỉnh sửa phiếu kiểm kê chưa duyệt, nếu sai thì xóa tạo lại)
-        if (isPending)
+        // Phân quyền hiển thị các nút hành động (Khi đã duyệt thì khóa hoàn toàn, chỉ có nút Đóng)
+        if (isPending && isAdmin)
         {
-            // Với Admin: có nút duyệt phiếu
-            if (isAdmin)
-            {
-                btnApprove = UITheme.CreateFlatButton("✓ Duyệt Phiếu", Color.FromArgb(22, 101, 52), Color.White);
-                btnApprove.Width = 150;
-                btnApprove.Height = 36;
-                btnApprove.Margin = new Padding(0);
-                flpFoot.Controls.Add(btnApprove);
-            }
-        }
-        else if (isApproved && isAdmin)
-        {
-            // Khi đã duyệt: chỉ có admin có thêm nút Vô hiệu hóa
-            btnInvalidate = UITheme.CreateFlatButton("🚫 Vô Hiệu Hóa", Color.FromArgb(239, 68, 68), Color.White);
-            btnInvalidate.Width = 160;
-            btnInvalidate.Height = 36;
-            btnInvalidate.Margin = new Padding(0);
-            flpFoot.Controls.Add(btnInvalidate);
+            btnApprove = UITheme.CreateFlatButton("✓ Duyệt Phiếu", Color.FromArgb(22, 101, 52), Color.White);
+            btnApprove.Width = 150;
+            btnApprove.Height = 36;
+            btnApprove.Margin = new Padding(0);
+            flpFoot.Controls.Add(btnApprove);
         }
 
         pnlFoot.Controls.Add(flpFoot);
@@ -843,7 +991,7 @@ public class InventoryAuditView : UserControl
 
         // Panel Ghi chú phía dưới
         var pnlGhiChu = new Panel { Dock = DockStyle.Bottom, Height = 75, Padding = new Padding(0, 8, 0, 0) };
-        var lblGhiChu = new Label { Text = "Ghi chú kiểm kê:", Dock = DockStyle.Left, Width = 115, ForeColor = UITheme.TextSecondary };
+        var lblGhiChu = new Label { Text = "Ghi chú kiểm kê:", Dock = DockStyle.Left, Width = 140, ForeColor = UITheme.TextSecondary, Font = UITheme.RegularFont };
         var txtGhiChu = new TextBox
         {
             Text = phieu.GhiChu,
@@ -851,10 +999,12 @@ public class InventoryAuditView : UserControl
             Multiline = true,
             Height = 60,
             ReadOnly = true,
-            ScrollBars = ScrollBars.Vertical
+            ScrollBars = ScrollBars.Vertical,
+            Font = UITheme.RegularFont
         };
-        pnlGhiChu.Controls.Add(txtGhiChu);
         pnlGhiChu.Controls.Add(lblGhiChu);
+        pnlGhiChu.Controls.Add(txtGhiChu);
+        txtGhiChu.SendToBack();
 
         pnlBody.Controls.Add(pnlGridHolder);
         pnlBody.Controls.Add(pnlGhiChu);
@@ -901,52 +1051,6 @@ public class InventoryAuditView : UserControl
                     MessageBox.Show(
                         $"TỪ CHỐI PHÊ DUYỆT:\n\n{error}",
                         "Ràng buộc chống xung đột tồn kho",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning
-                    );
-                }
-            };
-        }
-
-        // 3. Xử lý nút VÔ HIỆU HÓA (dành cho Admin khi đã duyệt nhầm)
-        if (btnInvalidate != null)
-        {
-            btnInvalidate.Click += (s, e) =>
-            {
-                var confirm = MessageBox.Show(
-                    $"Bạn có chắc chắn muốn vô hiệu hóa biên bản kiểm kê [{phieu.MaPhieuKiemKe}] không?\n\n" +
-                    "Hệ thống sẽ:\n" +
-                    "1. Kiểm tra chuỗi kiểm kê: Chỉ cho phép vô hiệu hóa nếu đây là đợt kiểm kê mới nhất đối với từng sản phẩm.\n" +
-                    "2. Hoàn tác số lượng tồn kho theo đúng chênh lệch đã kiểm đếm (bảo toàn các đơn hàng bán phát sinh sau khi duyệt).\n" +
-                    "3. Đổi trạng thái biên bản sang 'Đã vô hiệu hóa'.",
-                    "Xác nhận vô hiệu hóa biên bản kiểm kê",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning,
-                    MessageBoxDefaultButton.Button2
-                );
-
-                if (confirm != DialogResult.Yes) return;
-
-                var adminId = _services.CurrentStaff?.MaNhanVien ?? _services.CurrentUser?.MaNguoiDung ?? "ADMIN";
-                var success = _services.QuanLyKiemKe.VoHieuHoaPhieuKiemKe(phieu.MaPhieuKiemKe, adminId, out var error);
-
-                if (success)
-                {
-                    MessageBox.Show(
-                        $"Vô hiệu hóa biên bản kiểm kê [{phieu.MaPhieuKiemKe}] thành công!\nSố lượng tồn kho đã được hoàn tác chính xác theo chênh lệch ban đầu.",
-                        "Thành công",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
-                    dialog.Close();
-                    LoadAuditData();
-                }
-                else
-                {
-                    // Từ chối vô hiệu hóa do đã có phiếu kiểm kê mới hơn
-                    MessageBox.Show(
-                        $"TỪ CHỐI VÔ HIỆU HÓA:\n\n{error}",
-                        "Ràng buộc chuỗi kiểm kê",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning
                     );
