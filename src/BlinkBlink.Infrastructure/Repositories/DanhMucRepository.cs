@@ -104,6 +104,58 @@ public class DanhMucRepository : IDanhMucRepository
         return list;
     }
 
+    public void XoaDanhMuc(string maDanhMuc)
+    {
+        if (string.IsNullOrWhiteSpace(maDanhMuc)) return;
+        var cleanMa = maDanhMuc.Trim();
+
+        // Không cho phép xóa danh mục mặc định 'Chưa phân loại' (DM00)
+        if (string.Equals(cleanMa, "DM00", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Không thể xóa danh mục mặc định 'Chưa phân loại' (DM00).");
+        }
+
+        using var conn = _dbHelper.GetConnection();
+        using var tx = conn.BeginTransaction();
+        try
+        {
+            // 1. Đảm bảo danh mục DM00 đã tồn tại để nhận các sản phẩm được chuyển giao
+            const string sqlEnsureDm00 = @"
+                IF NOT EXISTS (SELECT 1 FROM dbo.DanhMuc WHERE MaDanhMuc = 'DM00')
+                BEGIN
+                    INSERT INTO dbo.DanhMuc (MaDanhMuc, TenDanhMuc, MoTa)
+                    VALUES ('DM00', N'Chưa phân loại', N'Danh mục mặc định cho sản phẩm chưa phân loại hoặc danh mục cũ bị xóa');
+                END";
+            using (var cmdEnsure = new SqlCommand(sqlEnsureDm00, conn, tx))
+            {
+                cmdEnsure.ExecuteNonQuery();
+            }
+
+            // 2. Chuyển toàn bộ sản phẩm thuộc danh mục bị xóa sang 'DM00'
+            const string sqlUpdateSp = "UPDATE dbo.SanPhamTrangSuc SET MaDanhMuc = 'DM00' WHERE MaDanhMuc = @MaDanhMuc;";
+            using (var cmdUpdate = new SqlCommand(sqlUpdateSp, conn, tx))
+            {
+                cmdUpdate.Parameters.Add(new SqlParameter("@MaDanhMuc", SqlDbType.VarChar, 50) { Value = cleanMa });
+                cmdUpdate.ExecuteNonQuery();
+            }
+
+            // 3. Xóa danh mục khỏi bảng DanhMuc
+            const string sqlDel = "DELETE FROM dbo.DanhMuc WHERE MaDanhMuc = @MaDanhMuc;";
+            using (var cmdDel = new SqlCommand(sqlDel, conn, tx))
+            {
+                cmdDel.Parameters.Add(new SqlParameter("@MaDanhMuc", SqlDbType.VarChar, 50) { Value = cleanMa });
+                cmdDel.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+        }
+        catch
+        {
+            tx.Rollback();
+            throw;
+        }
+    }
+
     public Task LuuDanhMucAsync(DanhMuc dm, CancellationToken cancellationToken = default)
     {
         LuuDanhMuc(dm);
@@ -118,5 +170,11 @@ public class DanhMucRepository : IDanhMucRepository
     public Task<List<DanhMuc>> LayTatCaAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(LayTatCa());
+    }
+
+    public Task XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default)
+    {
+        XoaDanhMuc(maDanhMuc);
+        return Task.CompletedTask;
     }
 }
