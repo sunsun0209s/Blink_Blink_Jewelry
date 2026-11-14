@@ -92,8 +92,17 @@ public class BanHangOfflineUseCase
             );
             hoaDon.ChiTietHoaDons.Add(ct);
 
-            // Cập nhật trạng thái sản phẩm trang sức kim hoàn sang đã bán
-            sp.CapNhatTrangThai("DaBan");
+            // Cập nhật trạng thái và số lượng tồn kho sản phẩm: Chỉ chuyển sang 'DaBan' khi tồn kho sau bán <= 0; nếu vẫn còn tồn kho thì giữ 'SanSang'
+            var tonConLai = sp.SoLuongTon - (item.SoLuong > 0 ? item.SoLuong : 1);
+            sp.SoLuongTon = Math.Max(0, tonConLai);
+            if (tonConLai <= 0)
+            {
+                sp.CapNhatTrangThai("DaBan");
+            }
+            else
+            {
+                sp.CapNhatTrangThai("SanSang");
+            }
             _sanPhamRepo.LuuSanPham(sp);
         }
 

@@ -57,7 +57,9 @@ public class XuLyBaoHanhUseCase
             return false;
         }
 
-        // Nếu trạng thái mới là DaHuy hoặc DaTraKhach, hoàn trả trạng thái sản phẩm sang DaBan
+        // Phục hồi trạng thái cho các sản phẩm trong CSDL cũ vô tình bị gán 'DangBaoHanh':
+        // Khi phiếu hoàn tất (DaTraKhach, DaHoanTat) hoặc DaHuy, chỉ phục hồi nếu sản phẩm đang mang trạng thái DangBaoHanh.
+        // Nếu sản phẩm còn tồn kho (> 0) thì đưa về 'SanSang', ngược lại đưa về 'DaBan'.
         if (string.Equals(trangThaiMoi, "DaHuy", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(trangThaiMoi, "DaTraKhach", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(trangThaiMoi, "DaHoanTat", StringComparison.OrdinalIgnoreCase))
@@ -65,7 +67,8 @@ public class XuLyBaoHanhUseCase
             var sanPham = await _sanPhamRepo.TimTheoIdAsync(phieu.MaSanPham, cancellationToken);
             if (sanPham != null && string.Equals(sanPham.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
             {
-                sanPham.CapNhatTrangThai("DaBan");
+                var trangThaiPhucHoi = sanPham.SoLuongTon > 0 ? "SanSang" : "DaBan";
+                sanPham.CapNhatTrangThai(trangThaiPhucHoi);
                 await _sanPhamRepo.LuuSanPhamAsync(sanPham, cancellationToken);
             }
         }

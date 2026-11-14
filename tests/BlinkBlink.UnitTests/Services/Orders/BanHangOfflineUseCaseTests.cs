@@ -168,4 +168,50 @@ public class BanHangOfflineUseCaseTests
         Assert.Equal("0", hoaDon.MaKhachHang); // Mã 0 chuẩn tránh lỗi DB constraint
         Assert.Equal("ChuyenKhoan", hoaDon.PhuongThucThanhToan);
     }
+
+    [Fact]
+    public void Execute_ProductWithRemainingStock_KeepsStatusSanSang()
+    {
+        // Sắp đặt: Sản phẩm SP001 ban đầu có tồn kho là 3, trạng thái SanSang
+        var fakeHoaDon = new FakeHoaDonRepository();
+        var fakeSanPham = new FakeSanPhamRepository();
+        var fakeKhachHang = new FakeKhachHangRepository();
+
+        var sp = new SanPhamTrangSuc(
+            maSanPham: "SP001",
+            tenSanPham: "Nhẫn Kim Cương Solitaire",
+            maDanhMuc: "DM01",
+            chatLieu: "Vàng trắng 18k",
+            size: "12",
+            giaNhap: 10000000m,
+            giaBan: 20000000m,
+            trangThai: "SanSang"
+        )
+        {
+            SoLuongTon = 3
+        };
+        fakeSanPham.LuuSanPham(sp);
+
+        var useCase = new BanHangOfflineUseCase(fakeHoaDon, fakeSanPham, fakeKhachHang);
+        var request = new TaoHoaDonOfflineDTO
+        {
+            TenKhachHang = "Khách vãng lai",
+            SoDienThoai = "",
+            PhuongThucThanhToan = "TienMat",
+            DanhSachSanPham = new List<ChiTietBanOfflineDTO>
+            {
+                new() { MaSanPham = "SP001", TenSanPham = "Nhẫn Kim Cương Solitaire", DonGia = 20000000m, SoLuong = 1, PhanTramGiamGia = 0 }
+            }
+        };
+
+        // Thực thi bán 1 cái
+        var result = useCase.Execute(request, out var maHoaDonMoi);
+
+        // Kiểm tra: Bán thành công, tồn kho còn lại là 2 và trạng thái vẫn duy trì SanSang (không bị biến thành DaBan)
+        Assert.True(result);
+        var spSauBan = fakeSanPham.TimTheoId("SP001");
+        Assert.NotNull(spSauBan);
+        Assert.Equal(2, spSauBan.SoLuongTon);
+        Assert.Equal("SanSang", spSauBan.TrangThai);
+    }
 }
