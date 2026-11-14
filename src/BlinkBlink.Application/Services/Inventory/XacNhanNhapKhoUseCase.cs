@@ -273,9 +273,25 @@ public class XacNhanNhapKhoUseCase
                             sp.GiaNhap = Math.Round(tongGiaTriConLai / tongSoLuongConLai, 2);
                         }
                     }
+                    else
+                    {
+                        // Hoàn nguyên giá vốn khi không còn phiếu nhập đã duyệt nào khác trong CSDL:
+                        // Áp dụng công thức đảo bình quân gia quyền: (Tổng giá trị trước hủy - Giá trị lô nhập hủy) / Tồn kho còn lại
+                        var tonTruocHuy = sp.SoLuongTon + ct.SoLuong;
+                        var tongTienConLai = (tonTruocHuy * sp.GiaNhap) - (ct.SoLuong * ct.GiaVonNhap);
+                        if (sp.SoLuongTon > 0 && tongTienConLai > 0)
+                        {
+                            sp.GiaNhap = Math.Round(tongTienConLai / sp.SoLuongTon, 2);
+                        }
+                        else
+                        {
+                            sp.GiaNhap = 0;
+                        }
+                    }
 
-                    // TÍNH LẠI GIÁ BÁN THEO TỶ LỆ LỢI NHUẬN:
-                    sp.GiaBan = sp.TinhGiaBanTheoLoiNhuan();
+                    // TỰ ĐỘNG CẬP NHẬT LẠI GIÁ BÁN THEO TỶ LỆ LỢI NHUẬN:
+                    // Giá bán = Giá nhập bình quân * (1 + % Lợi nhuận) nếu giá nhập > 0; nếu giá nhập = 0 thì giá bán hoàn nguyên về 0
+                    sp.GiaBan = sp.GiaNhap > 0 ? sp.TinhGiaBanTheoLoiNhuan() : 0;
 
                     _sanPhamRepo.LuuSanPham(sp);
                 }

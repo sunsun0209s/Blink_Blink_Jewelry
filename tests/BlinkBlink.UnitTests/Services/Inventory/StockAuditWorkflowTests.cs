@@ -60,19 +60,6 @@ public class StockAuditWorkflowTests
             }
         }
 
-        public bool KiemTraCoPhieuKiemKeMoiHon(string maPhieu, string maSanPham)
-        {
-            if (!Data.TryGetValue(maPhieu, out var target)) return false;
-            var targetTime = target.NgayDuyet ?? target.NgayKiemKe;
-
-            return Data.Values.Any(p =>
-                p.MaPhieuKiemKe != maPhieu &&
-                string.Equals(p.TrangThai, "DaDuyet", StringComparison.OrdinalIgnoreCase) &&
-                (p.NgayDuyet ?? p.NgayKiemKe) > targetTime &&
-                p.ChiTietKiemKes.Any(ct => ct.MaSanPham == maSanPham)
-            );
-        }
-
         public Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken ct = default) { LuuPhieuKiemKe(phieu); return Task.CompletedTask; }
         public Task<PhieuKiemKe?> TimTheoIdAsync(string maPhieu, CancellationToken ct = default) => Task.FromResult(TimTheoId(maPhieu));
     }
@@ -232,6 +219,116 @@ public class StockAuditWorkflowTests
     }
 
     [Fact]
+    public void DuyetPhieuKiemKe_ThanhCong_ChuyenTrangThaiHetHang_KhiTonThucTeBangKhong()
+    {
+        var spRepo = new FakeSanPhamRepository();
+        var kiemKeRepo = new FakePhieuKiemKeRepository();
+        var useCase = new QuanLyKiemKeUseCase(kiemKeRepo, spRepo);
+
+        var sp = new SanPhamTrangSuc("SP008", "Nhẫn Bạc", "DM01", "Bạc 925", "Size 10", 1000000, 1500000, "SanSang", "", 0) { SoLuongTon = 3 };
+        spRepo.LuuSanPham(sp);
+
+        var phieu = new PhieuKiemKe("PKK_ZERO", "Kho", "NV", DateTime.UtcNow, "ChoDuyet");
+        phieu.ChiTietKiemKes.Add(new ChiTietKiemKe("PKK_ZERO", "SP008", 3, 0)); // Kiểm kê thực tế mất hết hàng: tồn về 0
+        kiemKeRepo.LuuPhieuKiemKe(phieu);
+
+        var ok = useCase.DuyetPhieuKiemKe("PKK_ZERO", "ADMIN", out var error);
+
+        Assert.True(ok);
+        Assert.Empty(error);
+
+        var spCheck = spRepo.TimTheoId("SP008");
+        Assert.Equal(0, spCheck!.SoLuongTon);
+        Assert.Equal("HetHang", spCheck.TrangThai);
+    }
+
+    [Fact]
+    public void LapPhieuKiemKe_TuChoi_KhiTrungLapSanPhamTrongCungPhieu()
+    {
+        var spRepo = new FakeSanPhamRepository();
+        var kiemKeRepo = new FakePhieuKiemKeRepository();
+        var useCase = new QuanLyKiemKeUseCase(kiemKeRepo, spRepo);
+
+        var sp = new SanPhamTrangSuc("SP001", "Nhẫn Kim Cương", "DM01", "Vàng 18K", "Size 14", 10000000, 15000000, "SanSang", "", 10) { SoLuongTon = 10 };
+        spRepo.LuuSanPham(sp);
+
+        var dto = new TaoPhieuKiemKeDTO
+        {
+            MaPhieuKiemKe = "PKK_DUP",
+            ViTriKiemKe = "Kho Tổng",
+            MaNhanVienKho = "NV_KHO",
+            DanhSachChiTiet = new List<ChiTietKiemKeItemDTO>
+            {
+                new() { MaSanPham = "SP001", TonSoSach = 10, TonThucTe = 10 },
+                new() { MaSanPham = "SP001", TonSoSach = 10, TonThucTe = 12 } // Trùng mã SP001
+            }
+        };
+
+        var ok = useCase.LapPhieuKiemKe(dto, out var error);
+
+        Assert.False(ok);
+        Assert.Contains("bị trùng lặp trong biên bản kiểm kê", error);
+        Assert.Null(kiemKeRepo.TimTheoId("PKK_DUP"));
+    }
+
+    [Fact]
+    public void LapPhieuKiemKe_TuChoi_KhiTonSoSachKhongKhopHeThong()
+    {
+        var spRepo = new FakeSanPhamRepository();
+        var kiemKeRepo = new FakePhieuKiemKeRepository();
+        var useCase = new QuanLyKiemKeUseCase(kiemKeRepo, spRepo);
+
+        // Tồn kho hệ thống thực tế đang là 10
+        var sp = new SanPhamTrangSuc("SP001", "Nhẫn Kim Cương", "DM01", "Vàng 18K", "Size 14", 10000000, 15000000, "SanSang", "", 10) { SoLuongTon = 10 };
+        spRepo.LuuSanPham(sp);
+
+        // Gửi request với TonSoSach là 8 (lệch so với hệ thống 10)
+        var dto = new TaoPhieuKiemKeDTO
+        {
+            MaPhieuKiemKe = "PKK_MISMATCH",
+            ViTriKiemKe = "Kho Tổng",
+            MaNhanVienKho = "NV_KHO",
+            DanhSachChiTiet = new List<ChiTietKiemKeItemDTO>
+            {
+                new() { MaSanPham = "SP001", TonSoSach = 8, TonThucTe = 8 }
+            }
+        };
+
+        var ok = useCase.LapPhieuKiemKe(dto, out var error);
+
+        Assert.False(ok);
+        Assert.Contains("không khớp với hệ thống tại thời điểm lập phiếu", error);
+        Assert.Null(kiemKeRepo.TimTheoId("PKK_MISMATCH"));
+    }
+
+    [Fact]
+    public void LapPhieuKiemKe_TuChoi_KhiTonThucTeAm()
+    {
+        var spRepo = new FakeSanPhamRepository();
+        var kiemKeRepo = new FakePhieuKiemKeRepository();
+        var useCase = new QuanLyKiemKeUseCase(kiemKeRepo, spRepo);
+
+        var sp = new SanPhamTrangSuc("SP001", "Nhẫn Kim Cương", "DM01", "Vàng 18K", "Size 14", 10000000, 15000000, "SanSang", "", 10) { SoLuongTon = 10 };
+        spRepo.LuuSanPham(sp);
+
+        var dto = new TaoPhieuKiemKeDTO
+        {
+            MaPhieuKiemKe = "PKK_NEG",
+            ViTriKiemKe = "Kho Tổng",
+            MaNhanVienKho = "NV_KHO",
+            DanhSachChiTiet = new List<ChiTietKiemKeItemDTO>
+            {
+                new() { MaSanPham = "SP001", TonSoSach = 10, TonThucTe = -2 }
+            }
+        };
+
+        var ok = useCase.LapPhieuKiemKe(dto, out var error);
+
+        Assert.False(ok);
+        Assert.Contains("phải là số nguyên không âm", error);
+    }
+
+    [Fact]
     public void DuyetPhieuKiemKe_TuChoiDuyet_KhiTonKhoThucTeLechSoSachGhiTrongPhieu()
     {
         // Ràng buộc Anti-conflict: Khi duyệt, kiểm tra tồn kho hiện tại còn khớp TonSoSach không.
@@ -250,78 +347,12 @@ public class StockAuditWorkflowTests
         var ok = useCase.DuyetPhieuKiemKe("PKK_CONFLICT", "ADMIN", out var error);
 
         Assert.False(ok);
-        Assert.Contains("không chính xác so với hệ thống hiện tại", error);
+        Assert.Contains("đã có sự biến động trên hệ thống", error);
+        Assert.Contains("phát sinh giao dịch bán hàng hoặc nhập kho mới", error);
 
         // Tồn kho không bị thay đổi sai lệch
         var spCheck = spRepo.TimTheoId("SP001");
         Assert.Equal(8, spCheck!.SoLuongTon);
-    }
-
-    [Fact]
-    public void VoHieuHoaPhieuKiemKe_ThanhCong_HoanTacTonKhoTheoDelta_BaoToanGiaoDichBanHang()
-    {
-        // Kịch bản từ CONGVIECTIEPTHEO.md:
-        // Hệ thống ghi 105 cái, thực tế 100 cái (delta = -5).
-        // Duyệt phiếu -> tồn kho thành 100.
-        // Khách mua 2 cái -> tồn kho thành 98.
-        // Vô hiệu hóa phiếu -> Hoàn tác delta: 98 - (-5) = 103 cái (không phải 105).
-        var spRepo = new FakeSanPhamRepository();
-        var kiemKeRepo = new FakePhieuKiemKeRepository();
-        var useCase = new QuanLyKiemKeUseCase(kiemKeRepo, spRepo);
-
-        var sp = new SanPhamTrangSuc("SP100", "Lắc Tay Kim Cương", "DM04", "Bạch Kim", "17cm", 20000000, 30000000, "SanSang", "", 105) { SoLuongTon = 105 };
-        spRepo.LuuSanPham(sp);
-
-        var phieu = new PhieuKiemKe("PKK_SPEC", "Kho", "NV", DateTime.UtcNow.AddHours(-2), "ChoDuyet");
-        phieu.ChiTietKiemKes.Add(new ChiTietKiemKe("PKK_SPEC", "SP100", 105, 100)); // TonSoSach = 105, TonThucTe = 100
-        kiemKeRepo.LuuPhieuKiemKe(phieu);
-
-        // 1. Duyệt phiếu
-        var okDuyet = useCase.DuyetPhieuKiemKe("PKK_SPEC", "ADMIN", out _);
-        Assert.True(okDuyet);
-        Assert.Equal(100, spRepo.TimTheoId("SP100")!.SoLuongTon);
-
-        // 2. Khách mua 2 cái sau khi duyệt
-        var spSauBan = spRepo.TimTheoId("SP100")!;
-        spSauBan.SoLuongTon -= 2; // Còn 98
-        spRepo.LuuSanPham(spSauBan);
-        Assert.Equal(98, spRepo.TimTheoId("SP100")!.SoLuongTon);
-
-        // 3. Admin vô hiệu hóa phiếu kiểm kê
-        var okVoHieuHoa = useCase.VoHieuHoaPhieuKiemKe("PKK_SPEC", "ADMIN", out var errVoHieuHoa);
-        Assert.True(okVoHieuHoa);
-        Assert.Empty(errVoHieuHoa);
-
-        // Tồn kho phải là 98 - (100 - 105) = 98 - (-5) = 103!
-        Assert.Equal(103, spRepo.TimTheoId("SP100")!.SoLuongTon);
-    }
-
-    [Fact]
-    public void VoHieuHoaPhieuKiemKe_TuChoi_KhiCoPhieuKiemKeMoiHonCungSanPham()
-    {
-        // Ràng buộc chuỗi kiểm kê (Audit Chain):
-        // Phiếu 1 duyệt hôm qua, Phiếu 2 duyệt hôm nay cho cùng sản phẩm.
-        // Cấm vô hiệu hóa Phiếu 1.
-        var spRepo = new FakeSanPhamRepository();
-        var kiemKeRepo = new FakePhieuKiemKeRepository();
-        var useCase = new QuanLyKiemKeUseCase(kiemKeRepo, spRepo);
-
-        var sp = new SanPhamTrangSuc("SP001", "Bông Tai", "DM03", "Bạch Kim", "Tiêu chuẩn", 1000000, 2000000, "SanSang", "", 10) { SoLuongTon = 10 };
-        spRepo.LuuSanPham(sp);
-
-        var phieu1 = new PhieuKiemKe("PKK_CHAIN_1", "Kho", "NV", DateTime.UtcNow.AddDays(-2), "DaDuyet", "") { NgayDuyet = DateTime.UtcNow.AddDays(-2) };
-        phieu1.ChiTietKiemKes.Add(new ChiTietKiemKe("PKK_CHAIN_1", "SP001", 10, 12));
-        kiemKeRepo.LuuPhieuKiemKe(phieu1);
-
-        var phieu2 = new PhieuKiemKe("PKK_CHAIN_2", "Kho", "NV", DateTime.UtcNow.AddDays(-1), "DaDuyet", "") { NgayDuyet = DateTime.UtcNow.AddDays(-1) };
-        phieu2.ChiTietKiemKes.Add(new ChiTietKiemKe("PKK_CHAIN_2", "SP001", 12, 11));
-        kiemKeRepo.LuuPhieuKiemKe(phieu2);
-
-        // Thử vô hiệu hóa phiếu cũ PKK_CHAIN_1 -> Phải bị từ chối!
-        var ok = useCase.VoHieuHoaPhieuKiemKe("PKK_CHAIN_1", "ADMIN", out var error);
-
-        Assert.False(ok);
-        Assert.Contains("Chỉ cho phép vô hiệu hóa phiếu có chỉnh sửa mới nhất đối với sản phẩm", error);
     }
 
     [Fact]
@@ -446,5 +477,81 @@ public class StockAuditWorkflowTests
 
         // Tồn kho không bị thay đổi
         Assert.Equal(2, spRepo.TimTheoId("SP_AM")!.SoLuongTon);
+    }
+
+    [Fact]
+    public void VoHieuHoaPhieuNhap_ThanhCong_KhoiPhucGiaVonVaGiaBan()
+    {
+        var spRepo = new FakeSanPhamRepository();
+        var nhapKhoRepo = new FakePhieuNhapKhoRepository();
+        var useCase = new XacNhanNhapKhoUseCase(nhapKhoRepo, spRepo);
+
+        // Ban đầu SP có tồn kho 5 cái, giá vốn 1,000,000, giá bán 1,200,000 (lợi nhuận 20%)
+        var sp = new SanPhamTrangSuc("SP_HOAN_NGUYEN", "Vòng Tay Bạc", "DM01", "Bạc 925", "16cm", 1000000m, 1200000m, "SanSang", "", 0, "0", 20m)
+        {
+            SoLuongTon = 5
+        };
+        spRepo.LuuSanPham(sp);
+
+        // Nhập lô 2: 5 cái với giá vốn 2,000,000 (phiếu PNK_02)
+        var phieu2 = new PhieuNhapKho("PNK_02", "NCC A", "ADMIN", DateTime.UtcNow, "DaDuyet");
+        phieu2.ChiTietNhapKhos.Add(new ChiTietNhapKho("PNK_02", "SP_HOAN_NGUYEN", 5, 2000000m, "CT_02"));
+        nhapKhoRepo.LuuPhieuNhap(phieu2);
+
+        // Giả lập sau khi duyệt lô 2: Tồn kho = 10, Giá vốn bình quân = (5*1tr + 5*2tr) / 10 = 1,500,000. Giá bán = 1,800,000
+        sp.SoLuongTon = 10;
+        sp.GiaNhap = 1500000m;
+        sp.GiaBan = 1800000m;
+
+        // Thực hiện vô hiệu hóa phiếu PNK_02
+        var ok = useCase.VoHieuHoaPhieuNhap("PNK_02", "ADMIN", out var error);
+
+        // Kiểm tra: Hủy thành công, tồn kho còn lại là 5, giá vốn được hoàn nguyên về đúng 1,000,000 và giá bán về 1,200,000
+        Assert.True(ok);
+        Assert.Empty(error);
+        var spSauHuy = spRepo.TimTheoId("SP_HOAN_NGUYEN");
+        Assert.NotNull(spSauHuy);
+        Assert.Equal(5, spSauHuy.SoLuongTon);
+        Assert.Equal(1000000m, spSauHuy.GiaNhap);
+        Assert.Equal(1200000m, spSauHuy.GiaBan);
+    }
+
+    [Fact]
+    public void VoHieuHoaPhieuNhapDuyNhat_GiaVonVaGiaBanHoanNguyenVeKhong()
+    {
+        var spRepo = new FakeSanPhamRepository();
+        var nhapKhoRepo = new FakePhieuNhapKhoRepository();
+        var useCase = new XacNhanNhapKhoUseCase(nhapKhoRepo, spRepo);
+
+        // Ban đầu SP mới tạo: Tồn kho = 0, Giá vốn = 0, Giá bán = 0, Tỷ lệ lãi = 20%
+        var sp = new SanPhamTrangSuc("SP_DUY_NHAT", "Bông Tai Kim Cương", "DM03", "Bạch Kim", "Tiêu chuẩn", 0m, 0m, "HetHang", "", 0, "0", 20m)
+        {
+            SoLuongTon = 0
+        };
+        spRepo.LuuSanPham(sp);
+
+        // Tạo và duyệt phiếu nhập duy nhất cho sản phẩm
+        var phieu = new PhieuNhapKho("PNK_DUY_NHAT", "NCC Kim Cương", "ADMIN", DateTime.UtcNow, "DaDuyet");
+        phieu.ChiTietNhapKhos.Add(new ChiTietNhapKho("PNK_DUY_NHAT", "SP_DUY_NHAT", 10, 5000000m, "CT_01"));
+        nhapKhoRepo.LuuPhieuNhap(phieu);
+
+        // Cập nhật trạng thái sau duyệt: Tồn 10, Giá vốn 5,000,000, Giá bán 6,000,000
+        sp.SoLuongTon = 10;
+        sp.GiaNhap = 5000000m;
+        sp.GiaBan = 6000000m;
+        sp.TrangThai = "SanSang";
+
+        // Thực hiện vô hiệu hóa phiếu nhập duy nhất này
+        var ok = useCase.VoHieuHoaPhieuNhap("PNK_DUY_NHAT", "ADMIN", out var error);
+
+        // Kiểm tra: Hủy thành công, tồn kho về 0, giá vốn và giá bán hoàn nguyên về 0, trạng thái thành HetHang
+        Assert.True(ok);
+        Assert.Empty(error);
+        var spSauHuy = spRepo.TimTheoId("SP_DUY_NHAT");
+        Assert.NotNull(spSauHuy);
+        Assert.Equal(0, spSauHuy.SoLuongTon);
+        Assert.Equal(0m, spSauHuy.GiaNhap);
+        Assert.Equal(0m, spSauHuy.GiaBan);
+        Assert.Equal("HetHang", spSauHuy.TrangThai);
     }
 }

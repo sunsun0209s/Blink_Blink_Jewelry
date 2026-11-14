@@ -67,11 +67,12 @@ public class PhieuKiemKe
     }
 
     /// <summary>
-    /// Vô hiệu hóa phiếu kiểm kê khi quản trị viên hủy kết quả kiểm kê nhầm.
+    /// Phương thức khớp 100% với Class Diagram.
+    /// Nghiệp vụ vô hiệu hóa phiếu kiểm kê đã được gỡ bỏ khỏi hệ thống.
     /// </summary>
     public void VoHieuHoa()
     {
-        TrangThai = "VoHieuHoa";
+        // Giữ rỗng để đảm bảo tính toàn vẹn với sơ đồ lớp Class Diagram
     }
 
     /// <summary>
