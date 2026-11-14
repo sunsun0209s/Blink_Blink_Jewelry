@@ -117,7 +117,7 @@ public class TiepNhanBaoHanhUseCaseTests
     }
 
     [Fact]
-    public async Task TiepNhanBaoHanh_ThanhCong_TaoPhieuVaChuyenTrangThaiSanPham()
+    public async Task TiepNhanBaoHanh_ThanhCong_TaoPhieuVaBaoToanTrangThaiSanPham()
     {
         // Sắp đặt
         var baoHanhRepo = new FakeBaoHanhRepository();
@@ -147,8 +147,39 @@ public class TiepNhanBaoHanhUseCaseTests
         Assert.Equal("SP001", phieu.MaSanPham);
         Assert.Equal("TiepNhan", phieu.TrangThaiXuLy);
         Assert.Equal(0m, phieu.ChiPhiBaoHanh);
-        // Sản phẩm phải được chuyển sang DangBaoHanh
-        Assert.Equal("DangBaoHanh", sp.TrangThai);
+        // Trạng thái kinh doanh của sản phẩm được bảo toàn, không bị ép thành DangBaoHanh
+        Assert.Equal("DaBan", sp.TrangThai);
+    }
+
+    [Fact]
+    public async Task TiepNhanBaoHanh_SanPhamDangKinhDoanhConTonKho_BaoToanTrangThaiSanSang()
+    {
+        // Sắp đặt: Sản phẩm SP007 đang còn 5 chiếc trong kho để bán, trạng thái SanSang
+        var baoHanhRepo = new FakeBaoHanhRepository();
+        var sanPhamRepo = new FakeSanPhamRepository();
+
+        var sp = new SanPhamTrangSuc("SP007", "Dây chuyền vàng Ý", "DM02", "Vàng 18K", "45cm", 10000000m, 15000000m, "SanSang")
+        {
+            SoLuongTon = 5
+        };
+        sanPhamRepo.Data[sp.MaSanPham] = sp;
+
+        var useCase = new TiepNhanBaoHanhUseCase(baoHanhRepo, sanPhamRepo);
+        var request = new TaoBaoHanhDTO
+        {
+            MaKhachHang = "KH002",
+            MaSanPham = "SP007",
+            LyDoBaoHanh = "Đánh bóng siêu âm và làm mới",
+            ChiPhiBaoHanh = 0m
+        };
+
+        // Thực thi
+        var result = await useCase.ExecuteAsync(request);
+
+        // Kiểm tra: Phiếu tạo thành công nhưng trạng thái kinh doanh của SP007 trong kho vẫn là SanSang, tồn kho vẫn là 5
+        Assert.True(result);
+        Assert.Equal("SanSang", sp.TrangThai);
+        Assert.Equal(5, sp.SoLuongTon);
     }
 
     [Fact]

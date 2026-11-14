@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading;
@@ -14,7 +14,7 @@ namespace BlinkBlink.Infrastructure.Repositories;
 
 /// <summary>
 /// Triển khai Repository cho thực thể PhieuBaoHanh bằng ADO.NET thuần.
-/// Khớp 100% với Class Diagram kỹ thuật và XML sơ đồ phân hệ bảo hành (Đợt 4: Tối ưu hóa truy vấn repository bảo hành).
+/// Khớp 100% với Class Diagram kỹ thuật và XML sơ đồ phân hệ bảo hành.
 /// </summary>
 public class BaoHanhRepository : IBaoHanhRepository
 {
