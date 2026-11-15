@@ -414,9 +414,11 @@ public class OfflineSalesView : UserControl
 
     public void LoadProductsList()
     {
-        // Chỉ nạp các sản phẩm được phép kinh doanh có tồn kho khả dụng (> 0) và không ngừng kinh doanh
+        // Chỉ nạp các sản phẩm được phép kinh doanh có tồn kho khả dụng (> 0), không ngừng kinh doanh và không bị ẩn
         _allAvailableProducts = _services.SanPhamRepo.LayTatCa()
-            .Where(p => p.SoLuongTon > 0 && !string.Equals(p.TrangThai, "NgungKinhDoanh", StringComparison.OrdinalIgnoreCase))
+            .Where(p => p.SoLuongTon > 0 
+                     && !string.Equals(p.TrangThai, "NgungKinhDoanh", StringComparison.OrdinalIgnoreCase) 
+                     && !p.IsHidden)
             .ToList();
 
         // Đồng bộ trạng thái SanSang cho các sản phẩm còn tồn kho khả dụng
@@ -511,7 +513,9 @@ public class OfflineSalesView : UserControl
             _cboProductSize.Items.Clear();
             if (!string.IsNullOrWhiteSpace(sp.MaNhom) && sp.MaNhom != "0")
             {
-                var groupMembers = _services.SanPhamRepo.LayTheoNhom(sp.MaNhom);
+                var groupMembers = _services.SanPhamRepo.LayTheoNhom(sp.MaNhom)
+                    .Where(m => !m.IsHidden)
+                    .ToList();
                 foreach (var m in groupMembers)
                 {
                     var sText = string.IsNullOrWhiteSpace(m.Size) ? "Tiêu chuẩn" : m.Size;
@@ -553,7 +557,9 @@ public class OfflineSalesView : UserControl
         var selectedSize = _cboProductSize.SelectedItem?.ToString();
         if (string.IsNullOrWhiteSpace(selectedSize)) return;
 
-        var groupMembers = _services.SanPhamRepo.LayTheoNhom(sp.MaNhom);
+        var groupMembers = _services.SanPhamRepo.LayTheoNhom(sp.MaNhom)
+            .Where(m => !m.IsHidden)
+            .ToList();
         var matchSp = groupMembers.FirstOrDefault(m =>
             string.Equals(string.IsNullOrWhiteSpace(m.Size) ? "Tiêu chuẩn" : m.Size, selectedSize, StringComparison.OrdinalIgnoreCase)
         );

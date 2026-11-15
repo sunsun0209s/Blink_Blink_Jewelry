@@ -1,0 +1,9 @@
+# Force CRLF for batch scripts on Windows
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Default text files
+*.cs text diff=csharp
+*.sql text eol=crlf
+*.json text
+*.md text

@@ -27,6 +27,10 @@ public class DatabaseWorkflowIntegrationTests
     {
         _dbHelper = new DatabaseHelper(ConnectionString);
         _isDbAvailable = _dbHelper.TestConnection();
+        if (_isDbAvailable)
+        {
+            _dbHelper.EnsureSchemaCompatibility();
+        }
     }
 
     [Fact]

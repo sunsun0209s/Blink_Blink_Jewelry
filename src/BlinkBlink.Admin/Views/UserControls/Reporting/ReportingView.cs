@@ -136,6 +136,9 @@ public class ReportingView : UserControl
             Margin = new Padding(0, 4, 15, 4)
         };
 
+        _dtpTuNgay.ValueChanged += (s, e) => RefreshCurrentReport();
+        _dtpDenNgay.ValueChanged += (s, e) => RefreshCurrentReport();
+
         // Các nút bấm chính xác theo FormBaoCaoThongKe trong XML
         _btnXemDoanhThu = UITheme.CreateFlatButton("📊 Doanh Thu", UITheme.PrimaryGold, Color.Black);
         _btnXemDoanhThu.Margin = new Padding(0, 2, 8, 2);
@@ -235,12 +238,41 @@ public class ReportingView : UserControl
         return card;
     }
 
+    private void SetActiveButton(Button activeBtn)
+    {
+        _btnXemDoanhThu.BackColor = _btnXemDoanhThu == activeBtn ? UITheme.PrimaryGold : UITheme.DarkHeader;
+        _btnXemDoanhThu.ForeColor = _btnXemDoanhThu == activeBtn ? Color.Black : Color.White;
+
+        _btnXemTonKho.BackColor = _btnXemTonKho == activeBtn ? UITheme.PrimaryGold : UITheme.DarkHeader;
+        _btnXemTonKho.ForeColor = _btnXemTonKho == activeBtn ? Color.Black : Color.White;
+
+        _btnXemTopBanChay.BackColor = _btnXemTopBanChay == activeBtn ? UITheme.PrimaryGold : UITheme.DarkHeader;
+        _btnXemTopBanChay.ForeColor = _btnXemTopBanChay == activeBtn ? Color.Black : Color.White;
+    }
+
+    private void RefreshCurrentReport()
+    {
+        if (_currentReportType == "TonKho")
+        {
+            BtnXemTonKho_Click(this, EventArgs.Empty);
+        }
+        else if (_currentReportType == "TopBanChay")
+        {
+            BtnXemTopBanChay_Click(this, EventArgs.Empty);
+        }
+        else
+        {
+            BtnXemDoanhThu_Click(this, EventArgs.Empty);
+        }
+    }
+
     /// <summary>
     /// Xử lý sự kiện xem doanh thu theo ngày khớp phương thức + btnXemDoanhThu_Click(): void trong sơ đồ XML.
     /// </summary>
     public async void BtnXemDoanhThu_Click(object? sender, EventArgs e)
     {
         _currentReportType = "DoanhThu";
+        SetActiveButton(_btnXemDoanhThu);
         _lblReportMode.Text = $"BẢNG KẾT QUẢ THỐNG KÊ DOANH THU ({_dtpTuNgay.Value:dd/MM/yyyy} - {_dtpDenNgay.Value:dd/MM/yyyy})";
 
         _dgvKetQua.Columns.Clear();
@@ -275,7 +307,7 @@ public class ReportingView : UserControl
         _lblKpiOrderCount.Text = totalOrders.ToString("N0", viVn);
 
         // Cập nhật giá trị tồn kho hiện thời
-        var inventoryReport = await _services.ThongKeKhoHang.LayBaoCaoTonKhoAsync();
+        var inventoryReport = await _services.ThongKeKhoHang.LayBaoCaoTonKhoAsync(_dtpTuNgay.Value, _dtpDenNgay.Value);
         _lblKpiStockValue.Text = inventoryReport.Sum(i => i.GiaTriTonKho).ToString("N0", viVn);
     }
 
@@ -285,7 +317,8 @@ public class ReportingView : UserControl
     public async void BtnXemTonKho_Click(object? sender, EventArgs e)
     {
         _currentReportType = "TonKho";
-        _lblReportMode.Text = "BÁO CÁO TỒN KHO & ĐỐI CHIẾU CHÊNH LỆCH KIỂM KÊ KIM HOÀN";
+        SetActiveButton(_btnXemTonKho);
+        _lblReportMode.Text = $"BÁO CÁO TỒN KHO & ĐỐI CHIẾU CHÊNH LỆCH KIỂM KÊ ({_dtpTuNgay.Value:dd/MM/yyyy} - {_dtpDenNgay.Value:dd/MM/yyyy})";
 
         _dgvKetQua.Columns.Clear();
         _dgvKetQua.Columns.Add(new DataGridViewTextBoxColumn { Name = "MaSanPham", HeaderText = "MÃ SẢN PHẨM", FillWeight = 85, MinimumWidth = 110 });
@@ -294,7 +327,7 @@ public class ReportingView : UserControl
         _dgvKetQua.Columns.Add(new DataGridViewTextBoxColumn { Name = "ChenhLechKiemKe", HeaderText = "CHÊNH LỆCH KIỂM KÊ", FillWeight = 85, MinimumWidth = 135, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = UITheme.TabularNumericFont } });
         _dgvKetQua.Columns.Add(new DataGridViewTextBoxColumn { Name = "GiaTriTonKho", HeaderText = "GIÁ TRỊ TỒN KHO (VND)", FillWeight = 115, MinimumWidth = 160, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont, ForeColor = UITheme.PrimaryGold } });
 
-        var data = await _services.ThongKeKhoHang.LayBaoCaoTonKhoAsync();
+        var data = await _services.ThongKeKhoHang.LayBaoCaoTonKhoAsync(_dtpTuNgay.Value, _dtpDenNgay.Value);
 
         _dgvKetQua.Rows.Clear();
         var viVn = new CultureInfo("vi-VN");
@@ -316,6 +349,11 @@ public class ReportingView : UserControl
                 _dgvKetQua.Rows[rowIdx].Cells["ChenhLechKiemKe"].Style.ForeColor = UITheme.DangerColor;
             }
 
+            if (item.SoLuongTon <= 0)
+            {
+                _dgvKetQua.Rows[rowIdx].Cells["SoLuongTon"].Style.ForeColor = UITheme.DangerColor;
+            }
+
             totalVal += item.GiaTriTonKho;
             totalItems += item.SoLuongTon;
         }
@@ -329,7 +367,8 @@ public class ReportingView : UserControl
     public async void BtnXemTopBanChay_Click(object? sender, EventArgs e)
     {
         _currentReportType = "TopBanChay";
-        _lblReportMode.Text = "BÁO CÁO TOP SẢN PHẨM TRANG SỨC BÁN CHẠY NHẤT";
+        SetActiveButton(_btnXemTopBanChay);
+        _lblReportMode.Text = $"BÁO CÁO TOP SẢN PHẨM TRANG SỨC BÁN CHẠY NHẤT ({_dtpTuNgay.Value:dd/MM/yyyy} - {_dtpDenNgay.Value:dd/MM/yyyy})";
 
         _dgvKetQua.Columns.Clear();
         _dgvKetQua.Columns.Add(new DataGridViewTextBoxColumn { Name = "MaSanPham", HeaderText = "MÃ SẢN PHẨM", FillWeight = 85, MinimumWidth = 110 });
@@ -337,7 +376,7 @@ public class ReportingView : UserControl
         _dgvKetQua.Columns.Add(new DataGridViewTextBoxColumn { Name = "SoLuongDaBan", HeaderText = "ĐÃ BÁN (CHIẾC)", FillWeight = 80, MinimumWidth = 110, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = UITheme.TabularNumericFont } });
         _dgvKetQua.Columns.Add(new DataGridViewTextBoxColumn { Name = "TongTienThu", HeaderText = "TỔNG TIỀN THU (VND)", FillWeight = 115, MinimumWidth = 160, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont, ForeColor = UITheme.PrimaryGold } });
 
-        var data = await _services.ThongKeKhoHang.LayTopBanChayAsync(10);
+        var data = await _services.ThongKeKhoHang.LayTopBanChayAsync(10, _dtpTuNgay.Value, _dtpDenNgay.Value);
 
         _dgvKetQua.Rows.Clear();
         var viVn = new CultureInfo("vi-VN");
