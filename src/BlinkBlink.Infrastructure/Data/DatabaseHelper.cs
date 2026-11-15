@@ -210,6 +210,12 @@ public class DatabaseHelper
                     WHERE GiaNhap > 0 AND GiaBan > GiaNhap;
                 END
 
+                -- Cột IsHidden cho SanPhamTrangSuc (Ẩn/Hiện sản phẩm trên Web và POS)
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.SanPhamTrangSuc') AND name = 'IsHidden')
+                BEGIN
+                    ALTER TABLE dbo.SanPhamTrangSuc ADD IsHidden BIT NOT NULL CONSTRAINT DF_SanPhamTrangSuc_IsHidden DEFAULT 0;
+                END
+
                 -- Chuẩn hóa cột TrangThai cho PhieuNhapKho (ChoDuyet, DaDuyet, DaHuy)
                 IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuNhapKho') AND name = 'TrangThai' AND system_type_id = 104)
                 BEGIN
@@ -427,14 +433,16 @@ public class DatabaseHelper
         // 1. Tìm kiếm file vật lý tại các thư mục tương đối của solution
         var searchPaths = new[]
         {
-            Path.Combine(AppContext.BaseDirectory, "BlinkBlinkJewelry.sql"),
             Path.Combine(AppContext.BaseDirectory, "database", "BlinkBlinkJewelry.sql"),
-            Path.Combine(Directory.GetCurrentDirectory(), "BlinkBlinkJewelry.sql"),
+            Path.Combine(AppContext.BaseDirectory, "BlinkBlinkJewelry.sql"),
             Path.Combine(Directory.GetCurrentDirectory(), "database", "BlinkBlinkJewelry.sql"),
+            Path.Combine(Directory.GetCurrentDirectory(), "BlinkBlinkJewelry.sql"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "database", "BlinkBlinkJewelry.sql"),
             Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "BlinkBlinkJewelry.sql"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "database", "BlinkBlinkJewelry.sql"),
             Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "BlinkBlinkJewelry.sql"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "BlinkBlinkJewelry.sql"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "database", "BlinkBlinkJewelry.sql")
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "database", "BlinkBlinkJewelry.sql"),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "BlinkBlinkJewelry.sql")
         };
 
         foreach (var path in searchPaths)

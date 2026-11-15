@@ -25,6 +25,7 @@ public class SanPhamTrangSuc
     public int PhanTramGiamGia { get; set; } = 0; // Tỉ lệ phần trăm giảm giá (0 - 100%)
     public decimal TyLeLoiNhuan { get; set; } = 0; // Tỉ lệ % lợi nhuận so với giá nhập bình quân để định giá bán
     public int SoLuongTon { get; set; } = 0; // Số lượng hiện tại có trong kho (khớp sơ đồ Class Diagram)
+    public bool IsHidden { get; set; } = false; // Trạng thái ẩn/hiện sản phẩm (True: Đang ẩn khỏi Web và POS, False: Hiển thị)
 
     public SanPhamTrangSuc() { }
 
@@ -40,7 +41,8 @@ public class SanPhamTrangSuc
         string hinhAnh = "",
         int phanTramGiamGia = 0,
         string maNhom = "0",
-        decimal tyLeLoiNhuan = 0)
+        decimal tyLeLoiNhuan = 0,
+        bool isHidden = false)
     {
         MaSanPham = maSanPham;
         TenSanPham = tenSanPham;
@@ -54,6 +56,7 @@ public class SanPhamTrangSuc
         PhanTramGiamGia = phanTramGiamGia;
         MaNhom = string.IsNullOrWhiteSpace(maNhom) ? "0" : maNhom;
         TyLeLoiNhuan = tyLeLoiNhuan;
+        IsHidden = isHidden;
     }
 
     /// <summary>

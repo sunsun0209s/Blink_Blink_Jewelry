@@ -29,6 +29,7 @@ public interface IThongKeRepository
     /// </summary>
     /// <returns>Danh sách sản phẩm trong kho</returns>
     List<SanPhamTrangSuc> TruyVanSanPhamTonKho();
+    List<SanPhamTrangSuc> TruyVanSanPhamTonKho(DateTime? denNgay) => TruyVanSanPhamTonKho();
 
     /// <summary>
     /// Truy vấn danh sách các dòng kiểm kê có phát sinh chênh lệch hao hụt hoặc dư thừa (đồng bộ).
@@ -36,6 +37,7 @@ public interface IThongKeRepository
     /// </summary>
     /// <returns>Danh sách chi tiết kiểm kê phát sinh chênh lệch</returns>
     List<ChiTietKiemKe> TruyVanChenhLechKiemKe();
+    List<ChiTietKiemKe> TruyVanChenhLechKiemKe(DateTime? tuNgay, DateTime? denNgay) => TruyVanChenhLechKiemKe();
 
     /// <summary>
     /// Truy vấn danh sách sản phẩm trang sức có doanh thu thấp hoặc chưa phát sinh đơn hàng (đồng bộ).
@@ -47,6 +49,8 @@ public interface IThongKeRepository
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
     Task<List<HoaDon>> TruyVanDoanhThuAsync(DateTime tuNgay, DateTime denNgay, CancellationToken cancellationToken = default);
     Task<List<SanPhamTrangSuc>> TruyVanSanPhamTonKhoAsync(CancellationToken cancellationToken = default);
+    Task<List<SanPhamTrangSuc>> TruyVanSanPhamTonKhoAsync(DateTime? denNgay, CancellationToken cancellationToken = default) => TruyVanSanPhamTonKhoAsync(cancellationToken);
     Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(CancellationToken cancellationToken = default);
+    Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(DateTime? tuNgay, DateTime? denNgay, CancellationToken cancellationToken = default) => TruyVanChenhLechKiemKeAsync(cancellationToken);
     Task<List<SanPhamTrangSuc>> TruyVanSanPhamDoanhThuThapAsync(CancellationToken cancellationToken = default);
 }
