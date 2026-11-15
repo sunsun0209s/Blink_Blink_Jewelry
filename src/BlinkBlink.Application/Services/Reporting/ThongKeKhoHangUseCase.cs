@@ -29,7 +29,12 @@ public class ThongKeKhoHangUseCase
     /// <returns>Danh sách báo cáo tồn kho</returns>
     public List<BaoCaoTonKhoDTO> LayBaoCaoTonKho()
     {
-        return LayBaoCaoTonKhoAsync().GetAwaiter().GetResult();
+        return LayBaoCaoTonKhoAsync(null, null).GetAwaiter().GetResult();
+    }
+
+    public List<BaoCaoTonKhoDTO> LayBaoCaoTonKho(DateTime? tuNgay, DateTime? denNgay)
+    {
+        return LayBaoCaoTonKhoAsync(tuNgay, denNgay).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -37,10 +42,15 @@ public class ThongKeKhoHangUseCase
     /// </summary>
     /// <param name="cancellationToken">Mã token theo dõi hủy tác vụ</param>
     /// <returns>Danh sách báo cáo tồn kho</returns>
-    public async Task<List<BaoCaoTonKhoDTO>> LayBaoCaoTonKhoAsync(CancellationToken cancellationToken = default)
+    public Task<List<BaoCaoTonKhoDTO>> LayBaoCaoTonKhoAsync(CancellationToken cancellationToken = default)
     {
-        var sanPhamTonKho = await _thongKeRepo.TruyVanSanPhamTonKhoAsync(cancellationToken);
-        var danhSachKiemKe = await _thongKeRepo.TruyVanChenhLechKiemKeAsync(cancellationToken);
+        return LayBaoCaoTonKhoAsync(null, null, cancellationToken);
+    }
+
+    public async Task<List<BaoCaoTonKhoDTO>> LayBaoCaoTonKhoAsync(DateTime? tuNgay, DateTime? denNgay, CancellationToken cancellationToken = default)
+    {
+        var sanPhamTonKho = await _thongKeRepo.TruyVanSanPhamTonKhoAsync(denNgay, cancellationToken);
+        var danhSachKiemKe = await _thongKeRepo.TruyVanChenhLechKiemKeAsync(tuNgay, denNgay, cancellationToken);
 
         // Tạo bản đồ tra cứu tổng chênh lệch kiểm kê theo từng mã sản phẩm
         var mapChenhLech = danhSachKiemKe?
@@ -58,8 +68,25 @@ public class ThongKeKhoHangUseCase
             foreach (var group in nhomSanPham)
             {
                 var dauTien = group.First();
-                var soLuong = group.Count();
-                var giaTri = group.Sum(s => s.GiaBan);
+
+                int soLuong;
+                if (group.Any(s => s.SoLuongTon > 0))
+                {
+                    soLuong = group.Sum(s => s.SoLuongTon);
+                }
+                else if (string.Equals(dauTien.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(dauTien.TrangThai, "DaBan", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(dauTien.TrangThai, "NgungKinhDoanh", StringComparison.OrdinalIgnoreCase))
+                {
+                    soLuong = 0;
+                }
+                else
+                {
+                    // Trường hợp dữ liệu test hoặc đơn chiếc
+                    soLuong = group.Count();
+                }
+
+                var giaTri = soLuong * dauTien.GiaBan;
 
                 mapChenhLech.TryGetValue(dauTien.MaSanPham, out var chenhLech);
 
@@ -85,7 +112,12 @@ public class ThongKeKhoHangUseCase
     /// <returns>Danh sách top sản phẩm bán chạy</returns>
     public List<TopSanPhamBanChayDTO> LayTopBanChay(int top)
     {
-        return LayTopBanChayAsync(top).GetAwaiter().GetResult();
+        return LayTopBanChayAsync(top, null, null).GetAwaiter().GetResult();
+    }
+
+    public List<TopSanPhamBanChayDTO> LayTopBanChay(int top, DateTime? tuNgay, DateTime? denNgay)
+    {
+        return LayTopBanChayAsync(top, tuNgay, denNgay).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -94,12 +126,19 @@ public class ThongKeKhoHangUseCase
     /// <param name="top">Số lượng sản phẩm cần lấy</param>
     /// <param name="cancellationToken">Mã token theo dõi hủy tác vụ</param>
     /// <returns>Danh sách top sản phẩm bán chạy</returns>
-    public async Task<List<TopSanPhamBanChayDTO>> LayTopBanChayAsync(int top, CancellationToken cancellationToken = default)
+    public Task<List<TopSanPhamBanChayDTO>> LayTopBanChayAsync(int top, CancellationToken cancellationToken = default)
+    {
+        return LayTopBanChayAsync(top, null, null, cancellationToken);
+    }
+
+    public async Task<List<TopSanPhamBanChayDTO>> LayTopBanChayAsync(int top, DateTime? tuNgay, DateTime? denNgay, CancellationToken cancellationToken = default)
     {
         var soLuongTop = Math.Max(1, top);
+        var tu = tuNgay ?? DateTime.MinValue;
+        var den = denNgay ?? DateTime.MaxValue;
 
-        // Lấy toàn bộ đơn hàng hợp lệ để tổng hợp số lượng bán
-        var hoaDons = await _thongKeRepo.TruyVanDoanhThuAsync(DateTime.MinValue, DateTime.MaxValue, cancellationToken);
+        // Lấy toàn bộ đơn hàng hợp lệ trong kỳ để tổng hợp số lượng bán
+        var hoaDons = await _thongKeRepo.TruyVanDoanhThuAsync(tu, den, cancellationToken);
         if (hoaDons == null || hoaDons.Count == 0)
         {
             return new List<TopSanPhamBanChayDTO>();

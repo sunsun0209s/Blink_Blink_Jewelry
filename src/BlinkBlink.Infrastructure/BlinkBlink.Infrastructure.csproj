@@ -15,7 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\BlinkBlinkJewelry.sql" Link="BlinkBlinkJewelry.sql" Condition="Exists('..\..\BlinkBlinkJewelry.sql')" />
+    <EmbeddedResource Include="..\..\database\BlinkBlinkJewelry.sql" Link="BlinkBlinkJewelry.sql" Condition="Exists('..\..\database\BlinkBlinkJewelry.sql')" />
+    <EmbeddedResource Include="..\..\BlinkBlinkJewelry.sql" Link="BlinkBlinkJewelry.sql" Condition="!Exists('..\..\database\BlinkBlinkJewelry.sql') And Exists('..\..\BlinkBlinkJewelry.sql')" />
   </ItemGroup>
 
   <PropertyGroup>

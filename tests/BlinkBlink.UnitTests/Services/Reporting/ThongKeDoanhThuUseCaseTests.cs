@@ -35,20 +35,28 @@ public class ThongKeDoanhThuUseCaseTests
             return SanPhams.Where(s => s.TrangThai == "SanSang").ToList();
         }
 
+        public List<SanPhamTrangSuc> TruyVanSanPhamTonKho(DateTime? denNgay) => TruyVanSanPhamTonKho();
+
         public Task<List<SanPhamTrangSuc>> TruyVanSanPhamTonKhoAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(SanPhams.Where(s => s.TrangThai == "SanSang").ToList());
         }
+
+        public Task<List<SanPhamTrangSuc>> TruyVanSanPhamTonKhoAsync(DateTime? denNgay, CancellationToken cancellationToken = default) => TruyVanSanPhamTonKhoAsync(cancellationToken);
 
         public List<ChiTietKiemKe> TruyVanChenhLechKiemKe()
         {
             return ChiTietKiemKes.Where(k => k.ChenhLech != 0).ToList();
         }
 
+        public List<ChiTietKiemKe> TruyVanChenhLechKiemKe(DateTime? tuNgay, DateTime? denNgay) => TruyVanChenhLechKiemKe();
+
         public Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(ChiTietKiemKes.Where(k => k.ChenhLech != 0).ToList());
         }
+
+        public Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(DateTime? tuNgay, DateTime? denNgay, CancellationToken cancellationToken = default) => TruyVanChenhLechKiemKeAsync(cancellationToken);
 
         public List<SanPhamTrangSuc> TruyVanSanPhamDoanhThuThap()
         {

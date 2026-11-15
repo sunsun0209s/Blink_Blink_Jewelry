@@ -86,20 +86,39 @@ public class ThongKeRepository : IThongKeRepository
         return Task.FromResult(TruyVanDoanhThu(tuNgay, denNgay));
     }
 
-    public List<SanPhamTrangSuc> TruyVanSanPhamTonKho()
+    public List<SanPhamTrangSuc> TruyVanSanPhamTonKho() => TruyVanSanPhamTonKho(null);
+
+    public List<SanPhamTrangSuc> TruyVanSanPhamTonKho(DateTime? denNgay)
     {
         var list = new List<SanPhamTrangSuc>();
         const string sql = @"
             SELECT s.MaSanPham, s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai,
-                   d.TenDanhMuc, d.MoTa AS MoTaDanhMuc
+                   d.TenDanhMuc, d.MoTa AS MoTaDanhMuc,
+                   (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk 
+                            INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap 
+                            WHERE nk.MaSanPham = s.MaSanPham 
+                              AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')
+                              AND (@DenNgay IS NULL OR pn.NgayNhap <= @DenNgay)), 0)
+                    - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd 
+                             INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon 
+                             WHERE chd.MaSanPham = s.MaSanPham 
+                               AND hd.TrangThaiDonHang != 'DaHuy'
+                               AND (@DenNgay IS NULL OR hd.NgayLap <= @DenNgay)), 0)
+                    + ISNULL((SELECT SUM(ctk.ChenhLech) FROM dbo.ChiTietKiemKe ctk 
+                             INNER JOIN dbo.PhieuKiemKe pk ON ctk.MaPhieuKiemKe = pk.MaPhieuKiemKe 
+                             WHERE ctk.MaSanPham = s.MaSanPham 
+                               AND (pk.TrangThai = 'DaDuyet' OR pk.TrangThaiDuyet = 1)
+                               AND (@DenNgay IS NULL OR pk.NgayKiemKe <= @DenNgay)), 0)) AS SoLuongTonKho
             FROM dbo.SanPhamTrangSuc s
             LEFT JOIN dbo.DanhMuc d ON s.MaDanhMuc = d.MaDanhMuc
-            WHERE s.TrangThai = 'SanSang';";
+            ORDER BY s.MaSanPham ASC;";
 
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@DenNgay", SqlDbType.DateTime) { Value = (object?)denNgay ?? DBNull.Value });
         using var reader = cmd.ExecuteReader();
 
+        var ordTon = reader.GetOrdinal("SoLuongTonKho");
         while (reader.Read())
         {
             var sp = new SanPhamTrangSuc(
@@ -122,6 +141,11 @@ public class ThongKeRepository : IThongKeRepository
                 );
             }
 
+            if (!reader.IsDBNull(ordTon))
+            {
+                sp.SoLuongTon = reader.GetInt32(ordTon);
+            }
+
             list.Add(sp);
         }
 
@@ -133,18 +157,31 @@ public class ThongKeRepository : IThongKeRepository
         return Task.FromResult(TruyVanSanPhamTonKho());
     }
 
-    public List<ChiTietKiemKe> TruyVanChenhLechKiemKe()
+    public Task<List<SanPhamTrangSuc>> TruyVanSanPhamTonKhoAsync(DateTime? denNgay, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(TruyVanSanPhamTonKho(denNgay));
+    }
+
+    public List<ChiTietKiemKe> TruyVanChenhLechKiemKe() => TruyVanChenhLechKiemKe(null, null);
+
+    public List<ChiTietKiemKe> TruyVanChenhLechKiemKe(DateTime? tuNgay, DateTime? denNgay)
     {
         var list = new List<ChiTietKiemKe>();
         const string sql = @"
             SELECT c.MaPhieuKiemKe, c.MaSanPham, c.TonSoSach, c.TonThucTe, c.ChenhLech, c.LyDoChenhLech,
                    s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai
             FROM dbo.ChiTietKiemKe c
+            INNER JOIN dbo.PhieuKiemKe pk ON c.MaPhieuKiemKe = pk.MaPhieuKiemKe
             LEFT JOIN dbo.SanPhamTrangSuc s ON c.MaSanPham = s.MaSanPham
-            WHERE c.ChenhLech <> 0;";
+            WHERE c.ChenhLech <> 0
+              AND (pk.TrangThai = 'DaDuyet' OR pk.TrangThaiDuyet = 1)
+              AND (@TuNgay IS NULL OR pk.NgayKiemKe >= @TuNgay)
+              AND (@DenNgay IS NULL OR pk.NgayKiemKe <= @DenNgay);";
 
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@TuNgay", SqlDbType.DateTime) { Value = (object?)tuNgay ?? DBNull.Value });
+        cmd.Parameters.Add(new SqlParameter("@DenNgay", SqlDbType.DateTime) { Value = (object?)denNgay ?? DBNull.Value });
         using var reader = cmd.ExecuteReader();
 
         while (reader.Read())
@@ -183,6 +220,11 @@ public class ThongKeRepository : IThongKeRepository
     public Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(TruyVanChenhLechKiemKe());
+    }
+
+    public Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(DateTime? tuNgay, DateTime? denNgay, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(TruyVanChenhLechKiemKe(tuNgay, denNgay));
     }
 
     public List<SanPhamTrangSuc> TruyVanSanPhamDoanhThuThap()

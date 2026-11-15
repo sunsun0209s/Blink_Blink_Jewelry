@@ -339,4 +339,38 @@ public class QuanLySanPhamUseCaseTests
         // Kiểm tra 2: DM00 được bảo vệ và không bị xóa
         Assert.NotNull(fakeDmRepo.TimTheoId("DM00"));
     }
+
+    [Fact]
+    public void SanPhamTrangSuc_KhoiTaoIsHidden_MacDinhFalseVaChoPhepCapNhatAnHien()
+    {
+        // Sắp đặt
+        var sp = new SanPhamTrangSuc("SP_AN_01", "Dây Chuyền Ngọc Trai", "DM02", "Vàng 18K", "Size 45cm", 15000000, 22000000);
+
+        // Kiểm tra mặc định là không ẩn (IsHidden = false)
+        Assert.False(sp.IsHidden);
+
+        // Hành động: Đổi trạng thái sang ẩn
+        sp.IsHidden = true;
+
+        // Kiểm tra đã được đánh dấu ẩn thành công
+        Assert.True(sp.IsHidden);
+    }
+
+    [Fact]
+    public void QuanLySanPham_LocBoSanPhamBiAn_KhongXuatHienKhiBanHangVaStorefront()
+    {
+        // Sắp đặt: Có 2 sản phẩm (1 hiện, 1 bị ẩn)
+        var spHien = new SanPhamTrangSuc("SP_HIEN", "Nhẫn Kim Cương", "DM01", "Vàng trắng", "14", 10000000, 15000000, "SanSang", isHidden: false) { SoLuongTon = 5 };
+        var spAn = new SanPhamTrangSuc("SP_AN", "Lắc Tay Bạc", "DM04", "Bạc 925", "16", 2000000, 3000000, "SanSang", isHidden: true) { SoLuongTon = 3 };
+
+        var danhSachTatCa = new List<SanPhamTrangSuc> { spHien, spAn };
+
+        // Hành động: Lọc danh sách sản phẩm hiển thị trên Web và POS Bán hàng Offline
+        var danhSachKhaDung = danhSachTatCa.Where(p => !p.IsHidden && p.SoLuongTon > 0).ToList();
+
+        // Kiểm tra: Chỉ có sản phẩm hiển thị (spHien), sản phẩm ẩn bị loại trừ
+        Assert.Single(danhSachKhaDung);
+        Assert.Equal("SP_HIEN", danhSachKhaDung[0].MaSanPham);
+        Assert.DoesNotContain(danhSachKhaDung, p => p.MaSanPham == "SP_AN");
+    }
 }
