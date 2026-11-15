@@ -2150,6 +2150,13 @@ async function handleRegisterSubmit(event) {
         return;
     }
 
+    if (password.length < 6) {
+        showAuthFeedback('register', 'Mật khẩu phải có độ dài từ 6 ký tự trở lên.');
+        showToast('Mật khẩu phải có ít nhất 6 ký tự.', 'warning');
+        document.getElementById('reg-password')?.focus();
+        return;
+    }
+
     try {
         const response = await fetch('/api/KhachHang/dang-ky', {
             method: 'POST',

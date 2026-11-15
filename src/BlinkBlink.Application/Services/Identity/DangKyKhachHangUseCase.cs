@@ -52,6 +52,12 @@ public class DangKyKhachHangUseCase
             return false;
         }
 
+        // Ràng buộc quy chuẩn bảo mật: Mật khẩu tối thiểu 6 ký tự để bảo vệ tài khoản khách hàng
+        if (request.MatKhau.Trim().Length < 6)
+        {
+            return false;
+        }
+
         // Tạo định danh tự động cho khách hàng mới
         var maDinhDanh = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         var maKhachHang = $"KH_{maDinhDanh}";
