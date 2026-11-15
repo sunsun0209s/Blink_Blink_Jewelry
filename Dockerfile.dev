@@ -16,8 +16,8 @@ EXPOSE 5000
 EXPOSE 5095
 
 # Sao chép tệp kịch bản CSDL và các tệp định nghĩa dự án để khôi phục gói thư viện trước
-COPY BlinkBlinkJewelry.sql /
-COPY BlinkBlinkJewelry.sql /app/
+COPY database/BlinkBlinkJewelry.sql /database/
+COPY database/BlinkBlinkJewelry.sql /app/database/
 COPY src/BlinkBlink.Domain/*.csproj ./src/BlinkBlink.Domain/
 COPY src/BlinkBlink.Application/*.csproj ./src/BlinkBlink.Application/
 COPY src/BlinkBlink.Infrastructure/*.csproj ./src/BlinkBlink.Infrastructure/

@@ -11,8 +11,8 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Sao chép file kịch bản CSDL để phục vụ cơ chế tự động nhúng tài nguyên vào thư viện Infrastructure
-COPY BlinkBlinkJewelry.sql /
-COPY BlinkBlinkJewelry.sql /src/
+COPY database/BlinkBlinkJewelry.sql /database/
+COPY database/BlinkBlinkJewelry.sql /src/database/
 COPY src/BlinkBlink.Domain/*.csproj ./src/BlinkBlink.Domain/
 COPY src/BlinkBlink.Application/*.csproj ./src/BlinkBlink.Application/
 COPY src/BlinkBlink.Infrastructure/*.csproj ./src/BlinkBlink.Infrastructure/
