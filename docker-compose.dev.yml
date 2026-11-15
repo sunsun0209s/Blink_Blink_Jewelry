@@ -22,8 +22,8 @@ services:
       - "5095:5095"
     volumes:
       - ./src:/app/src
-      - ./BlinkBlinkJewelry.sql:/app/BlinkBlinkJewelry.sql
-      - ./BlinkBlinkJewelry.sql:/BlinkBlinkJewelry.sql
+      - ./database/BlinkBlinkJewelry.sql:/app/database/BlinkBlinkJewelry.sql
+      - ./database/BlinkBlinkJewelry.sql:/database/BlinkBlinkJewelry.sql
       # Giữ các thư mục nhị phân biên dịch độc lập trong container Linux, tránh xung đột với máy Windows
       - /app/src/BlinkBlink.Domain/bin
       - /app/src/BlinkBlink.Domain/obj

@@ -15,7 +15,7 @@ Hệ thống được xây dựng trên nền tảng .NET 8 (LTS) kết hợp ki
 | **Cổng Web Khách hàng (Web)** | ASP.NET Core 8 Web App (MVC + RESTful API) | Trang web mua sắm trực tuyến dành cho khách hàng tra cứu mẫu mã, giỏ hàng, đặt hàng và tra cứu bảo hành. Hệ thống kết hợp giao diện Web MVC (Razor Views, HTML5, CSS3, JavaScript) và cung cấp hệ thống RESTful Web API Controller phục vụ toàn diện các yêu cầu từ phía client. |
 | **Hệ quản trị Cơ sở dữ liệu** | Microsoft SQL Server (`BlinkBlinkJewelryDb`) | Nơi lưu trữ tập trung toàn bộ dữ liệu kinh doanh (sản phẩm trang sức, hóa đơn, khách hàng, phiếu nhập kho, phiếu kiểm kê, bảo hành), bảo đảm chuẩn hóa quan hệ 3NF và hỗ trợ văn bản tiếng Việt Unicode có dấu. |
 | **Tương tác CSDL & Tự động hóa** | ADO.NET thuần (`Microsoft.Data.SqlClient`) qua `DatabaseHelper` | Quản lý kết nối an toàn, thực thi câu lệnh SQL trực tiếp với tham số hóa 100% bằng `SqlParameter`, ngăn chặn triệt để SQL Injection. Tích hợp cơ chế **Tự động Khởi tạo CSDL (Auto-Database Provisioning)** và tự động tương thích lược đồ (`EnsureSchemaCompatibility`). |
-| **Triển khai Cơ sở dữ liệu** | Kịch bản SQL (`BlinkBlinkJewelry.sql`) | Khởi tạo toàn bộ database `BlinkBlinkJewelryDb`, 15 bảng quan hệ và nạp sẵn dữ liệu mẫu thực tế của ngành kim hoàn. Được cấu hình nhúng (`EmbeddedResource`) trong thư viện `BlinkBlink.Infrastructure` để tự động tạo CSDL ngay khi khởi chạy chương trình. |
+| **Triển khai Cơ sở dữ liệu** | Kịch bản SQL (`database/BlinkBlinkJewelry.sql`) | Khởi tạo toàn bộ database `BlinkBlinkJewelryDb`, 15 bảng quan hệ và nạp sẵn dữ liệu mẫu thực tế của ngành kim hoàn. Được cấu hình nhúng (`EmbeddedResource`) trong thư viện `BlinkBlink.Infrastructure` để tự động tạo CSDL ngay khi khởi chạy chương trình. |
 | **Tài liệu & Thử nghiệm API** | Swagger / OpenAPI (`Swashbuckle.AspNetCore 6.6.2`) | Tự động sinh tài liệu giao diện tương tác API tại địa chỉ `/swagger`, giúp kiểm thử và đối soát các endpoint dễ dàng. |
 | **Chia sẻ tài nguyên liên nguồn** | CORS (`AllowAll`) | Cho phép Cổng Web khách hàng và các ứng dụng ngoại vi gọi API trực tiếp, an toàn và linh hoạt. |
 | **Cơ chế quản lý phụ thuộc** | Dependency Injection (DI) | Cơ chế tiêm phụ thuộc có sẵn của .NET giúp kết nối các tầng với nhau thông qua hợp đồng (Interface), đảm bảo tính tách biệt và độc lập trong kiểm thử. |
@@ -143,7 +143,7 @@ Hiện thực hóa các thực thể nghiệp vụ hoàn toàn độc lập vớ
 
 #### Giai đoạn 2: Hiện thực hóa Cơ sở dữ liệu & Truy xuất Dữ liệu (`BlinkBlink.Infrastructure`)
 Triển khai cơ sở dữ liệu Microsoft SQL Server và tầng truy xuất dữ liệu bằng ADO.NET thuần:
-1. **Kịch bản cơ sở dữ liệu `BlinkBlinkJewelry.sql`:**
+1. **Kịch bản cơ sở dữ liệu `database/BlinkBlinkJewelry.sql`:**
    - Khởi tạo database `BlinkBlinkJewelryDb`, 15 bảng quan hệ, khóa chính, khóa ngoại, chỉ mục và các ràng buộc toàn vẹn dữ liệu.
    - Nạp sẵn dữ liệu mẫu thực tế của ngành kim hoàn (vai trò, nhân viên, khách hàng, 4 danh mục trang sức, sản phẩm độc bản, hóa đơn, phiếu nhập kho, phiếu bảo hành).
    - Tài khoản quản trị mặc định: `admin` / `123456789`.
