@@ -8,7 +8,7 @@ echo ===========================================================================
 echo.
 
 echo [1/2] Đang khởi động Web Server Khách Hàng (BlinkBlink.Web)...
-start "BlinkBlink Web Server (Ports 5095 & 5000)" cmd /k "dotnet run --project src/BlinkBlink.Web --urls \"http://localhost:5095;http://localhost:5000\""
+start "BlinkBlink Web Server (Ports 5095 and 5000)" cmd /k "dotnet run --project src/BlinkBlink.Web --launch-profile http"
 
 echo Đang chờ máy chủ web sẵn sàng trong 4 giây...
 timeout /t 4 /nobreak > nul

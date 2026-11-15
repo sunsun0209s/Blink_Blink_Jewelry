@@ -115,17 +115,29 @@ public class AdminServiceScope
             writeToConsole: false);
 
         // Danh sách các chuỗi kết nối máy chủ SQL Server theo thứ tự ưu tiên
-        // Ưu tiên 1: CSDL Docker SQL Server trên cổng 1433 theo chuẩn docker-compose
-        // Ưu tiên 2: CSDL cục bộ trên máy phát triển
-        var candidateConnections = new[]
+        // Ưu tiên 1: CSDL cấu hình qua biến môi trường (nếu có)
+        // Ưu tiên 2: CSDL Docker SQL Server trên cổng 1433 theo chuẩn docker-compose
+        // Ưu tiên 3: CSDL cục bộ trên máy phát triển (Default instance, SQLEXPRESS, MSSQL, LocalDB)
+        var customConn = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                         ?? Environment.GetEnvironmentVariable("SQLCONNSTR_DefaultConnection");
+
+        var candidateList = new List<string>();
+        if (!string.IsNullOrWhiteSpace(customConn))
+        {
+            candidateList.Add(customConn.Trim());
+        }
+        candidateList.AddRange(new[]
         {
             "Server=localhost,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
             "Server=127.0.0.1,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
             "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
             "Server=localhost;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
+            "Server=.\\SQLEXPRESS;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
+            "Server=localhost\\SQLEXPRESS;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
             "Server=.\\MSSQL;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
             "Server=(localdb)\\mssqllocaldb;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;"
-        };
+        });
+        var candidateConnections = candidateList.Distinct().ToArray();
 
         DatabaseHelper? dbHelper = null;
         foreach (var connStr in candidateConnections)

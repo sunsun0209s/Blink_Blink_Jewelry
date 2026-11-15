@@ -389,10 +389,14 @@ public class InMemoryDataContext
         public Task<List<HoaDon>> TruyVanDoanhThuAsync(DateTime tu, DateTime den, CancellationToken ct = default) => Task.FromResult(TruyVanDoanhThu(tu, den));
 
         public List<SanPhamTrangSuc> TruyVanSanPhamTonKho() => _ctx.SanPhams.ToList();
+        public List<SanPhamTrangSuc> TruyVanSanPhamTonKho(DateTime? denNgay) => _ctx.SanPhams.ToList();
         public Task<List<SanPhamTrangSuc>> TruyVanSanPhamTonKhoAsync(CancellationToken ct = default) => Task.FromResult(TruyVanSanPhamTonKho());
+        public Task<List<SanPhamTrangSuc>> TruyVanSanPhamTonKhoAsync(DateTime? denNgay, CancellationToken ct = default) => Task.FromResult(TruyVanSanPhamTonKho(denNgay));
 
         public List<ChiTietKiemKe> TruyVanChenhLechKiemKe() => new();
+        public List<ChiTietKiemKe> TruyVanChenhLechKiemKe(DateTime? tuNgay, DateTime? denNgay) => new();
         public Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(CancellationToken ct = default) => Task.FromResult(TruyVanChenhLechKiemKe());
+        public Task<List<ChiTietKiemKe>> TruyVanChenhLechKiemKeAsync(DateTime? tuNgay, DateTime? denNgay, CancellationToken ct = default) => Task.FromResult(TruyVanChenhLechKiemKe(tuNgay, denNgay));
 
         public List<SanPhamTrangSuc> TruyVanSanPhamDoanhThuThap() => _ctx.SanPhams.Take(2).ToList();
         public Task<List<SanPhamTrangSuc>> TruyVanSanPhamDoanhThuThapAsync(CancellationToken ct = default) => Task.FromResult(TruyVanSanPhamDoanhThuThap());

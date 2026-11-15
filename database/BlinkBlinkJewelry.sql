@@ -112,6 +112,7 @@ CREATE TABLE dbo.SanPhamTrangSuc (
     HinhAnh NVARCHAR(500) NULL,
     PhanTramGiamGia INT NOT NULL DEFAULT 0,
     TyLeLoiNhuan DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    IsHidden BIT NOT NULL DEFAULT 0, -- 0: Hiển thị trên Web và POS, 1: Ẩn khỏi Web và POS
     CONSTRAINT FK_SanPham_DanhMuc FOREIGN KEY (MaDanhMuc) REFERENCES dbo.DanhMuc(MaDanhMuc)
 );
 GO

@@ -25,6 +25,7 @@ public class ProductsView : UserControl
     private ComboBox _cboCategory = null!;
     private Button _btnAddProduct = null!;
     private Button _btnEditProduct = null!;
+    private Button _btnToggleVisibility = null!;
     private Button _btnRefresh = null!;
 
     private Label _lblKpiTotalSku = null!;
@@ -152,6 +153,10 @@ public class ProductsView : UserControl
         _btnEditProduct.Margin = new Padding(0, 2, 8, 2);
         _btnEditProduct.Click += (s, e) => EditSelectedProduct();
 
+        _btnToggleVisibility = UITheme.CreateFlatButton("👁 Ẩn / Hiện SP", Color.FromArgb(71, 85, 105), Color.White);
+        _btnToggleVisibility.Margin = new Padding(0, 2, 8, 2);
+        _btnToggleVisibility.Click += (s, e) => ToggleSelectedProductVisibility();
+
         _btnRefresh = UITheme.CreateFlatButton("⟳ Nạp Lại", Color.FromArgb(241, 245, 249), UITheme.TextPrimary);
         _btnRefresh.Margin = new Padding(0, 2, 0, 2);
         _btnRefresh.Click += (s, e) => LoadProductsData();
@@ -162,6 +167,7 @@ public class ProductsView : UserControl
         toolbarPanel.Controls.Add(_cboCategory);
         toolbarPanel.Controls.Add(_btnAddProduct);
         toolbarPanel.Controls.Add(_btnEditProduct);
+        toolbarPanel.Controls.Add(_btnToggleVisibility);
         toolbarPanel.Controls.Add(_btnRefresh);
 
         // Grid Container
@@ -332,6 +338,15 @@ public class ProductsView : UserControl
         colTrangThai.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleLeft;
         colTrangThai.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
 
+        var colAnHien = new DataGridViewTextBoxColumn
+        {
+            Name = "IsHidden",
+            HeaderText = "HIỂN THỊ",
+            Width = 110,
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
+        };
+        colAnHien.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
         var colTonKho = new DataGridViewTextBoxColumn 
         { 
             Name = "SoLuongTon", 
@@ -350,7 +365,7 @@ public class ProductsView : UserControl
         };
         colHinhAnh.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-        _dgvProducts.Columns.AddRange(colMa, colTen, colMaNhom, colDm, colChatLieu, colSize, colGiaNhap, colTyLeLoiNhuan, colGiaBan, colGiamGia, colTonKho, colTrangThai, colHinhAnh);
+        _dgvProducts.Columns.AddRange(colMa, colTen, colMaNhom, colDm, colChatLieu, colSize, colGiaNhap, colTyLeLoiNhuan, colGiaBan, colGiamGia, colTonKho, colTrangThai, colAnHien, colHinhAnh);
     }
 
     public void LoadProductsData()
@@ -442,6 +457,7 @@ public class ProductsView : UserControl
             var discountText = p.PhanTramGiamGia > 0 ? $"{p.PhanTramGiamGia}%" : "0%";
             var loiNhuanText = $"{p.TyLeLoiNhuan:0.##}%";
             var maNhomText = string.IsNullOrWhiteSpace(p.MaNhom) || p.MaNhom == "0" ? "0" : p.MaNhom;
+            var anHienText = p.IsHidden ? "👁️ Đang ẩn" : "🟢 Đang hiện";
             var rowIdx = _dgvProducts.Rows.Add(
                 p.MaSanPham,
                 p.TenSanPham,
@@ -455,8 +471,21 @@ public class ProductsView : UserControl
                 discountText,
                 p.SoLuongTon.ToString("N0", viVn),
                 FormatStatusText(p.TrangThai),
+                anHienText,
                 hasImage
             );
+
+            var cellAnHien = _dgvProducts.Rows[rowIdx].Cells["IsHidden"];
+            if (p.IsHidden)
+            {
+                cellAnHien.Style.ForeColor = UITheme.TextSecondary;
+                cellAnHien.Style.Font = new Font("Segoe UI", 9F, FontStyle.Italic);
+            }
+            else
+            {
+                cellAnHien.Style.ForeColor = Color.FromArgb(16, 185, 129);
+                cellAnHien.Style.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            }
 
             var cellDiscount = _dgvProducts.Rows[rowIdx].Cells["PhanTramGiamGia"];
             if (p.PhanTramGiamGia > 0)
@@ -525,6 +554,44 @@ public class ProductsView : UserControl
         if (dialog.ShowDialog() == DialogResult.OK)
         {
             LoadProductsData();
+        }
+    }
+
+    /// <summary>
+    /// Chuyển đổi trạng thái Ẩn/Hiện của sản phẩm đang được chọn trong danh sách.
+    /// Sản phẩm bị ẩn sẽ không hiển thị trên Web mua hàng và giao diện bán hàng offline.
+    /// </summary>
+    private void ToggleSelectedProductVisibility()
+    {
+        if (_dgvProducts.SelectedRows.Count == 0)
+        {
+            MessageBox.Show("Vui lòng chọn một sản phẩm trong danh sách để thay đổi trạng thái ẩn/hiện.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var maSP = _dgvProducts.SelectedRows[0].Cells["MaSanPham"].Value?.ToString();
+        var targetProduct = _allProducts.FirstOrDefault(p => p.MaSanPham == maSP);
+        if (targetProduct == null) return;
+
+        var newState = !targetProduct.IsHidden;
+        var actionText = newState ? "ẨN sản phẩm này (không hiển thị trên Web và POS)" : "HIỂN THỊ lại sản phẩm này (cho phép bán trên Web và POS)";
+
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc chắn muốn {actionText} đối với sản phẩm:\n[{targetProduct.MaSanPham}] {targetProduct.TenSanPham}?",
+            "Xác nhận thay đổi trạng thái hiển thị",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirm == DialogResult.Yes)
+        {
+            targetProduct.IsHidden = newState;
+            _services.SanPhamRepo.LuuSanPham(targetProduct);
+            LoadProductsData();
+            MessageBox.Show(
+                $"Đã cập nhật: Sản phẩm [{targetProduct.MaSanPham}] hiện đã {(newState ? "ĐƯỢC ẨN" : "HIỂN THỊ TRỞ LẠI")}.",
+                "Thành công",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
     }
 }
