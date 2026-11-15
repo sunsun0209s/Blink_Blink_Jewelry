@@ -116,7 +116,9 @@ public class SanPhamController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> LayDanhSach(CancellationToken cancellationToken)
     {
-        var items = await _sanPhamRepository.LayTatCaAsync(cancellationToken);
+        var allItems = await _sanPhamRepository.LayTatCaAsync(cancellationToken);
+        // Lọc bỏ các sản phẩm bị ẩn để không hiển thị trên trang Web mua hàng của khách hàng
+        var items = allItems.Where(sp => !sp.IsHidden).ToList();
         var response = items.Select(sp =>
         {
             decimal giaSauGiam = sp.PhanTramGiamGia > 0
@@ -166,7 +168,9 @@ public class SanPhamController : ControllerBase
             return Ok(new { Success = true, Data = Array.Empty<object>() });
         }
 
-        var items = await _sanPhamRepository.LayTheoNhomAsync(maNhom, cancellationToken);
+        var allItems = await _sanPhamRepository.LayTheoNhomAsync(maNhom, cancellationToken);
+        // Lọc bỏ sản phẩm bị ẩn trong danh sách chọn size của nhóm
+        var items = allItems.Where(sp => !sp.IsHidden).ToList();
         var response = items.Select(sp =>
         {
             decimal giaSauGiam = sp.PhanTramGiamGia > 0
@@ -205,7 +209,7 @@ public class SanPhamController : ControllerBase
         }
 
         var sp = await _sanPhamRepository.TimTheoIdAsync(maSanPham, cancellationToken);
-        if (sp == null)
+        if (sp == null || sp.IsHidden)
         {
             return ApiResponseHelper.Fail(this, 404, ErrorCodes.ProductNotFound, $"Không tìm thấy sản phẩm mã '{maSanPham}'.", _logger);
         }

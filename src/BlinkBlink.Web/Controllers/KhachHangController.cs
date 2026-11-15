@@ -56,6 +56,11 @@ public class KhachHangController : ControllerBase
             return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Vui lòng nhập đầy đủ các thông tin bắt buộc.", _logger);
         }
 
+        if (request.MatKhau.Trim().Length < 6)
+        {
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Mật khẩu phải có độ dài từ 6 ký tự trở lên.", _logger);
+        }
+
         try
         {
             var result = _dangKyUseCase.Execute(request);
@@ -165,6 +170,35 @@ public class KhachHangController : ControllerBase
                 khachHang.NgaySinh,
                 khachHang.TrangThai
             }
+        });
+    }
+
+    /// <summary>
+    /// Khóa hoặc mở khóa tài khoản khách hàng.
+    /// Khớp phương thức: + HttpPut KhoaTaiKhoan(maKh: string): HttpResponse trong Diagram.
+    /// </summary>
+    /// <param name="maKh">Mã khách hàng cần khóa hoặc mở khóa</param>
+    /// <returns>HTTP Status 200 nếu thành công, 400 nếu thất bại</returns>
+    [HttpPut("khoa/{maKh}")]
+    public IActionResult KhoaTaiKhoan(string maKh)
+    {
+        if (string.IsNullOrWhiteSpace(maKh))
+        {
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Mã khách hàng không hợp lệ.", _logger);
+        }
+
+        var result = _quanLyKhachHangUseCase.KhoaTaiKhoanKhachHang(maKh.Trim());
+        if (!result)
+        {
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.CustomerNotFound, "Không tìm thấy khách hàng hoặc không thể thay đổi trạng thái tài khoản.", _logger);
+        }
+
+        _logger.LogInfo(nameof(KhachHangController), $"Cập nhật trạng thái tài khoản khách hàng '{maKh}' thành công.");
+
+        return Ok(new
+        {
+            Success = true,
+            Message = $"Thay đổi trạng thái tài khoản khách hàng '{maKh}' thành công."
         });
     }
 }
