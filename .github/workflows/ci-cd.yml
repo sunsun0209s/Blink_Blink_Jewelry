@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   # =========================================================================
@@ -92,7 +93,7 @@ jobs:
   release_and_package:
     name: CD - Đóng Gói Thành Phẩm (Release Artifacts)
     needs: [build_and_test, docker_validation]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
 
     steps:
@@ -125,3 +126,45 @@ jobs:
           name: blinkblink-admin-winforms-release
           path: ./publish/admin
           retention-days: 30
+
+  # =========================================================================
+  # GIAI ĐOẠN 4: PHÂN PHỐI CONTAINER (CD) - XUẤT BẢN GITHUB PACKAGES (GHCR)
+  # Kích hoạt: Tự động đóng gói & đẩy Docker Image lên mục Packages của GitHub
+  # =========================================================================
+  publish_docker_package:
+    name: CD - Xuất Bản Gói GitHub Packages (GHCR)
+    needs: [build_and_test, docker_validation]
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 1. Tải mã nguồn kho lưu trữ (Checkout)
+        uses: actions/checkout@v4
+
+      - name: 2. Thiết lập Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 3. Đăng nhập GitHub Container Registry (ghcr.io)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 4. Chuẩn hóa tên định danh Image về chữ thường (Lowercase Repository Name)
+        id: prep
+        run: |
+          echo "IMAGE_NAME=ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: 5. Biên dịch và Đẩy Docker Image lên GitHub Packages
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}

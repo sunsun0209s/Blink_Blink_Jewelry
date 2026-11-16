@@ -17,7 +17,7 @@ Do đó, kịch bản CI/CD (`.github/workflows/ci-cd.yml`) được thiết k�
           │
           ├───► Job 1 (CI): Build & Test toàn bộ Solution trên Windows Runner (windows-latest)
           │        ├── Restore & Build Solution ở chế độ Release
-          │        └── Chạy 72 ca kiểm thử tự động (Unit Tests & Integration Tests)
+          │        └── Chạy 90 ca kiểm thử tự động (Unit Tests & Integration Tests)
           │
           ├───► Job 2 (CI): Xác thực môi trường Docker Container trên Linux Runner (ubuntu-latest)
           │        ├── Kiểm tra biên dịch Dockerfile Production cho Web & API
@@ -26,10 +26,14 @@ Do đó, kịch bản CI/CD (`.github/workflows/ci-cd.yml`) được thiết k�
           ▼
    (Khi merge vào main)
           │
-          └───► Job 3 (CD): Đóng gói và phát hành thành phẩm (Release Artifacts)
-                   ├── Publish gói BlinkBlink.Web (sẵn sàng đưa lên máy chủ Linux / IIS)
-                   ├── Publish gói BlinkBlink.Admin (ứng dụng WinForms chạy ngay trên máy trạm)
-                   └── Tải lên mục Artifacts của GitHub Actions lưu trữ trong 30 ngày
+          ├───► Job 3 (CD): Đóng gói và phát hành thành phẩm (Release Artifacts)
+          │        ├── Publish gói BlinkBlink.Web (sẵn sàng đưa lên máy chủ Linux / IIS)
+          │        ├── Publish gói BlinkBlink.Admin (ứng dụng WinForms chạy ngay trên máy trạm)
+          │        └── Tải lên mục Artifacts của GitHub Actions lưu trữ trong 30 ngày
+          │
+          └───► Job 4 (CD): Xuất bản gói Container lên GitHub Packages (GHCR)
+                   ├── Đăng nhập GitHub Container Registry (ghcr.io) tự động bằng GITHUB_TOKEN
+                   └── Biên dịch & Đẩy Docker Image chính thức lên tab Packages của kho lưu trữ
 ```
 
 ---
@@ -79,6 +83,16 @@ Do đó, kịch bản CI/CD (`.github/workflows/ci-cd.yml`) được thiết k�
      * `blinkblink-web-production-release`: Gói Web sẵn sàng cấu hình chạy Production.
      * `blinkblink-admin-winforms-release`: Gói phần mềm WinForms Admin sẵn sàng chạy ngay trên Windows.
 
+### Giai Đoạn 4: Phân Phối Container (CD - Xuất Bản GitHub Packages)
+* **Môi trường thực thi:** Máy ảo `ubuntu-latest`.
+* **Điều kiện kích hoạt:** Chạy song song với Giai đoạn 3 khi mã nguồn được **gộp vào nhánh `main`**.
+* **Các bước tự động:**
+  1. Đăng nhập an toàn vào kho lưu trữ GitHub Container Registry (`ghcr.io`) bằng `GITHUB_TOKEN` có quyền `packages: write`.
+  2. Chuẩn hóa đường dẫn Repository về chữ thường (tuân thủ đặc tả Docker Image Name).
+  3. Tự động đóng gói và đẩy Container Image lên mục **Packages** của GitHub với 2 tag:
+     * `ghcr.io/<tai-khoan>/blink_blink_jewelry:latest` (Bản chạy mới nhất).
+     * `ghcr.io/<tai-khoan>/blink_blink_jewelry:<commit-sha>` (Lưu trữ lịch sử phiên bản).
+
 ---
 
 ## 3. Quy Trình Làm Việc Nhóm Với CI/CD (Quy Chuẩn Chặn Lỗi)
@@ -101,10 +115,10 @@ Do đó, kịch bản CI/CD (`.github/workflows/ci-cd.yml`) được thiết k�
 3. **Mở Pull Request (PR) để ghép vào `main`:**
    * Vào giao diện GitHub, tạo Pull Request từ nhánh của bạn vào `main`.
    * Giao diện GitHub sẽ hiển thị trạng thái kiểm tra tự động của CI (Checks):
-     * 🟢 **Màu xanh (All checks have passed):** Mã nguồn an toàn, biên dịch tốt, vượt qua 72/72 ca kiểm thử và Docker hợp lệ. Nhóm trưởng hoặc thành viên có thể an tâm Review và Merge vào `main`.
+     * 🟢 **Màu xanh (All checks have passed):** Mã nguồn an toàn, biên dịch tốt, vượt qua 90/90 ca kiểm thử và Docker hợp lệ. Nhóm trưởng hoặc thành viên có thể an tâm Review và Merge vào `main`.
      * 🔴 **Màu đỏ (Some checks were not successful):** Mã nguồn bị lỗi biên dịch hoặc có bài test bị rớt. **Tuyệt đối không được merge**. Thành viên phải xem log chi tiết để sửa lỗi tại máy cá nhân rồi push bổ sung.
 4. **Sau khi Merge vào `main`:**
-   * Pipeline sẽ tự động kích hoạt Giai đoạn 3 (CD) để đóng gói thành phẩm đưa vào mục **Artifacts**.
+   * Pipeline sẽ tự động kích hoạt Giai đoạn 3 (Artifacts) và Giai đoạn 4 (GitHub Packages) để phát hành thành phẩm.
 
 ---
 
@@ -118,11 +132,27 @@ Giảng viên hoặc các thành viên muốn chạy thử nghiệm phiên bản
 4. Cuộn xuống phần **Artifacts** ở cuối trang:
    * Nhấn vào `blinkblink-admin-winforms-release` để tải tệp zip chứa ứng dụng Quản trị WinForms. Sau khi giải nén, nhấp đúp vào `BlinkBlink.Admin.exe` để chạy phần mềm quản trị và POS.
    * Nhấn vào `blinkblink-web-production-release` để tải gói ứng dụng Web khách hàng đã biên dịch sẵn.
-   * Nhấn vào `ket-qua-kiem-thu-trx` nếu muốn xem báo cáo chi tiết 72 ca kiểm thử.
+   * Nhấn vào `ket-qua-kiem-thu-trx` nếu muốn xem báo cáo chi tiết 90 ca kiểm thử.
 
 ---
 
-## 5. Huy Hiệu Trạng Thái Xây Dựng (Build Badge)
+## 5. Hướng Dẫn Kéo & Chạy Gói Từ GitHub Packages (GHCR)
+
+Sau khi merge vào `main`, gói Docker Image sẽ hiển thị ngay tại mục **Packages** ở trang chủ kho lưu trữ GitHub. Người dùng có thể kéo và chạy trực tiếp mà không cần tải source code:
+
+1. **Kéo ảnh Docker từ GitHub Packages:**
+   ```bash
+   docker pull ghcr.io/sunsun0209s/blink_blink_jewelry:latest
+   ```
+2. **Khởi chạy ứng dụng Web & API từ gói đã tải:**
+   ```bash
+   docker run -d -p 5000:8080 --name blinkblink-storefront ghcr.io/sunsun0209s/blink_blink_jewelry:latest
+   ```
+3. Truy cập vào trình duyệt tại địa chỉ `http://localhost:5000` để trải nghiệm hệ thống.
+
+---
+
+## 6. Huy Hiệu Trạng Thái Xây Dựng (Build Badge)
 
 Để gắn huy hiệu hiển thị trạng thái CI/CD trực tiếp vào tệp `README.md` của dự án, bạn thêm đoạn mã Markdown sau vào đầu trang:
 
