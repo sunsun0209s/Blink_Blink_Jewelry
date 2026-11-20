@@ -233,7 +233,6 @@ CREATE TABLE dbo.PhieuBaoHanh (
     GhiChu NVARCHAR(500) NULL,
     ChiPhiUocTinh DECIMAL(18, 2) NOT NULL DEFAULT 0,
     ChiPhiThucTe DECIMAL(18, 2) NOT NULL DEFAULT 0,
-    ChiPhiBaoHanh DECIMAL(18, 2) NOT NULL DEFAULT 0,
     TrangThaiXuLy NVARCHAR(50) NOT NULL DEFAULT 'TiepNhan', -- TiepNhan, DangXuLy, DaXuLy, DaTraKhach, DaHuy
     SoDienThoai VARCHAR(20) NULL,
     NgayTiepNhan DATETIME2 NOT NULL DEFAULT GETDATE(),
@@ -346,9 +345,9 @@ GO
 GO
 
 -- 11. Nạp phiếu tiếp nhận bảo hành dịch vụ kim hoàn
-INSERT INTO dbo.PhieuBaoHanh (SoPhieuBH, MaKhachHang, MaSanPham, LyDoBaoHanh, ChiPhiBaoHanh, TrangThaiXuLy, NgayTiepNhan, NgayHenTra) VALUES
-('BH2001', 'USER_KH001', 'SP001', N'Làm sạch, đánh bóng siêu âm và kiểm tra chấu giữ viên kim cương chủ', 0, N'DaHoanTat', '2026-03-12 10:00:00', '2026-03-14 17:00:00'),
-('BH2002', 'USER_KH002', 'SP002', N'Đứt khoen móc khóa cài dây chuyền vàng hồng, yêu cầu hàn laser thẩm mỹ', 150000, N'DangBaoHanh', '2026-03-18 15:30:00', '2026-03-22 17:00:00');
+INSERT INTO dbo.PhieuBaoHanh (SoPhieuBH, MaKhachHang, MaSanPham, LyDoBaoHanh, ChiPhiUocTinh, ChiPhiThucTe, TrangThaiXuLy, NgayTiepNhan, NgayHenTra) VALUES
+('BH2001', 'USER_KH001', 'SP001', N'Làm sạch, đánh bóng siêu âm và kiểm tra chấu giữ viên kim cương chủ', 0, 0, N'DaHoanTat', '2026-03-12 10:00:00', '2026-03-14 17:00:00'),
+('BH2002', 'USER_KH002', 'SP002', N'Đứt khoen móc khóa cài dây chuyền vàng hồng, yêu cầu hàn laser thẩm mỹ', 150000, 150000, N'DangBaoHanh', '2026-03-18 15:30:00', '2026-03-22 17:00:00');
 GO
 
 PRINT N'>>> HOÀN TẤT KHỞI TẠO CƠ SỞ DỮ LIỆU BLINK BLINK JEWELRY VÀ NẠP DỮ LIỆU MẪU THÀNH CÔNG! <<<';
