@@ -129,4 +129,34 @@ public class QuanLyKhachHangUseCaseTests
         Assert.NotNull(updated);
         Assert.False(updated.TrangThai);
     }
+
+    [Fact]
+    public void ResetMatKhau_ExistingCustomer_ResetsPasswordToDefaultAndReturnsTrue()
+    {
+        // Arrange
+        var fakeRepo = new FakeKhachHangRepository();
+        var initialCustomer = new KhachHang(
+            maNguoiDung: "ND_03",
+            hoTen: "Le Van C",
+            soDienThoai: "0922334455",
+            tenDangNhap: "levanc",
+            matKhau: "oldPassword123",
+            maVaiTro: "Customer",
+            maKhachHang: "KH_03",
+            ngaySinh: new DateTime(1998, 3, 10),
+            trangThai: true
+        );
+        fakeRepo.LuuKhachHang(initialCustomer);
+
+        var useCase = new QuanLyKhachHangUseCase(fakeRepo);
+
+        // Act
+        var result = useCase.ResetMatKhau("KH_03");
+
+        // Assert
+        Assert.True(result);
+        var updated = fakeRepo.TimTheoMa("KH_03");
+        Assert.NotNull(updated);
+        Assert.Equal("123456789", updated.MatKhau);
+    }
 }

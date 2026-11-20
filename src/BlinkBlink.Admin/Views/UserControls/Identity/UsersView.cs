@@ -211,6 +211,10 @@ public class UsersView : UserControl
         btnDeleteCust.Margin = new Padding(0, 2, 8, 2);
         btnDeleteCust.Click += BtnDeleteCustomer_Click;
 
+        var btnResetCust = UITheme.CreateFlatButton("🔑 Đặt Lại Mật Khẩu", UITheme.DarkHeader, Color.White);
+        btnResetCust.Margin = new Padding(0, 2, 8, 2);
+        btnResetCust.Click += BtnResetCustomerPassword_Click;
+
         var btnRef = UITheme.CreateFlatButton("⟳ Nạp Lại", Color.FromArgb(241, 245, 249), UITheme.TextPrimary);
         btnRef.Margin = new Padding(0, 2, 0, 2);
         btnRef.Click += (s, e) => LoadCustomerData();
@@ -221,6 +225,7 @@ public class UsersView : UserControl
         toolbar.Controls.Add(btnOrderHistory);
         toolbar.Controls.Add(btnLockCust);
         toolbar.Controls.Add(btnDeleteCust);
+        toolbar.Controls.Add(btnResetCust);
         toolbar.Controls.Add(btnRef);
 
         var pnlGrid = new Panel { Dock = DockStyle.Fill, Padding = new Padding(15, 10, 15, 15), BackColor = UITheme.CanvasBackground };
@@ -644,6 +649,37 @@ public class UsersView : UserControl
         if (ok)
         {
             MessageBox.Show($"Đã đặt lại mật khẩu mặc định cho nhân viên [{maNv}]: 123456789", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+    }
+
+    private void BtnResetCustomerPassword_Click(object? sender, EventArgs e)
+    {
+        if (_dgvCustomers.SelectedRows.Count == 0)
+        {
+            MessageBox.Show("Vui lòng chọn khách hàng cần đặt lại mật khẩu.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var maKh = _dgvCustomers.SelectedRows[0].Cells["MaKH"].Value?.ToString();
+        var hoTen = _dgvCustomers.SelectedRows[0].Cells["HoTen"].Value?.ToString() ?? maKh;
+        if (string.IsNullOrEmpty(maKh)) return;
+
+        var confirm = MessageBox.Show(
+            $"Bạn có muốn đặt lại mật khẩu của khách hàng [{hoTen}] ({maKh}) về mật khẩu mặc định (123456789)?",
+            "Xác nhận đặt lại mật khẩu",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirm != DialogResult.Yes) return;
+
+        var ok = _services.QuanLyKhachHang.ResetMatKhau(maKh);
+        if (ok)
+        {
+            MessageBox.Show($"Đã đặt lại mật khẩu mặc định cho khách hàng [{maKh}]: 123456789", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        else
+        {
+            MessageBox.Show("Đặt lại mật khẩu thất bại. Không tìm thấy khách hàng.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

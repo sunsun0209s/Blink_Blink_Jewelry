@@ -22,6 +22,9 @@ feature/<tên tính năng>
 bugfix/<lỗi cần sửa>
 refactor/<tên module>
 
+> [!IMPORTANT]
+> **Quy Tắc Quản Lý Git & Commit:** TUYỆT ĐỐI KHÔNG tự tiện chạy lệnh `git commit` hoặc `git push` mã nguồn khi người dùng CHƯA YÊU CẦU. Chỉ tiến hành commit và đẩy nhánh khi có sự cho phép hoặc yêu cầu cụ thể từ người dùng.
+
 ## Nguyên Tắc Cốt Lõi: Đọc Diagram Trước Tiên (Diagram-First Rule)
 - Trước khi phân tích bất kỳ logic hoặc sinh mã nguồn nào, BẮT BUỘC phải đọc và đối chiếu các tài liệu/sơ đồ kiến trúc có sẵn trong project {
     Class Diagram.xml
@@ -91,6 +94,7 @@ Sau khi code đã được kiểm tra, review và người dùng xác nhận ho�
 - **Dọn dẹp `SCRATCHPAD.md`:** Khi một task lớn đã hoàn thành trọn vẹn và đã chuyển sang `COMPLETED.md`, hãy làm sạch nội dung nháp trong `SCRATCHPAD.md` để sẵn sàng cho task tiếp theo.
 
 ### Những điều CẤM (Anti-patterns):
+- TUYỆT ĐỐI CẤM tự ý chạy lệnh `git commit` hoặc `git push` mã nguồn lên kho Git khi người dùng chưa có yêu cầu cụ thể.
 - KHÔNG viết comment thừa thãi, rác mã nguồn với các dòng code đã tự tường minh qua tên hàm/tên biến.
 - Những code bị comment KHÔNG được tự tiện xoá vì nó dùng để test.
 - Ngôn ngữ comment: Thống nhất dùng tiếng Việt chỉ dùng tiếng anh khi từ đó quá chuyên ngành.

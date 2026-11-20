@@ -461,14 +461,15 @@ public class WarrantyView : UserControl
 
         using var prompt = new Form
         {
-            Text = $"Quyết Toán Chi Phí & Hoàn Thành Kỹ Thuật - Phiếu #{ticket.SoPhieuBH}",
-            Width = 460,
-            Height = 280,
+            Text = $"Quyết Toán Chi Phí - Phiếu #{ticket.SoPhieuBH}",
+            ClientSize = new Size(620, 240),
             StartPosition = FormStartPosition.CenterParent,
             FormBorderStyle = FormBorderStyle.FixedDialog,
             MaximizeBox = false,
             MinimizeBox = false,
-            BackColor = Color.White
+            BackColor = Color.White,
+            Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+            AutoScaleMode = AutoScaleMode.Dpi
         };
 
         var lblUocTinh = new Label
@@ -482,7 +483,7 @@ public class WarrantyView : UserControl
         var lblPrompt = new Label
         {
             Text = "Chi phí thực tế kỹ thuật viên đã sửa chữa / thay thế (VND):",
-            Location = new Point(25, 52),
+            Location = new Point(25, 48),
             AutoSize = true,
             ForeColor = UITheme.TextPrimary,
             Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
@@ -490,31 +491,47 @@ public class WarrantyView : UserControl
 
         var txtCost = new TextBox
         {
-            Text = uocTinh > 0 ? uocTinh.ToString("F0") : "0",
-            Location = new Point(25, 85),
-            Width = 390,
+            Text = "",
+            PlaceholderText = "Nhập chi phí thực tế (nhập 0 nếu bảo hành miễn phí)...",
+            Location = new Point(25, 78),
+            Width = 570,
             Font = UITheme.TabularNumericFont
         };
 
         var lblHint = new Label
         {
             Text = "(Nhập 0 nếu lỗi được bảo hành miễn phí theo chính sách của hãng)",
-            Location = new Point(25, 118),
+            Location = new Point(25, 114),
             AutoSize = true,
             ForeColor = UITheme.TextSecondary,
             Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
         };
 
-        var btnOk = UITheme.CreateFlatButton("XÁC NHẬN HOÀN THÀNH KỸ THUẬT (ĐÃ XỬ LÝ)", UITheme.PrimaryGold, Color.Black);
+        var btnOk = UITheme.CreateFlatButton("XÁC NHẬN HOÀN TẤT KỸ THUẬT", UITheme.PrimaryGold, Color.Black);
         btnOk.Location = new Point(25, 160);
-        btnOk.Size = new Size(390, 42);
+        btnOk.Size = new Size(330, 42);
         btnOk.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+
+        var btnCancel = UITheme.CreateFlatButton("Hủy Bỏ", Color.FromArgb(241, 245, 249), UITheme.TextPrimary);
+        btnCancel.Location = new Point(370, 160);
+        btnCancel.Size = new Size(130, 42);
+        btnCancel.Click += (s, ev) => prompt.Close();
 
         btnOk.Click += (s, ev) =>
         {
-            if (!decimal.TryParse(txtCost.Text.Trim(), out var cost) || cost < 0)
+            var rawText = txtCost.Text.Trim();
+            if (string.IsNullOrWhiteSpace(rawText))
+            {
+                MessageBox.Show("Vui lòng nhập chi phí thực tế kỹ thuật viên đã sửa chữa / thay thế.\n(Nếu được bảo hành miễn phí theo chính sách của hãng, vui lòng nhập số 0).", "Yêu Cầu Nhập Liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtCost.Focus();
+                return;
+            }
+
+            if (!decimal.TryParse(rawText, out var cost) || cost < 0)
             {
                 MessageBox.Show("Vui lòng nhập chi phí thực tế hợp lệ (số tiền lớn hơn hoặc bằng 0).", "Lỗi Nhập Liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtCost.Focus();
+                txtCost.SelectAll();
                 return;
             }
 
@@ -536,6 +553,7 @@ public class WarrantyView : UserControl
         prompt.Controls.Add(txtCost);
         prompt.Controls.Add(lblHint);
         prompt.Controls.Add(btnOk);
+        prompt.Controls.Add(btnCancel);
 
         if (prompt.ShowDialog() == DialogResult.OK)
         {
@@ -608,47 +626,118 @@ public class WarrantyView : UserControl
         using var payForm = new Form
         {
             Text = $"Thanh Toán Dịch Vụ Bảo Hành - Phiếu #{ticket.SoPhieuBH}",
-            Width = 500,
-            Height = 560,
+            ClientSize = new Size(560, 660),
             StartPosition = FormStartPosition.CenterParent,
             FormBorderStyle = FormBorderStyle.FixedDialog,
             MaximizeBox = false,
             MinimizeBox = false,
+            BackColor = Color.White,
+            Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+            AutoScaleMode = AutoScaleMode.Dpi
+        };
+
+        var pnlHeader = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 90,
+            Padding = new Padding(25, 15, 25, 10),
+            BackColor = Color.FromArgb(248, 250, 252)
+        };
+        var lblSub = new Label
+        {
+            Text = $"SỐ TIỀN CẦN THANH TOÁN (PHIẾU #{ticket.SoPhieuBH}):",
+            Location = new Point(25, 12),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+            ForeColor = UITheme.TextSecondary
+        };
+        var lblAmount = new Label
+        {
+            Text = $"{amount.ToString("N0", _viVn)} VND",
+            Location = new Point(25, 35),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+            ForeColor = UITheme.PrimaryGold
+        };
+        pnlHeader.Controls.Add(lblSub);
+        pnlHeader.Controls.Add(lblAmount);
+
+        var pnlBody = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(25, 15, 25, 15),
             BackColor = Color.White
         };
 
-        var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 65, Padding = new Padding(20, 10, 20, 5), BackColor = Color.FromArgb(248, 250, 252) };
-        var lblTitle = new Label { Text = "XÁC NHẬN THANH TOÁN CHI PHÍ BẢO HÀNH", Font = UITheme.SubHeaderFont, ForeColor = UITheme.TextPrimary, AutoSize = true, Location = new Point(20, 8) };
-        var lblSub = new Label { Text = $"Phiếu #{ticket.SoPhieuBH} | Số tiền cần thanh toán: {amount:N0} VND", ForeColor = UITheme.PrimaryGold, Font = new Font("Segoe UI", 10.5F, FontStyle.Bold), AutoSize = true, Location = new Point(20, 34) };
-        pnlHeader.Controls.Add(lblTitle);
-        pnlHeader.Controls.Add(lblSub);
+        // 2 Lựa chọn thanh toán xếp theo chiều dọc độc lập giống POS chống đè chữ
+        var pnlOptions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 78,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            BackColor = Color.Transparent,
+            Margin = new Padding(0)
+        };
 
-        var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20, 10, 20, 10), BackColor = Color.White };
+        var rdoCash = new RadioButton
+        {
+            Text = "💵 Thanh toán Tiền Mặt tại quầy",
+            AutoSize = true,
+            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+            ForeColor = UITheme.TextPrimary,
+            Checked = true,
+            Margin = new Padding(0, 0, 0, 8)
+        };
 
-        var pnlOptions = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 45, FlowDirection = FlowDirection.LeftToRight };
-        var rdoCash = new RadioButton { Text = "💵 Tiền Mặt", Checked = true, Font = new Font("Segoe UI", 10F, FontStyle.Bold), AutoSize = true, Margin = new Padding(0, 5, 25, 0) };
-        var rdoQr = new RadioButton { Text = "📱 Chuyển Khoản (Quét Mã QR)", Font = new Font("Segoe UI", 10F, FontStyle.Bold), AutoSize = true, Margin = new Padding(0, 5, 0, 0) };
+        var rdoQr = new RadioButton
+        {
+            Text = "📲 Quét mã QR",
+            AutoSize = true,
+            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+            ForeColor = UITheme.TextPrimary,
+            Checked = false,
+            Margin = new Padding(0)
+        };
+
         pnlOptions.Controls.Add(rdoCash);
         pnlOptions.Controls.Add(rdoQr);
 
-        var pnlContent = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+        // Khung chi tiết nội dung
+        var pnlContent = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(0, 10, 0, 0),
+            BackColor = Color.Transparent
+        };
 
         // Panel tiền mặt
-        var pnlCash = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(240, 253, 244), Padding = new Padding(20), Visible = true };
+        var pnlCash = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.FromArgb(240, 253, 244),
+            Padding = new Padding(20),
+            Visible = true
+        };
         var lblCashMsg = new Label
         {
-            Text = $"✓ Thu ngân xác nhận thu tiền mặt trực tiếp tại quầy:\n\n   Tổng thanh toán:  {amount.ToString("N0", _viVn)} VND\n\nSau khi thu đủ tiền, vui lòng nhấn 'XÁC NHẬN THANH TOÁN & TRẢ KHÁCH' để hoàn tất.",
+            Text = $"✓ Thu ngân xác nhận thu tiền mặt trực tiếp tại quầy:\n\n   Tổng thanh toán:  {amount.ToString("N0", _viVn)} VND\n\nSau khi thu đủ tiền, vui lòng nhấn 'XÁC NHẬN THANH TOÁN & TRẢ KHÁCH' bên dưới để hoàn tất.",
             Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+            Font = new Font("Segoe UI", 10.5F, FontStyle.Regular),
             ForeColor = Color.FromArgb(22, 101, 52)
         };
         pnlCash.Controls.Add(lblCashMsg);
 
         // Panel QR Code
-        var pnlQr = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Visible = false };
+        var pnlQr = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.White,
+            Visible = false
+        };
         var picQr = new PictureBox
         {
-            Size = new Size(270, 270),
+            Size = new Size(300, 300),
             Location = new Point(105, 5),
             SizeMode = PictureBoxSizeMode.Zoom,
             BorderStyle = BorderStyle.FixedSingle,
@@ -656,8 +745,8 @@ public class WarrantyView : UserControl
         };
         var lblQrGuide = new Label
         {
-            Text = "Quý khách quét mã QR để chuyển khoản chính xác số tiền dịch vụ.",
-            Location = new Point(45, 285),
+            Text = "Quý khách vui lòng quét mã QR để chuyển khoản chính xác số tiền dịch vụ.",
+            Location = new Point(35, 315),
             AutoSize = true,
             ForeColor = UITheme.TextSecondary,
             Font = new Font("Segoe UI", 9F, FontStyle.Italic)
@@ -682,10 +771,16 @@ public class WarrantyView : UserControl
         pnlBody.Controls.Add(pnlContent);
         pnlBody.Controls.Add(pnlOptions);
 
-        var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 60, Padding = new Padding(20, 10, 20, 10), BackColor = Color.FromArgb(248, 250, 252) };
+        var pnlBottom = new Panel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 65,
+            Padding = new Padding(25, 10, 25, 10),
+            BackColor = Color.FromArgb(248, 250, 252)
+        };
         var btnConfirm = UITheme.CreateFlatButton("✓ XÁC NHẬN THANH TOÁN & TRẢ KHÁCH", UITheme.PrimaryGold, Color.Black);
         btnConfirm.Dock = DockStyle.Fill;
-        btnConfirm.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+        btnConfirm.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
         btnConfirm.Click += (s, e) =>
         {
             var ok = _services.XuLyBaoHanh.HoanTatBaoHanh(ticket.SoPhieuBH);
@@ -1033,6 +1128,12 @@ public class WarrantyView : UserControl
 
             foreach (var kh in matches)
             {
+                // Bỏ qua bản ghi hệ thống đại diện khách vãng lai để tránh trùng lặp với mục mặc định ở đầu danh sách
+                if (kh.MaKhachHang == "0" || kh.MaKhachHang == "KH_0" || string.Equals(kh.MaKhachHang, "KH_GUEST_POS", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 var phone = string.IsNullOrEmpty(kh.SoDienThoai) ? "" : $" - {kh.SoDienThoai}";
                 cboKhach.Items.Add(new CustomerComboItem(kh.MaKhachHang, $"[{kh.MaKhachHang}] {kh.HoTen}{phone}", kh.SoDienThoai ?? "", kh.MaNguoiDung));
             }

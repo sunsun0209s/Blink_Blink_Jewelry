@@ -12,7 +12,7 @@ namespace BlinkBlink.Admin.Forms;
 /// <summary>
 /// Màn hình Đăng Nhập hệ thống quản trị và bán hàng POS Blink Blink Jewelry.
 /// Thiết kế thanh lịch, ánh kim sang trọng theo chuẩn Taste Skill.
-/// Xác thực người dùng nội bộ (ADMIN, SALE, WAREHOUSE) từ CSDL SQL Server.
+/// Xác thực người dùng nội bộ (ADMIN, SALE, WAREHOUSE, TECHNICIAN) từ CSDL SQL Server.
 /// </summary>
 public class LoginForm : Form
 {
@@ -246,7 +246,7 @@ public class LoginForm : Form
             }
 
             var roleCode = user.MaVaiTro?.ToUpperInvariant();
-            if (roleCode != "ADMIN" && roleCode != "SALE" && roleCode != "WAREHOUSE")
+            if (roleCode != "ADMIN" && roleCode != "SALE" && roleCode != "WAREHOUSE" && roleCode != "TECHNICIAN")
             {
                 AdminServiceScope.Instance.Logger.LogWarning(nameof(LoginForm), $"Tài khoản '{user.TenDangNhap}' không có quyền truy cập WinForms ({roleCode}).", ErrorCodes.AccountLocked);
                 ShowError("Tài khoản của bạn không có quyền truy cập vào phần mềm quản trị.");
