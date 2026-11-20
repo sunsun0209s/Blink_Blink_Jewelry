@@ -61,6 +61,14 @@ echo       HE THONG PRODUCTION DA HOAT DONG
 echo       - Web Khach Hang [Noi bo]: !WEB_URL!/
 echo       - Duong ham ngrok: Dang hien thi o cua so ngrok rieng
 echo       - WinForms Admin: Dang chay tren may tinh
+echo.
+echo       >>> NHAN PHIM BAT KY DE DUNG HE THONG VA TAT CONTAINER DOCKER <<<
 echo ==============================================================================
 echo.
-pause
+pause > nul
+
+echo.
+echo [DANG TAT] Dang tat cac dich vu va don dep container Docker...
+docker compose -f docker-compose.prod.yml down
+echo [OK] He thong da tat va don dep container hoan toan.
+timeout /t 3 /nobreak > nul
