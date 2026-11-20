@@ -54,10 +54,18 @@ public interface IBaoHanhRepository
     /// <param name="maKhachHangMoi">Mã khách hàng mới tạo</param>
     void CapNhatKhachHangTheoSoDienThoai(string soDienThoai, string maKhachHangMoi);
 
+    /// <summary>
+    /// Tra cứu phiếu bảo hành theo từ khóa (Mã phiếu bảo hành hoặc Số điện thoại của khách hàng).
+    /// </summary>
+    /// <param name="tuKhoa">Mã phiếu hoặc số điện thoại</param>
+    /// <returns>Danh sách phiếu bảo hành khớp với từ khóa</returns>
+    List<PhieuBaoHanh> TraCuuBaoHanh(string tuKhoa);
+
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
     Task LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default);
     Task<PhieuBaoHanh?> TimTheoSoPhieuAsync(string soPhieu, CancellationToken cancellationToken = default);
     Task<List<PhieuBaoHanh>> LayTheoKhachHangAsync(string maKH, CancellationToken cancellationToken = default);
     Task<List<PhieuBaoHanh>> LayDanhSachPhieuAsync(CancellationToken cancellationToken = default);
     Task CapNhatPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default);
+    Task<List<PhieuBaoHanh>> TraCuuBaoHanhAsync(string tuKhoa, CancellationToken cancellationToken = default);
 }

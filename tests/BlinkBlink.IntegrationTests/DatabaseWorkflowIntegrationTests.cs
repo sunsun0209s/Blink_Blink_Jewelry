@@ -102,10 +102,10 @@ public class DatabaseWorkflowIntegrationTests
         Assert.NotNull(ticketHoanTat);
         Assert.Equal("DaTraKhach", ticketHoanTat.TrangThaiXuLy);
 
-        // Sản phẩm được khôi phục trạng thái kinh doanh tương ứng với tồn kho (SanSang nếu còn tồn, DaBan nếu hết tồn)
+        // Sản phẩm được khôi phục trạng thái kinh doanh tương ứng với tồn kho (SanSang nếu còn tồn, HetHang nếu hết tồn)
         var spSauHoanTat = await sanPhamRepo.TimTheoIdAsync(testSp.MaSanPham);
         Assert.NotNull(spSauHoanTat);
-        Assert.Equal(testSp.SoLuongTon > 0 ? "SanSang" : "DaBan", spSauHoanTat.TrangThai);
+        Assert.Equal(testSp.SoLuongTon > 0 ? "SanSang" : "HetHang", spSauHoanTat.TrangThai);
 
         // 6. Test Tạo phiếu cho Khách vãng lai (MaKhachHang = "0")
         var reqVangLai = new TaoBaoHanhDTO

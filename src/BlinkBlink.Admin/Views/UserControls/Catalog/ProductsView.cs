@@ -404,8 +404,8 @@ public class ProductsView : UserControl
         var viVn = new CultureInfo("vi-VN");
         // Sẵn sàng bán: Các sản phẩm có tồn kho thực tế > 0 và trạng thái là SanSang
         var inStock = _allProducts.Count(p => p.SoLuongTon > 0 && string.Equals(p.TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase));
-        // Chờ nhập / Hết hàng: Tất cả các sản phẩm có tồn kho thực tế <= 0 (bao gồm cả trạng thái HetHang hoặc DaBan hết)
-        var outOfStock = _allProducts.Count(p => p.SoLuongTon <= 0 || string.Equals(p.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase) || string.Equals(p.TrangThai, "DaBan", StringComparison.OrdinalIgnoreCase));
+        // Chờ nhập / Hết hàng: Các sản phẩm chưa nhập hàng (ChuaNhap) hoặc đã hết hàng (HetHang / tồn <= 0)
+        var outOfStock = _allProducts.Count(p => p.SoLuongTon <= 0 || string.Equals(p.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase) || string.Equals(p.TrangThai, "ChuaNhap", StringComparison.OrdinalIgnoreCase));
 
         _lblKpiTotalSku.Text = _allProducts.Count.ToString("N0", viVn);
         _lblKpiInStock.Text = inStock.ToString("N0", viVn);
@@ -510,6 +510,8 @@ public class ProductsView : UserControl
             if (string.Equals(p.TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase))
                 cellStatus.Style.ForeColor = UITheme.SuccessColor;
             else if (string.Equals(p.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase))
+                cellStatus.Style.ForeColor = UITheme.DangerColor;
+            else if (string.Equals(p.TrangThai, "ChuaNhap", StringComparison.OrdinalIgnoreCase))
                 cellStatus.Style.ForeColor = UITheme.WarningColor;
             else
                 cellStatus.Style.ForeColor = UITheme.TextSecondary;
@@ -526,8 +528,8 @@ public class ProductsView : UserControl
         return status switch
         {
             "SanSang" => "Sẵn Sàng Bán",
-            "HetHang" => "Hết Hàng (Tồn 0)",
-            "DaBan" => "Đã Bán Hết",
+            "HetHang" => "Hết Hàng",
+            "ChuaNhap" => "Chưa Nhập Hàng",
             "DangBaoHanh" => "Đang Bảo Hành",
             _ => status
         };

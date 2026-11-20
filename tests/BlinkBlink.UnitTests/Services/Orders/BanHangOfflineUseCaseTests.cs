@@ -120,10 +120,10 @@ public class BanHangOfflineUseCaseTests
         Assert.Equal("KH_01", hoaDon.MaKhachHang); // Tự động link qua SĐT
         Assert.Equal(18000000m, hoaDon.TongThanhToan); // 20tr - 10% = 18tr
 
-        // Kiểm tra sản phẩm đã chuyển trạng thái sang DaBan
+        // Kiểm tra sản phẩm đã chuyển trạng thái sang HetHang
         var spSauBan = fakeSanPham.TimTheoId("SP_NHAN_01");
         Assert.NotNull(spSauBan);
-        Assert.Equal("DaBan", spSauBan.TrangThai);
+        Assert.Equal("HetHang", spSauBan.TrangThai);
     }
 
     [Fact]

@@ -1426,6 +1426,48 @@ a {
     line-height: 1.6;
 }
 
+/* Phân trang danh sách phiếu bảo hành (Taste Skill) */
+.warranty-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 32px;
+}
+
+.warranty-page-btn {
+    background-color: var(--dark-surface, #1e2430);
+    color: #e2e8f0;
+    border: 1px solid rgba(197, 168, 128, 0.3);
+    padding: 8px 16px;
+    border-radius: var(--radius-xs, 4px);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    user-select: none;
+}
+
+.warranty-page-btn:hover:not(:disabled) {
+    border-color: var(--gold-primary, #d4af37);
+    color: var(--gold-primary, #d4af37);
+    transform: translateY(-1px);
+}
+
+.warranty-page-btn.active {
+    background: var(--gold-gradient, linear-gradient(135deg, #d4af37, #f3e5ab));
+    color: #0b0d12;
+    border-color: var(--gold-primary, #d4af37);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+    font-weight: 700;
+}
+
+.warranty-page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
 /* Ngăn Kéo Giỏ Hàng (Cart Drawer) */
 .cart-drawer-overlay {
     position: fixed;

@@ -179,66 +179,28 @@
             <span class="section-pretitle" style="color: var(--gold-primary);">Hệ Thống Dịch Vụ Hậu Mãi</span>
             <h2>Tra Cứu Dịch Vụ & Tiến Độ Bảo Hành</h2>
             <p>
-                Quý khách có thể dễ dàng kiểm tra tình trạng phục hồi, tiến độ đánh bóng và thời gian hẹn trả của kiệt tác trang sức bằng mã phiếu bảo hành.
+                Quý khách có thể dễ dàng kiểm tra tình trạng phục hồi, tiến độ đánh bóng và thời gian hẹn trả của kiệt tác trang sức bằng mã phiếu bảo hành hoặc số điện thoại.
             </p>
         </div>
 
         <!-- Thanh tìm kiếm phiếu bảo hành -->
         <div class="warranty-search-bar">
-            <input type="text" id="warranty-search-input" placeholder="Nhập mã phiếu bảo hành (VD: BH2001, BH2002)..." />
+            <input type="text" id="warranty-search-input" placeholder="Nhập mã phiếu bảo hành hoặc Số điện thoại (VD: BH001, 0988776655)..." />
             <button type="button" id="btn-search-warranty">Tra Cứu Tiến Độ</button>
         </div>
 
-        <!-- Các mã phiếu mẫu để kiểm thử nhanh -->
-        <div class="warranty-sample-pills">
-            <span>Phiếu mẫu có sẵn:</span>
-            <span class="warranty-pill-tag" onclick="lookupWarranty('BH2001')">BH2001 (Đã hoàn tất)</span>
-            <span class="warranty-pill-tag" onclick="lookupWarranty('BH2002')">BH2002 (Đang xử lý)</span>
-        </div>
-
-        <!-- Thẻ kết quả tra cứu chi tiết -->
-        <div class="warranty-result-card" id="warranty-result-card">
-            <div class="warranty-ticket-head">
-                <div>
-                    <span style="font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-primary);">Phiếu Dịch Vụ Kim Hoàn</span>
-                    <h3 class="ticket-number-title" id="wb-ticket-no">BH2001</h3>
-                </div>
-                <div>
-                    <span id="wb-status-badge" class="badge-status-completed">Đã Hoàn Tất Dịch Vụ</span>
-                </div>
+        <!-- Danh sách kết quả tra cứu phiếu bảo hành -->
+        <div id="warranty-results-container" style="display: none; margin-top: 36px;">
+            <div id="warranty-results-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid rgba(197, 168, 128, 0.2);">
+                <span id="warranty-results-count" style="font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-primary); font-weight: 600;"></span>
+                <span id="warranty-page-indicator" style="font-size: 0.8rem; color: var(--text-muted);"></span>
             </div>
 
-            <div class="ticket-grid-details">
-                <div>
-                    <div class="detail-item-title">Khách hàng tiếp nhận</div>
-                    <div class="detail-item-val" id="wb-customer">Phạm Bích Ngọc</div>
-                </div>
-                <div>
-                    <div class="detail-item-title">Kiệt tác trang sức</div>
-                    <div class="detail-item-val" id="wb-product">Nhẫn Solitaire Diamond 18K</div>
-                </div>
-                <div>
-                    <div class="detail-item-title">Chi phí bảo dưỡng</div>
-                    <div class="detail-item-val" id="wb-cost">Miễn phí dịch vụ</div>
-                </div>
-                <div>
-                    <div class="detail-item-title">Ngày tiếp nhận</div>
-                    <div class="detail-item-val" id="wb-date-in">12/03/2026</div>
-                </div>
-                <div>
-                    <div class="detail-item-title">Ngày hẹn giao trả</div>
-                    <div class="detail-item-val" id="wb-date-out">14/03/2026</div>
-                </div>
-                <div>
-                    <div class="detail-item-title">Địa điểm bàn giao</div>
-                    <div class="detail-item-val">Showroom Quận 1, TP.HCM</div>
-                </div>
-            </div>
+            <!-- Vùng render danh sách thẻ bảo hành động -->
+            <div id="warranty-tickets-list" style="display: flex; flex-direction: column; gap: 24px;"></div>
 
-            <div class="ticket-service-note">
-                <strong style="color: var(--gold-primary);">Nội dung gia công & Lưu ý kỹ thuật:</strong><br />
-                <span id="wb-note">Làm sạch, đánh bóng siêu âm và kiểm tra chấu giữ viên kim cương chủ.</span>
-            </div>
+            <!-- Thanh điều hướng phân trang (tối đa 3 phiếu/trang) -->
+            <div id="warranty-pagination" class="warranty-pagination" style="display: none;"></div>
         </div>
     </div>
 </section>

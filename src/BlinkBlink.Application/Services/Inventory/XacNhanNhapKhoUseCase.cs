@@ -118,7 +118,7 @@ public class XacNhanNhapKhoUseCase
                 {
                     // Cộng dồn số lượng tồn kho
                     sp.SoLuongTon += ct.SoLuong;
-                    if (string.Equals(sp.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase) && sp.SoLuongTon > 0)
+                    if (sp.SoLuongTon > 0 && !string.Equals(sp.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
                     {
                         sp.TrangThai = "SanSang";
                     }
@@ -253,7 +253,7 @@ public class XacNhanNhapKhoUseCase
                 {
                     // Trừ số lượng tồn kho tương ứng với đợt nhập bị hủy
                     sp.SoLuongTon = Math.Max(0, sp.SoLuongTon - ct.SoLuong);
-                    if (sp.SoLuongTon == 0)
+                    if (sp.SoLuongTon <= 0 && !string.Equals(sp.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
                     {
                         sp.TrangThai = "HetHang";
                     }

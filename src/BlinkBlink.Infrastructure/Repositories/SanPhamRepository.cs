@@ -316,16 +316,22 @@ public class SanPhamRepository : ISanPhamRepository
             // Tránh lỗi nếu truy vấn không select cột SoLuongTonKho
         }
 
-        // Nếu sản phẩm chưa có phiếu nhập nhưng đang ở trạng thái sẵn sàng bán, ghi nhận tồn 1 chiếc trưng bày
-        if (soLuongTon <= 0 && string.Equals(sp.TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase))
-        {
-            soLuongTon = Math.Max(1, soLuongTon);
-        }
-        else
-        {
-            soLuongTon = Math.Max(0, soLuongTon);
-        }
+        soLuongTon = Math.Max(0, soLuongTon);
         sp.SoLuongTon = soLuongTon;
+
+        // Tự động đồng bộ trạng thái sản phẩm theo tồn kho thực tế
+        if (soLuongTon > 0 && !string.Equals(sp.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
+        {
+            sp.TrangThai = "SanSang";
+        }
+        else if (soLuongTon == 0 && !string.Equals(sp.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.Equals(sp.TrangThai, "DaBan", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(sp.TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase))
+            {
+                sp.TrangThai = "HetHang";
+            }
+        }
 
         if (!reader.IsDBNull(reader.GetOrdinal("TenDanhMuc")))
         {

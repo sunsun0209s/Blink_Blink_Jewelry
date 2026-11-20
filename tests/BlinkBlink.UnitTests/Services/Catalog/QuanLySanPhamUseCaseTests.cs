@@ -187,7 +187,7 @@ public class QuanLySanPhamUseCaseTests
         Assert.True(result);
         var created = fakeSpRepo.TimTheoId("SP_NEW01");
         Assert.NotNull(created);
-        Assert.Equal("HetHang", created.TrangThai); // Ban đầu tồn kho = 0, chưa nhập kho
+        Assert.Equal("ChuaNhap", created.TrangThai); // Ban đầu chưa nhập hàng
         Assert.Equal("C:\\images\\bongtai.png", created.HinhAnh);
         Assert.Equal(12000000, created.GiaNhap);
         Assert.Equal(18500000, created.GiaBan);
@@ -255,7 +255,7 @@ public class QuanLySanPhamUseCaseTests
         var created = fakeSpRepo.TimTheoId("SP_TEST_DISCOUNT");
         Assert.NotNull(created);
         Assert.Equal(0, created.PhanTramGiamGia);
-        Assert.Equal("HetHang", created.TrangThai);
+        Assert.Equal("ChuaNhap", created.TrangThai);
         Assert.Equal(0, created.GiaNhap);
         Assert.Equal(0, created.GiaBan);
     }

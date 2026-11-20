@@ -263,14 +263,19 @@ public class DatabaseHelper
                 -- Tự động khôi phục trạng thái SanSang cho các sản phẩm còn tồn kho > 0 nhưng bị đánh dấu nhầm là DaBan hoặc DangBaoHanh
                 UPDATE dbo.SanPhamTrangSuc
                 SET TrangThai = 'SanSang'
-                WHERE (TrangThai = 'DaBan' OR TrangThai = 'DangBaoHanh') AND (
+                WHERE (TrangThai = 'DaBan' OR TrangThai = 'DangBaoHanh' OR TrangThai = 'HetHang') AND (
                     (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
                      - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) > 0
                 );
 
-                -- Tự động khôi phục trạng thái DaBan cho các sản phẩm hết hàng nhưng bị đánh dấu DangBaoHanh
+                -- Tự động chuyển đổi toàn bộ trạng thái DaBan cũ sang HetHang
                 UPDATE dbo.SanPhamTrangSuc
-                SET TrangThai = 'DaBan'
+                SET TrangThai = 'HetHang'
+                WHERE TrangThai = 'DaBan';
+
+                -- Tự động khôi phục trạng thái HetHang cho các sản phẩm hết hàng nhưng bị đánh dấu DangBaoHanh
+                UPDATE dbo.SanPhamTrangSuc
+                SET TrangThai = 'HetHang'
                 WHERE TrangThai = 'DangBaoHanh' AND (
                     (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
                      - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) <= 0
@@ -295,7 +300,27 @@ public class DatabaseHelper
                 AND (
                     (ISNULL((SELECT SUM(nk.SoLuong) FROM dbo.ChiTietNhapKho nk INNER JOIN dbo.PhieuNhapKho pn ON nk.MaPhieuNhap = pn.MaPhieuNhap WHERE nk.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND (pn.TrangThai = 'DaDuyet' OR pn.TrangThai = '1')), 0)
                      - ISNULL((SELECT SUM(chd.SoLuong) FROM dbo.ChiTietHoaDon chd INNER JOIN dbo.HoaDon hd ON chd.SoHoaDon = hd.MaHoaDon WHERE chd.MaSanPham = dbo.SanPhamTrangSuc.MaSanPham AND hd.TrangThaiDonHang != 'DaHuy'), 0)) <= 0
-                );";
+                );
+
+                -- Tự động liên kết các hóa đơn khách vãng lai (0 / KH_0 / KH_GUEST_POS) với tài khoản khách hàng nếu trùng Số điện thoại nhận
+                UPDATE h
+                SET h.MaKhachHang = u.MaNguoiDung
+                FROM dbo.HoaDon h
+                INNER JOIN dbo.NguoiDung u ON h.SoDienThoaiNhan = u.SoDienThoai
+                WHERE (h.MaKhachHang = '0' OR h.MaKhachHang = 'KH_0' OR h.MaKhachHang = 'KH_GUEST_POS')
+                  AND h.SoDienThoaiNhan IS NOT NULL 
+                  AND h.SoDienThoaiNhan <> '' 
+                  AND h.SoDienThoaiNhan <> '0000000000';
+
+                -- Tự động liên kết các phiếu bảo hành cũ với tài khoản khách hàng nếu trùng Số điện thoại nhận
+                UPDATE pbh
+                SET pbh.MaKhachHang = u.MaNguoiDung
+                FROM dbo.PhieuBaoHanh pbh
+                INNER JOIN dbo.NguoiDung u ON pbh.SoDienThoai = u.SoDienThoai
+                WHERE (pbh.MaKhachHang = '0' OR pbh.MaKhachHang = 'KH_0' OR pbh.MaKhachHang = 'KH_GUEST_POS')
+                  AND pbh.SoDienThoai IS NOT NULL 
+                  AND pbh.SoDienThoai <> '' 
+                  AND pbh.SoDienThoai <> '0000000000';";
 
             ExecuteNonQuery(migrationSql);
             _logger.LogInfo(nameof(DatabaseHelper), "Kiểm tra tương thích lược đồ cơ sở dữ liệu hoàn tất.");

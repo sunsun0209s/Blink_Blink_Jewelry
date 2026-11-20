@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using BlinkBlink.Admin.Services;
 using BlinkBlink.Admin.Views.Helpers;
 using BlinkBlink.Admin.Views.UserControls.Inventory;
 
@@ -82,8 +83,48 @@ public class ProductsAndInventoryContainerView : UserControl
         this.Controls.Add(_pnlContentHost);
         this.Controls.Add(_pnlTabsBar);
 
-        // Khởi động tại tab Quản lý Sản Phẩm
-        SwitchTab(_btnTabProducts, GetProductsView());
+        // Khởi động các tab theo vai trò của tài khoản hiện hành
+        var currentUser = AdminServiceScope.Instance.CurrentUser;
+        var currentRole = currentUser != null ? currentUser.VaiTro.ToString() : "ADMIN";
+        ApplyRolePermissions(currentRole);
+    }
+
+    /// <summary>
+    /// Áp dụng ma trận phân quyền:
+    /// Nhân viên kho (WAREHOUSE / KHO): Bị chặn hoàn toàn khỏi Quản lý sản phẩm, Quản lý nhóm và Danh mục sản phẩm.
+    /// Chỉ được phép thao tác Quản lý nhập kho và Kiểm kê kho.
+    /// Quản trị viên (ADMIN): Hiển thị đầy đủ cả 5 tab.
+    /// </summary>
+    /// <param name="roleCode">Mã vai trò tài khoản: ADMIN, WAREHOUSE, SALE...</param>
+    public void ApplyRolePermissions(string? roleCode)
+    {
+        var isWarehouseStaff = string.Equals(roleCode, "WAREHOUSE", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(roleCode, "KHO", StringComparison.OrdinalIgnoreCase);
+
+        if (isWarehouseStaff)
+        {
+            _btnTabProducts.Visible = false;
+            _btnTabProductGroups.Visible = false;
+            _btnTabCategories.Visible = false;
+            _btnTabInventory.Visible = true;
+            _btnTabAudit.Visible = true;
+
+            // Kích hoạt tab mặc định là Quản Lý Nhập Kho Hàng cho nhân viên kho
+            SwitchTab(_btnTabInventory, GetInventoryView());
+        }
+        else
+        {
+            _btnTabProducts.Visible = true;
+            _btnTabProductGroups.Visible = true;
+            _btnTabCategories.Visible = true;
+            _btnTabInventory.Visible = true;
+            _btnTabAudit.Visible = true;
+
+            if (_currentActiveTab == null || !_currentActiveTab.Visible)
+            {
+                SwitchTab(_btnTabProducts, GetProductsView());
+            }
+        }
     }
 
     private Button CreateSubTabButton(string text)

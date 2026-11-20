@@ -18,7 +18,7 @@ public class SanPhamTrangSuc
     public virtual NhomSanPham? NhomSanPham { get; set; }
     public string ChatLieu { get; set; } = string.Empty;
     public string Size { get; set; } = string.Empty; // Chuẩn hóa string theo Diagram
-    public string TrangThai { get; set; } = "HetHang"; // SanSang, DaBan, DangBaoHanh, HetHang
+    public string TrangThai { get; set; } = "ChuaNhap"; // ChuaNhap, SanSang, HetHang, DangBaoHanh
     public decimal GiaNhap { get; set; }
     public decimal GiaBan { get; set; }
     public string HinhAnh { get; set; } = string.Empty; // Đường dẫn tệp ảnh hoặc URL ảnh
@@ -37,7 +37,7 @@ public class SanPhamTrangSuc
         string size,
         decimal giaNhap,
         decimal giaBan,
-        string trangThai = "HetHang",
+        string trangThai = "ChuaNhap",
         string hinhAnh = "",
         int phanTramGiamGia = 0,
         string maNhom = "0",
@@ -71,11 +71,11 @@ public class SanPhamTrangSuc
     /// <summary>
     /// Kiểm tra trạng thái sản phẩm có sẵn trong kho để giao dịch hay không.
     /// </summary>
-    /// <returns>True nếu còn trong kho ("SanSang"), False nếu đã bán hoặc hết hàng</returns>
+    /// <returns>True nếu còn trong kho ("SanSang"), False nếu chưa nhập hàng hoặc hết hàng</returns>
     public bool KiemTraTonKho()
     {
-        // Khớp hàm KiemTraTonKho(): bool trong Diagram
-        return string.Equals(TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase);
+        // Khớp hàm KiemTraTonKho(): bool trong Diagram: Phải ở trạng thái SanSang và tồn kho > 0
+        return string.Equals(TrangThai, "SanSang", StringComparison.OrdinalIgnoreCase) && SoLuongTon > 0;
     }
 
     /// <summary>

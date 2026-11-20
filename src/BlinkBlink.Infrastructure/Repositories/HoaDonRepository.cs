@@ -148,7 +148,7 @@ public class HoaDonRepository : IHoaDonRepository
         const string sql = @"
             SELECT h.MaHoaDon, h.NgayLap, h.MaKhachHang, h.MaNhanVien, h.DiaChiGiaoHang, h.SoDienThoaiNhan,
                    h.PhuongThucThanhToan, h.TrangThaiDonHang, h.TongTienHang, h.TienGiamGia, h.TongThanhToan, h.GhiChu,
-                   uKh.HoTen AS TenKhachHang, uKh.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
+                   uKh.HoTen AS TenKhachHang, uKh.SoDienThoai AS SdtKhachHang, uKh.TenDangNhap AS TenDangNhapKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
                    uNv.HoTen AS TenNhanVien, nv.MaNhanVien AS MaDinhDanhNhanVien
             FROM dbo.HoaDon h
             LEFT JOIN dbo.NguoiDung uKh ON h.MaKhachHang = uKh.MaNguoiDung
@@ -189,14 +189,17 @@ public class HoaDonRepository : IHoaDonRepository
         const string sql = @"
             SELECT h.MaHoaDon, h.NgayLap, h.MaKhachHang, h.MaNhanVien, h.DiaChiGiaoHang, h.SoDienThoaiNhan,
                    h.PhuongThucThanhToan, h.TrangThaiDonHang, h.TongTienHang, h.TienGiamGia, h.TongThanhToan, h.GhiChu,
-                   uKh.HoTen AS TenKhachHang, uKh.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
+                   uKh.HoTen AS TenKhachHang, uKh.SoDienThoai AS SdtKhachHang, uKh.TenDangNhap AS TenDangNhapKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
                    uNv.HoTen AS TenNhanVien, nv.MaNhanVien AS MaDinhDanhNhanVien
             FROM dbo.HoaDon h
             LEFT JOIN dbo.NguoiDung uKh ON h.MaKhachHang = uKh.MaNguoiDung
             LEFT JOIN dbo.KhachHang kh ON uKh.MaNguoiDung = kh.MaNguoiDung
             LEFT JOIN dbo.NguoiDung uNv ON h.MaNhanVien = uNv.MaNguoiDung
             LEFT JOIN dbo.NhanVien nv ON uNv.MaNguoiDung = nv.MaNguoiDung
-            WHERE h.MaKhachHang = @MaKhachHang OR kh.MaKhachHang = @MaKhachHang
+            WHERE h.MaKhachHang = @MaKhachHang 
+               OR kh.MaKhachHang = @MaKhachHang
+               OR (h.SoDienThoaiNhan = (SELECT TOP 1 SoDienThoai FROM dbo.NguoiDung WHERE MaNguoiDung = @MaKhachHang OR MaNguoiDung IN (SELECT MaNguoiDung FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHang)) 
+                   AND h.SoDienThoaiNhan IS NOT NULL AND h.SoDienThoaiNhan <> '' AND h.SoDienThoaiNhan <> '0000000000')
             ORDER BY h.NgayLap DESC;";
 
         using var conn = _dbHelper.GetConnection();
@@ -226,7 +229,7 @@ public class HoaDonRepository : IHoaDonRepository
         const string sql = @"
             SELECT h.MaHoaDon, h.NgayLap, h.MaKhachHang, h.MaNhanVien, h.DiaChiGiaoHang, h.SoDienThoaiNhan,
                    h.PhuongThucThanhToan, h.TrangThaiDonHang, h.TongTienHang, h.TienGiamGia, h.TongThanhToan, h.GhiChu,
-                   uKh.HoTen AS TenKhachHang, uKh.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
+                   uKh.HoTen AS TenKhachHang, uKh.SoDienThoai AS SdtKhachHang, uKh.TenDangNhap AS TenDangNhapKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
                    uNv.HoTen AS TenNhanVien, nv.MaNhanVien AS MaDinhDanhNhanVien
             FROM dbo.HoaDon h
             LEFT JOIN dbo.NguoiDung uKh ON h.MaKhachHang = uKh.MaNguoiDung
@@ -383,6 +386,43 @@ public class HoaDonRepository : IHoaDonRepository
             TongThanhToan = reader.GetDecimal(reader.GetOrdinal("TongThanhToan"))
         };
 
+        // Gán thông tin đối tượng Khách hàng nếu có
+        try
+        {
+            var ordTenKh = reader.GetOrdinal("TenKhachHang");
+            if (!reader.IsDBNull(ordTenKh))
+            {
+                var tenKh = reader.GetString(ordTenKh);
+                var ordSdtKh = reader.GetOrdinal("SdtKhachHang");
+                var sdtKh = !reader.IsDBNull(ordSdtKh) ? reader.GetString(ordSdtKh) : hd.SoDienThoaiNhan;
+
+                var ordTenDn = reader.GetOrdinal("TenDangNhapKhachHang");
+                var tenDn = !reader.IsDBNull(ordTenDn) ? reader.GetString(ordTenDn) : string.Empty;
+
+                var ordMaDinhDanh = reader.GetOrdinal("MaDinhDanhKhachHang");
+                var maKhachHangDinhDanh = !reader.IsDBNull(ordMaDinhDanh) ? reader.GetString(ordMaDinhDanh) : hd.MaKhachHang;
+
+                var ordNgaySinh = reader.GetOrdinal("NgaySinhKhachHang");
+                var ngaySinh = !reader.IsDBNull(ordNgaySinh) ? reader.GetDateTime(ordNgaySinh) : DateTime.MinValue;
+
+                hd.KhachHang = new KhachHang(
+                    maNguoiDung: hd.MaKhachHang,
+                    hoTen: tenKh,
+                    soDienThoai: sdtKh,
+                    tenDangNhap: tenDn,
+                    matKhau: string.Empty,
+                    maVaiTro: "KHACHHANG",
+                    maKhachHang: maKhachHangDinhDanh,
+                    ngaySinh: ngaySinh,
+                    trangThai: true
+                );
+            }
+        }
+        catch
+        {
+            // Bỏ qua nếu cột không tồn tại trong tập kết quả của câu query khác
+        }
+
         return hd;
     }
 
@@ -395,8 +435,13 @@ public class HoaDonRepository : IHoaDonRepository
 
         const string sql = @"
             UPDATE dbo.HoaDon
-            SET MaKhachHang = @MaKhachHangMoi
-            WHERE SoDienThoaiNhan = @SoDienThoai AND (MaKhachHang = '0' OR MaKhachHang = 'KH_0');";
+            SET MaKhachHang = CASE 
+                    WHEN EXISTS (SELECT 1 FROM dbo.NguoiDung WHERE MaNguoiDung = @MaKhachHangMoi) THEN @MaKhachHangMoi
+                    WHEN EXISTS (SELECT 1 FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHangMoi) THEN (SELECT TOP 1 MaNguoiDung FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHangMoi)
+                    ELSE @MaKhachHangMoi
+                END
+            WHERE SoDienThoaiNhan = @SoDienThoai 
+              AND (MaKhachHang = '0' OR MaKhachHang = 'KH_0' OR MaKhachHang = 'KH_GUEST_POS');";
 
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);

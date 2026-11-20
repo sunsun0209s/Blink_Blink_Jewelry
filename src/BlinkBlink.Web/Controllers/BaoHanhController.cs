@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -114,50 +115,54 @@ public class BaoHanhController : ControllerBase
     }
 
     /// <summary>
-    /// Tra cứu chi tiết một phiếu bảo hành điện tử theo số phiếu.
+    /// Tra cứu danh sách phiếu bảo hành điện tử theo Số phiếu bảo hành hoặc Số điện thoại.
+    /// Hỗ trợ cả khách có tài khoản và khách vãng lai để lại số điện thoại trên phiếu.
     /// </summary>
-    /// <param name="soPhieu">Số phiếu bảo hành</param>
+    /// <param name="soPhieu">Số phiếu bảo hành hoặc số điện thoại</param>
     /// <param name="cancellationToken">Mã token hủy tác vụ</param>
-    /// <returns>Chi tiết phiếu bảo hành</returns>
+    /// <returns>Danh sách phiếu bảo hành phù hợp</returns>
     [HttpGet("{soPhieu}")]
     public async Task<IActionResult> TraCuuTheoSoPhieu(string soPhieu, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(soPhieu))
         {
-            return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Số phiếu bảo hành không hợp lệ.", _logger);
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Vui lòng nhập mã phiếu hoặc số điện thoại để tra cứu.", _logger);
         }
 
-        var phieu = await _baoHanhRepo.TimTheoSoPhieuAsync(soPhieu, cancellationToken);
-        if (phieu == null)
+        var danhSach = await _baoHanhRepo.TraCuuBaoHanhAsync(soPhieu.Trim(), cancellationToken);
+        if (danhSach.Count == 0)
         {
-            return ApiResponseHelper.Fail(this, 404, ErrorCodes.WarrantyNotFound, "Không tìm thấy thông tin phiếu bảo hành.", _logger);
+            return ApiResponseHelper.Fail(this, 404, ErrorCodes.WarrantyNotFound, "Không tìm thấy thông tin phiếu bảo hành cho mã hoặc số điện thoại này.", _logger);
         }
+
+        var dtoList = danhSach.Select(phieu => new
+        {
+            SoPhieu = phieu.SoPhieuBH,
+            SoPhieuBH = phieu.SoPhieuBH,
+            MaKhachHang = phieu.MaKhachHang,
+            TenKhachHang = phieu.KhachHang?.HoTen ?? (!string.IsNullOrWhiteSpace(phieu.SoDienThoai) ? $"Khách hàng ({phieu.SoDienThoai})" : "Khách vãng lai"),
+            SoDienThoai = phieu.SoDienThoai,
+            MaSanPham = phieu.MaSanPham,
+            TenSanPham = phieu.SanPham?.TenSanPham ?? phieu.MaSanPham,
+            LyDoBaoHanh = phieu.LyDoBaoHanh,
+            LyDo = phieu.LyDoBaoHanh,
+            TinhTrangTiepNhan = phieu.TinhTrangTiepNhan,
+            GhiChu = phieu.GhiChu,
+            ChiPhiUocTinh = phieu.ChiPhiUocTinh,
+            ChiPhiThucTe = phieu.ChiPhiThucTe,
+            ChiPhi = phieu.ChiPhiBaoHanh,
+            ChiPhiBaoHanh = phieu.ChiPhiBaoHanh,
+            TrangThaiXuLy = phieu.TrangThaiXuLy,
+            TrangThai = phieu.TrangThaiXuLy,
+            NgayTiepNhan = phieu.NgayTiepNhan.ToString("dd/MM/yyyy"),
+            NgayHenTra = phieu.NgayHenTra.HasValue ? phieu.NgayHenTra.Value.ToString("dd/MM/yyyy") : "Đang cập nhật"
+        }).ToList();
 
         return Ok(new
         {
             Success = true,
-            Data = new
-            {
-                SoPhieu = phieu.SoPhieuBH,
-                SoPhieuBH = phieu.SoPhieuBH,
-                MaKhachHang = phieu.MaKhachHang,
-                TenKhachHang = phieu.KhachHang?.HoTen ?? (!string.IsNullOrWhiteSpace(phieu.SoDienThoai) ? $"Khách hàng ({phieu.SoDienThoai})" : "Khách vãng lai"),
-                SoDienThoai = phieu.SoDienThoai,
-                MaSanPham = phieu.MaSanPham,
-                TenSanPham = phieu.SanPham?.TenSanPham ?? phieu.MaSanPham,
-                LyDoBaoHanh = phieu.LyDoBaoHanh,
-                LyDo = phieu.LyDoBaoHanh,
-                TinhTrangTiepNhan = phieu.TinhTrangTiepNhan,
-                GhiChu = phieu.GhiChu,
-                ChiPhiUocTinh = phieu.ChiPhiUocTinh,
-                ChiPhiThucTe = phieu.ChiPhiThucTe,
-                ChiPhi = phieu.ChiPhiBaoHanh,
-                ChiPhiBaoHanh = phieu.ChiPhiBaoHanh,
-                TrangThaiXuLy = phieu.TrangThaiXuLy,
-                TrangThai = phieu.TrangThaiXuLy,
-                NgayTiepNhan = phieu.NgayTiepNhan.ToString("dd/MM/yyyy"),
-                NgayHenTra = phieu.NgayHenTra.HasValue ? phieu.NgayHenTra.Value.ToString("dd/MM/yyyy") : "Đang cập nhật"
-            }
+            Total = dtoList.Count,
+            Data = dtoList
         });
     }
 

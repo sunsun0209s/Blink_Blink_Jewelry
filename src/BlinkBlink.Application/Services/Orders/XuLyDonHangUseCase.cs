@@ -32,7 +32,43 @@ public class XuLyDonHangUseCase
     /// <returns>True nếu duyệt thành công, False nếu hóa đơn không tồn tại hoặc đã xử lý</returns>
     public bool DuyetDonHang(string maHoaDon, string maNhanVien)
     {
-        return DuyetDonHangAsync(maHoaDon, maNhanVien).GetAwaiter().GetResult();
+        return DuyetDonHang(maHoaDon, maNhanVien, out _);
+    }
+
+    /// <summary>
+    /// Phê duyệt đơn đặt hàng online của khách hàng có thông báo lỗi chi tiết (đồng bộ).
+    /// </summary>
+    /// <param name="maHoaDon">Mã hóa đơn cần duyệt</param>
+    /// <param name="maNhanVien">Mã nhân viên duyệt đơn</param>
+    /// <param name="error">Thông báo lỗi nếu duyệt thất bại</param>
+    /// <returns>True nếu duyệt thành công</returns>
+    public bool DuyetDonHang(string maHoaDon, string maNhanVien, out string error)
+    {
+        error = string.Empty;
+        if (string.IsNullOrWhiteSpace(maHoaDon) || string.IsNullOrWhiteSpace(maNhanVien))
+        {
+            error = "Mã hóa đơn hoặc mã nhân viên không hợp lệ.";
+            return false;
+        }
+
+        var hoaDon = _hoaDonRepo.TimTheoMa(maHoaDon);
+        if (hoaDon == null)
+        {
+            error = $"Không tìm thấy đơn hàng #{maHoaDon}.";
+            return false;
+        }
+
+        if (!string.Equals(hoaDon.TrangThaiDonHang, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
+        {
+            error = $"Đơn hàng #{maHoaDon} không ở trạng thái Chờ duyệt (hiện tại: {hoaDon.TrangThaiDonHang}).";
+            return false;
+        }
+
+        // Tồn kho đã được giữ chỗ và trừ tự động ngay từ thời điểm khách hàng đặt đơn trên Web.
+        // Khi Admin duyệt đơn, chuyển trạng thái đơn hàng sang Đang đóng gói (DangDongGoi) và gán nhân viên duyệt.
+        hoaDon.CapNhatTrangThai("DangDongGoi", maNhanVien);
+        _hoaDonRepo.CapNhatHoaDon(hoaDon);
+        return true;
     }
 
     /// <summary>
@@ -61,32 +97,7 @@ public class XuLyDonHangUseCase
             return false;
         }
 
-        // Chuyển sang trạng thái đang đóng gói và gán nhân viên duyệt
         hoaDon.CapNhatTrangThai("DangDongGoi", maNhanVien);
-
-        // Đánh dấu chuyển trạng thái các sản phẩm trong đơn sang Đã bán
-        if (hoaDon.ChiTietHoaDons != null)
-        {
-            foreach (var item in hoaDon.ChiTietHoaDons)
-            {
-                var sp = await _sanPhamRepo.TimTheoIdAsync(item.MaSanPham, cancellationToken);
-                if (sp != null)
-                {
-                    var tonConLai = sp.SoLuongTon - item.SoLuong;
-                    sp.SoLuongTon = Math.Max(0, tonConLai);
-                    if (tonConLai <= 0)
-                    {
-                        sp.CapNhatTrangThai("DaBan");
-                    }
-                    else
-                    {
-                        sp.CapNhatTrangThai("SanSang");
-                    }
-                    await _sanPhamRepo.LuuSanPhamAsync(sp, cancellationToken);
-                }
-            }
-        }
-
         await _hoaDonRepo.CapNhatHoaDonAsync(hoaDon, cancellationToken);
         return true;
     }
@@ -183,7 +194,7 @@ public class XuLyDonHangUseCase
             foreach (var item in hoaDon.ChiTietHoaDons)
             {
                 var sp = await _sanPhamRepo.TimTheoIdAsync(item.MaSanPham, cancellationToken);
-                if (sp != null && string.Equals(sp.TrangThai, "DaBan", StringComparison.OrdinalIgnoreCase))
+                if (sp != null && (string.Equals(sp.TrangThai, "HetHang", StringComparison.OrdinalIgnoreCase) || string.Equals(sp.TrangThai, "DaBan", StringComparison.OrdinalIgnoreCase)))
                 {
                     sp.CapNhatTrangThai("SanSang");
                     await _sanPhamRepo.LuuSanPhamAsync(sp, cancellationToken);

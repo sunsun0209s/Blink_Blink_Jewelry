@@ -59,7 +59,7 @@ public class XuLyBaoHanhUseCase
 
         // Phục hồi trạng thái cho các sản phẩm trong CSDL cũ vô tình bị gán 'DangBaoHanh':
         // Khi phiếu hoàn tất (DaTraKhach, DaHoanTat) hoặc DaHuy, chỉ phục hồi nếu sản phẩm đang mang trạng thái DangBaoHanh.
-        // Nếu sản phẩm còn tồn kho (> 0) thì đưa về 'SanSang', ngược lại đưa về 'DaBan'.
+        // Nếu sản phẩm còn tồn kho (> 0) thì đưa về 'SanSang', ngược lại đưa về 'HetHang'.
         if (string.Equals(trangThaiMoi, "DaHuy", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(trangThaiMoi, "DaTraKhach", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(trangThaiMoi, "DaHoanTat", StringComparison.OrdinalIgnoreCase))
@@ -67,7 +67,7 @@ public class XuLyBaoHanhUseCase
             var sanPham = await _sanPhamRepo.TimTheoIdAsync(phieu.MaSanPham, cancellationToken);
             if (sanPham != null && string.Equals(sanPham.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
             {
-                var trangThaiPhucHoi = sanPham.SoLuongTon > 0 ? "SanSang" : "DaBan";
+                var trangThaiPhucHoi = sanPham.SoLuongTon > 0 ? "SanSang" : "HetHang";
                 sanPham.CapNhatTrangThai(trangThaiPhucHoi);
                 await _sanPhamRepo.LuuSanPhamAsync(sanPham, cancellationToken);
             }
@@ -151,11 +151,11 @@ public class XuLyBaoHanhUseCase
 
         phieu.HoanTatBaoHanh();
 
-        // Hoàn trả trạng thái của món trang sức từ DangBaoHanh về DaBan
+        // Hoàn trả trạng thái của món trang sức từ DangBaoHanh về SanSang hoặc HetHang tuỳ tồn kho
         var sanPham = await _sanPhamRepo.TimTheoIdAsync(phieu.MaSanPham, cancellationToken);
         if (sanPham != null && string.Equals(sanPham.TrangThai, "DangBaoHanh", StringComparison.OrdinalIgnoreCase))
         {
-            sanPham.CapNhatTrangThai("DaBan");
+            sanPham.CapNhatTrangThai(sanPham.SoLuongTon > 0 ? "SanSang" : "HetHang");
             await _sanPhamRepo.LuuSanPhamAsync(sanPham, cancellationToken);
         }
 
