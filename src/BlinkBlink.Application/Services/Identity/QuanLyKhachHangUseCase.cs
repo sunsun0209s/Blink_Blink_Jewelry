@@ -117,4 +117,29 @@ public class QuanLyKhachHangUseCase
         message = "Xóa khách hàng thất bại do lỗi hệ thống dữ liệu.";
         return false;
     }
+
+    /// <summary>
+    /// Đặt lại mật khẩu mặc định 123456789 cho khách hàng.
+    /// </summary>
+    /// <param name="maKh">Mã định danh khách hàng cần đặt lại mật khẩu</param>
+    /// <returns>True nếu đặt lại mật khẩu thành công; ngược lại False</returns>
+    public bool ResetMatKhau(string maKh)
+    {
+        if (string.IsNullOrWhiteSpace(maKh))
+        {
+            return false;
+        }
+
+        var khachHang = _khachHangRepo.TimTheoMa(maKh.Trim());
+        if (khachHang == null)
+        {
+            return false;
+        }
+
+        const string matKhauMacDinh = "123456789";
+        khachHang.DoiMatKhau(matKhauMacDinh);
+
+        _khachHangRepo.LuuKhachHang(khachHang);
+        return true;
+    }
 }

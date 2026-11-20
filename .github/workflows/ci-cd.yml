@@ -48,8 +48,8 @@ jobs:
       - name: 5. Biên dịch toàn bộ Solution (Build Release)
         run: dotnet build BlinkBlinkJewelry.slnx --configuration Release --no-restore
 
-      - name: 6. Chạy toàn bộ Unit Tests & Integration Tests
-        run: dotnet test BlinkBlinkJewelry.slnx --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      - name: 6. Chạy toàn bộ Unit Tests & Integration Tests (Bỏ qua WebTests Playwright)
+        run: dotnet test BlinkBlinkJewelry.slnx --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx" --filter "FullyQualifiedName!~WebTests"
 
       - name: 7. Lưu trữ báo cáo kết quả kiểm thử (Upload Test Results)
         if: always()

@@ -201,4 +201,33 @@ public class KhachHangController : ControllerBase
             Message = $"Thay đổi trạng thái tài khoản khách hàng '{maKh}' thành công."
         });
     }
+
+    /// <summary>
+    /// Đặt lại mật khẩu mặc định (123456789) cho khách hàng.
+    /// Khớp phương thức: + HttpPut ResetMatKhau(maKh: string): HttpResponse trong Diagram.
+    /// </summary>
+    /// <param name="maKh">Mã khách hàng cần đặt lại mật khẩu</param>
+    /// <returns>HTTP Status 200 nếu thành công, 400 nếu thất bại</returns>
+    [HttpPut("reset-mat-khau/{maKh}")]
+    public IActionResult ResetMatKhau(string maKh)
+    {
+        if (string.IsNullOrWhiteSpace(maKh))
+        {
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Mã khách hàng không hợp lệ.", _logger);
+        }
+
+        var result = _quanLyKhachHangUseCase.ResetMatKhau(maKh.Trim());
+        if (!result)
+        {
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.CustomerNotFound, "Không tìm thấy khách hàng hoặc không thể đặt lại mật khẩu.", _logger);
+        }
+
+        _logger.LogInfo(nameof(KhachHangController), $"Đặt lại mật khẩu mặc định cho khách hàng '{maKh}' thành công.");
+
+        return Ok(new
+        {
+            Success = true,
+            Message = $"Đã đặt lại mật khẩu mặc định 123456789 cho khách hàng '{maKh}' thành công."
+        });
+    }
 }

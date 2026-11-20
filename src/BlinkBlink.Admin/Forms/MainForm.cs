@@ -265,8 +265,8 @@ public partial class MainForm : Form
 
             case "TECHNICIAN":
                 // 4. Nhân viên kỹ thuật: Phụ trách tiếp nhận xử lý, sửa chữa và hoàn thiện bảo hành trang sức
-                btnWarranty.Visible = true; // Phân hệ trọng tâm của kỹ thuật viên
-                btnProducts.Visible = true; // Cho phép xem danh mục sản phẩm, chất liệu
+                btnWarranty.Visible = true; // Phân hệ trọng tâm duy nhất của kỹ thuật viên
+                btnProducts.Visible = false; // Kỹ thuật viên chỉ quản lý phần bảo hành
 
                 btnSales.Visible = false;
                 _btnOfflineSales.Visible = false;

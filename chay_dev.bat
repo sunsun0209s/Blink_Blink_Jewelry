@@ -29,9 +29,19 @@ goto READY_DEV
 
 :READY_DEV
 echo.
-echo [BUOC 2/3] Dang cho he thong san sang trong 4 giay...
-timeout /t 4 /nobreak > nul
-
+echo [BUOC 2/3] Dang cho he thong san sang (tham do ket noi tu dong)...
+set /a RETRY_COUNT=0
+:WAIT_WEB
+timeout /t 1 /nobreak > nul
+curl.exe -s -o nul !WEB_URL!/ >nul 2>&1
+if %ERRORLEVEL% equ 0 goto WEB_READY
+set /a RETRY_COUNT+=1
+if !RETRY_COUNT! lss 30 (
+    echo      Dang cho Web Server bien dich va mo cong... (!RETRY_COUNT!s)
+    goto WAIT_WEB
+)
+:WEB_READY
+echo [OK] May chu Web da san sang hoan toan.
 echo Tu dong mo trinh duyet Web Storefront...
 start !WEB_URL!/
 
