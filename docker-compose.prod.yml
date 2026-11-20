@@ -9,9 +9,7 @@
 
 services:
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/sunsun0209s/blink_blink_jewelry:latest
     container_name: blinkblink_web_prod
     restart: unless-stopped
     environment:
