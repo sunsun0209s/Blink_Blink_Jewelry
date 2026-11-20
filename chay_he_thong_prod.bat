@@ -15,8 +15,10 @@ goto USE_LOCAL_PROD
 
 :USE_DOCKER_PROD
 echo [OK] Phat hien Docker dang hoat dong.
-echo      Khoi chay Docker Production: Dong goi Release, CSDL cong 1433...
-docker compose -f docker-compose.prod.yml up -d --build
+echo      Dang tai ban dong goi Web moi nhat tu GitHub Packages [ghcr.io]...
+docker compose -f docker-compose.prod.yml pull web
+echo      Khoi chay he sinh thai Docker Production [CSDL cong 1433]...
+docker compose -f docker-compose.prod.yml up -d
 set "WEB_PORT=8080"
 set "WEB_URL=http://localhost:8080"
 goto OPEN_NGROK
@@ -59,6 +61,14 @@ echo       HE THONG PRODUCTION DA HOAT DONG
 echo       - Web Khach Hang [Noi bo]: !WEB_URL!/
 echo       - Duong ham ngrok: Dang hien thi o cua so ngrok rieng
 echo       - WinForms Admin: Dang chay tren may tinh
+echo.
+echo       >>> NHAN PHIM BAT KY DE DUNG HE THONG VA TAT CONTAINER DOCKER <<<
 echo ==============================================================================
 echo.
-pause
+pause > nul
+
+echo.
+echo [DANG TAT] Dang tat cac dich vu va don dep container Docker...
+docker compose -f docker-compose.prod.yml down
+echo [OK] He thong da tat va don dep container hoan toan.
+timeout /t 3 /nobreak > nul

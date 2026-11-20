@@ -46,6 +46,15 @@ echo       HE THONG PHAT TRIEN DA SAN SANG HOAT DONG
 echo       - Web Khach Hang: !WEB_URL!/
 echo       - Swagger API:    !WEB_URL!/swagger
 echo       - WinForms Admin: Dang chay tren may
+echo.
+echo       >>> NHAN PHIM BAT KY DE DUNG HE THONG VA TAT CONTAINER DOCKER <<<
 echo ==============================================================================
 echo.
+pause > nul
+
+echo.
+echo [DANG TAT] Dang tat cac dich vu va don dep container Docker...
+docker compose -f docker-compose.dev.yml down >nul 2>&1
+echo [OK] He thong da tat va don dep container hoan toan.
+timeout /t 3 /nobreak > nul
 pause
