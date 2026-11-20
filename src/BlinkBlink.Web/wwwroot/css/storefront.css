@@ -1655,8 +1655,9 @@ a {
 .quickview-card-dialog {
     background: #FFFFFF;
     border-radius: var(--radius-sm);
-    max-width: 840px;
-    width: 100%;
+    max-width: 720px;
+    width: 95%;
+    max-height: 85vh;
     box-shadow: var(--shadow-elevated);
     display: grid;
     grid-template-columns: 1fr 1.15fr;
@@ -1667,8 +1668,8 @@ a {
 
 .btn-close-modal {
     position: absolute;
-    top: 16px;
-    right: 18px;
+    top: 12px;
+    right: 14px;
     background: #FFFFFF;
     border: 1px solid var(--border-subtle);
     border-radius: 50%;
@@ -1679,12 +1680,19 @@ a {
     justify-content: center;
     cursor: pointer;
     z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.btn-close-modal:hover {
+    background: #F1F5F9;
+    color: var(--dark-obsidian);
 }
 
 .quickview-img-frame {
     background: #F8F6F2;
     height: 100%;
-    min-height: 420px;
+    max-height: 85vh;
+    overflow: hidden;
 }
 
 .quickview-img-frame img {
@@ -1694,49 +1702,53 @@ a {
 }
 
 .quickview-content-pane {
-    padding: 40px 32px;
+    padding: 24px 24px 20px 24px;
     display: flex;
     flex-direction: column;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 
 .modal-cat-tag {
-    font-size: 0.72rem;
-    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--gold-hover);
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .modal-prod-title {
-    font-size: 2rem;
-    line-height: 1.2;
-    margin-bottom: 12px;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    margin-bottom: 8px;
+    padding-right: 28px;
 }
 
 .modal-prod-price {
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--dark-obsidian);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .modal-prod-specs {
     border-top: 1px solid var(--border-light);
     border-bottom: 1px solid var(--border-light);
-    padding: 16px 0;
-    margin-bottom: 24px;
-    font-size: 0.88rem;
+    padding: 10px 0;
+    margin-bottom: 14px;
+    font-size: 0.82rem;
     color: var(--text-secondary);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .modal-action-row {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     margin-top: auto;
+    padding-top: 8px;
 }
 
 /* Thông Báo Toast Thanh Lịch */

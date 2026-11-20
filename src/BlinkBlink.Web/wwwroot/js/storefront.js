@@ -1524,16 +1524,16 @@ function initNavigationAndScrollSpy() {
     });
 
     // 4. ScrollSpy: Tự động chuyển gạch chân active khi người dùng cuộn trang
-    const sectionIds = ['top', 'collections', 'catalog', 'warranty'];
+    const sectionIds = ['top', 'catalog', 'warranty'];
     const sections = sectionIds
         .map(id => document.getElementById(id))
-        .filter(el => el !== null);
+        .filter(el => el !== null && el.offsetParent !== null && window.getComputedStyle(el).display !== 'none');
 
     if (sections.length > 0 && 'IntersectionObserver' in window) {
         const observerOptions = {
             root: null,
-            rootMargin: '-20% 0px -55% 0px',
-            threshold: 0.1
+            rootMargin: '-15% 0px -55% 0px',
+            threshold: 0.05
         };
 
         const observer = new IntersectionObserver((entries) => {
@@ -2489,6 +2489,9 @@ function renderCustomerOrders(orders, user) {
         } else if (st === 'dagiao') {
             badgeClass = 'status-badge-dagiao';
             statusText = '✅ Đã Bàn Giao Thành Công';
+        } else if (st === 'dathanhtoan' || st === 'hoantat') {
+            badgeClass = 'status-badge-dagiao';
+            statusText = '✅ Mua Tại Quầy (Đã Thanh Toán)';
         } else if (st === 'dahuy') {
             badgeClass = 'status-badge-dahuy';
             statusText = '❌ Đã Hủy Đơn';
@@ -2544,7 +2547,9 @@ function renderCustomerOrders(orders, user) {
         const finalTotal = order.tongThanhToan !== undefined ? order.tongThanhToan : (order.tongTien || 0);
         const origTotal = order.tongTienHang !== undefined ? order.tongTienHang : (finalTotal + (order.tienGiamGia || 0));
         const discount = order.tienGiamGia || 0;
-        const address = order.diaChiGiaoHang || order.diaChi || 'Nhận tại xưởng Blink Blink';
+        const address = (order.diaChiGiaoHang && order.diaChiGiaoHang.trim() !== '') 
+            ? order.diaChiGiaoHang 
+            : (st === 'dathanhtoan' ? 'Mua trực tiếp tại showroom' : (order.diaChi || 'Nhận tại xưởng Blink Blink'));
         const phone = order.soDienThoaiNhan || order.soDienThoai || '';
         const payment = order.phuongThucThanhToan || order.phuongThuc || 'Chuyển khoản';
 
