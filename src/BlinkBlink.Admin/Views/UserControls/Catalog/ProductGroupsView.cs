@@ -156,6 +156,7 @@ public class ProductGroupsView : UserControl
         };
 
         _dgvGroups = new DataGridView();
+        _dgvGroups.AutoGenerateColumns = false;
         UITheme.ApplyGridViewStyle(_dgvGroups);
         ConfigureGridColumns();
         _dgvGroups.CellDoubleClick += (s, e) => BtnEditGroup_Click(s, e);
@@ -765,6 +766,7 @@ public class EditProductGroupModal : Form
         };
 
         _dgvProductsInGroup = new DataGridView();
+        _dgvProductsInGroup.AutoGenerateColumns = false;
         UITheme.ApplyGridViewStyle(_dgvProductsInGroup);
         _dgvProductsInGroup.ScrollBars = ScrollBars.Vertical;
         _dgvProductsInGroup.RowTemplate.Height = 32;
@@ -1044,9 +1046,10 @@ public class EditProductGroupModal : Form
                 MessageBoxIcon.Warning
             );
 
-            // Làm trống ô search và combobox theo đúng yêu cầu CONGVIECTIEPTHEO.md
+            // Làm trống ô search và bỏ chọn combobox, nạp lại danh sách khả dụng
             _txtSearchToAdd.Text = string.Empty;
-            _cboProductToAdd.Items.Clear();
+            FilterProductsToAdd();
+            _cboProductToAdd.SelectedIndex = -1;
             _lblProductSize.Text = "Size: (chưa chọn sản phẩm)";
             return;
         }
