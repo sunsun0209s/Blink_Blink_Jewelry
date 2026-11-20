@@ -62,37 +62,10 @@ async function fetchCatalogFromApi() {
     return [];
 }
 
-// 2. Dữ liệu mẫu phiếu tiếp nhận bảo hành dịch vụ kim hoàn (SeedData.sql)
-const sampleWarrantyTickets = {
-    'BH2001': {
-        soPhieu: 'BH2001',
-        maKhachHang: 'USER_KH001',
-        tenKhachHang: 'Phạm Bích Ngọc',
-        maSanPham: 'SP001',
-        tenSanPham: 'Nhẫn Solitaire Diamond 18K',
-        ngayTiepNhan: '12/03/2026',
-        ngayHenTra: '14/03/2026',
-        chiPhi: 0,
-        trangThai: 'DaHoanTat',
-        trangThaiText: 'Đã hoàn tất',
-        lyDo: 'Làm sạch, đánh bóng siêu âm và kiểm tra chấu giữ viên kim cương chủ',
-        ghiChu: 'Trang sức đã được phục hồi độ sáng bóng 99%, sẵn sàng giao trả tại showroom Quận 1.'
-    },
-    'BH2002': {
-        soPhieu: 'BH2002',
-        maKhachHang: 'USER_KH002',
-        tenKhachHang: 'Hoàng Tuấn Anh',
-        maSanPham: 'SP002',
-        tenSanPham: 'Dây Chuyền Eternal Heart Ruby',
-        ngayTiepNhan: '18/03/2026',
-        ngayHenTra: '22/03/2026',
-        chiPhi: 150000,
-        trangThai: 'DangBaoHanh',
-        trangThaiText: 'Đang bảo dưỡng',
-        lyDo: 'Đứt khoen móc khóa cài dây chuyền vàng hồng, yêu cầu hàn laser thẩm mỹ',
-        ghiChu: 'Nghệ nhân đang gia công hàn nhiệt laser tại xưởng chế tác Blink Blink.'
-    }
-};
+// 2. Trạng thái tra cứu bảo hành kim hoàn và phân trang tự động (3 phiếu/trang)
+let warrantyTicketsData = [];
+let currentWarrantyPage = 1;
+const WARRANTY_PAGE_SIZE = 3;
 
 
 
@@ -1206,98 +1179,195 @@ function closeQuickView() {
 }
 
 /**
- * Tra cứu bảo hành kim hoàn
+ * Chuyển đổi mã trạng thái bảo hành sang nhãn hiển thị và CSS class chuẩn Taste kim hoàn
  */
-async function lookupWarranty(ticketCode) {
-    const input = document.getElementById('warranty-search-input');
-    const code = (ticketCode || (input ? input.value : '')).trim().toUpperCase();
+function getWarrantyStatusInfo(rawStatus) {
+    const status = (rawStatus || '').toUpperCase();
+    if (status === 'DAHOANTAT' || status === 'DATRAKHACH') {
+        return { badgeClass: 'badge-status-completed', text: 'Đã Hoàn Tất Dịch Vụ' };
+    }
+    if (status === 'DAXULY') {
+        return { badgeClass: 'badge-status-completed', text: 'Đã Xử Lý Xong • Chờ Giao Khách' };
+    }
+    if (status === 'DAHUY') {
+        return { badgeClass: 'badge-status-cancelled', text: 'Phiếu Đã Hủy' };
+    }
+    if (status === 'TIEPNHAN') {
+        return { badgeClass: 'badge-status-processing', text: 'Đã Tiếp Nhận Yêu Cầu' };
+    }
+    return { badgeClass: 'badge-status-processing', text: 'Đang Gia Công Bảo Dưỡng' };
+}
 
-    if (!code) {
-        showToast('Vui lòng nhập mã phiếu bảo hành (VD: BH2001, BH2002)');
+/**
+ * Tra cứu bảo hành kim hoàn theo Mã phiếu bảo hành hoặc Số điện thoại
+ */
+async function lookupWarranty(ticketCodeOrPhone) {
+    const input = document.getElementById('warranty-search-input');
+    const query = (ticketCodeOrPhone || (input ? input.value : '')).trim();
+
+    if (!query) {
+        showToast('Vui lòng nhập mã phiếu bảo hành hoặc Số điện thoại để tra cứu.', 'warning');
+        if (input) input.focus();
         return;
     }
 
-    if (input) input.value = code;
+    if (input) input.value = query;
 
-    const card = document.getElementById('warranty-result-card');
-    let ticket = null;
+    const container = document.getElementById('warranty-results-container');
 
-    // 1. Tra cứu trực tiếp từ CSDL SQL Server qua RESTful API
+    // Tra cứu trực tiếp từ CSDL SQL Server qua RESTful API
     try {
-        const res = await fetch(`/api/BaoHanh/${encodeURIComponent(code)}`);
+        const res = await fetch(`/api/BaoHanh/${encodeURIComponent(query)}`);
         if (res.ok) {
             const json = await res.json();
             if (json.success && json.data) {
-                ticket = json.data;
+                warrantyTicketsData = Array.isArray(json.data) ? json.data : [json.data];
+            } else {
+                warrantyTicketsData = [];
             }
+        } else {
+            warrantyTicketsData = [];
         }
     } catch (e) {
-        console.warn(`[BlinkBlink.Web] Lỗi kết nối /api/BaoHanh/${code}:`, e);
+        console.warn(`[BlinkBlink.Web] Lỗi kết nối /api/BaoHanh/${query}:`, e);
+        warrantyTicketsData = [];
     }
 
-    // 2. Dự phòng kho mẫu nếu mất kết nối hoặc dữ liệu cục bộ
-    if (!ticket && sampleWarrantyTickets[code]) {
-        ticket = sampleWarrantyTickets[code];
-    }
-
-    if (!ticket) {
-        showToast(`Không tìm thấy thông tin cho mã phiếu: ${code}`);
-        if (card) card.style.display = 'none';
+    if (!warrantyTicketsData || warrantyTicketsData.length === 0) {
+        showToast(`Không tìm thấy phiếu bảo hành phù hợp với: ${query}`, 'warning');
+        if (container) container.style.display = 'none';
         return;
     }
 
-    // Nạp dữ liệu vào thẻ bảo hành
-    const elTicketNo = document.getElementById('wb-ticket-no');
-    const elCustomer = document.getElementById('wb-customer');
-    const elProduct = document.getElementById('wb-product');
-    const elDateIn = document.getElementById('wb-date-in');
-    const elDateOut = document.getElementById('wb-date-out');
-    const elCost = document.getElementById('wb-cost');
-    const elNote = document.getElementById('wb-note');
+    currentWarrantyPage = 1;
+    renderWarrantyResults();
+    if (container) {
+        container.style.display = 'block';
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    showToast(`Đã tìm thấy ${warrantyTicketsData.length} phiếu bảo hành cho: ${query}`, 'success');
+}
 
-    if (elTicketNo) elTicketNo.textContent = ticket.soPhieu || ticket.soPhieuBH || code;
-    if (elCustomer) elCustomer.textContent = ticket.tenKhachHang || 'Khách hàng Blink Blink';
-    if (elProduct) elProduct.textContent = ticket.tenSanPham || 'Kiệt tác trang sức';
-    if (elDateIn) elDateIn.textContent = ticket.ngayTiepNhan || '-';
-    if (elDateOut) elDateOut.textContent = ticket.ngayHenTra || 'Đang cập nhật';
+/**
+ * Hiển thị danh sách phiếu bảo hành kèm phân trang (tối đa 3 phiếu/trang)
+ */
+function renderWarrantyResults() {
+    const listEl = document.getElementById('warranty-tickets-list');
+    const countEl = document.getElementById('warranty-results-count');
+    const pageIndicatorEl = document.getElementById('warranty-page-indicator');
+    const paginationEl = document.getElementById('warranty-pagination');
 
-    const costVal = ticket.chiPhi !== undefined ? ticket.chiPhi : (ticket.chiPhiBaoHanh || 0);
-    if (elCost) elCost.textContent = costVal === 0 ? 'Miễn phí bảo dưỡng' : formatCurrency(costVal);
+    if (!listEl) return;
 
-    const noteParts = [
-        ticket.lyDo || ticket.lyDoBaoHanh,
-        ticket.tinhTrangTiepNhan ? `Tình trạng: ${ticket.tinhTrangTiepNhan}` : '',
-        ticket.ghiChu
-    ].filter(Boolean);
-    if (elNote) elNote.textContent = noteParts.join(' — ') || 'Đang được nghệ nhân Blink Blink chăm sóc và gia công.';
+    const totalTickets = warrantyTicketsData.length;
+    const totalPages = Math.ceil(totalTickets / WARRANTY_PAGE_SIZE);
 
-    const badgeEl = document.getElementById('wb-status-badge');
-    if (badgeEl) {
-        const rawStatus = (ticket.trangThaiXuLy || ticket.trangThai || '').toUpperCase();
-        if (rawStatus === 'DAHOANTAT' || rawStatus === 'DATRAKHACH') {
-            badgeEl.className = 'badge-status-completed';
-            badgeEl.textContent = 'Đã Hoàn Tất Dịch Vụ';
-        } else if (rawStatus === 'DAXULY') {
-            badgeEl.className = 'badge-status-completed';
-            badgeEl.textContent = 'Đã Xử Lý Xong • Chờ Giao Khách';
-        } else if (rawStatus === 'DAHUY') {
-            badgeEl.className = 'badge-status-cancelled';
-            badgeEl.textContent = 'Phiếu Đã Hủy';
-        } else if (rawStatus === 'TIEPNHAN') {
-            badgeEl.className = 'badge-status-processing';
-            badgeEl.textContent = 'Đã Tiếp Nhận Yêu Cầu';
+    if (currentWarrantyPage > totalPages) currentWarrantyPage = totalPages;
+    if (currentWarrantyPage < 1) currentWarrantyPage = 1;
+
+    // Cập nhật tiêu đề số lượng & chỉ báo trang
+    if (countEl) {
+        countEl.textContent = `KẾT QUẢ TRA CỨU (${totalTickets} PHIẾU BẢO HÀNH)`;
+    }
+    if (pageIndicatorEl) {
+        pageIndicatorEl.textContent = totalPages > 1 ? `Trang ${currentWarrantyPage} / ${totalPages}` : '';
+    }
+
+    // Lấy danh sách phiếu của trang hiện tại
+    const startIndex = (currentWarrantyPage - 1) * WARRANTY_PAGE_SIZE;
+    const pageItems = warrantyTicketsData.slice(startIndex, startIndex + WARRANTY_PAGE_SIZE);
+
+    listEl.innerHTML = pageItems.map(ticket => {
+        const soPhieu = ticket.soPhieu || ticket.soPhieuBH || 'Chưa có số';
+        const tenKH = ticket.tenKhachHang || 'Khách hàng Blink Blink';
+        const sdt = ticket.soDienThoai ? ` • SĐT: ${ticket.soDienThoai}` : '';
+        const tenSP = ticket.tenSanPham || 'Kiệt tác trang sức';
+        const ngayVao = ticket.ngayTiepNhan || '-';
+        const ngayRa = ticket.ngayHenTra || 'Đang cập nhật';
+        const costVal = ticket.chiPhi !== undefined ? ticket.chiPhi : (ticket.chiPhiBaoHanh || 0);
+        const costStr = costVal === 0 ? 'Miễn phí bảo dưỡng' : formatCurrency(costVal);
+
+        const statusInfo = getWarrantyStatusInfo(ticket.trangThaiXuLy || ticket.trangThai);
+
+        const noteParts = [
+            ticket.lyDo || ticket.lyDoBaoHanh,
+            ticket.tinhTrangTiepNhan ? `Tình trạng tiếp nhận: ${ticket.tinhTrangTiepNhan}` : '',
+            ticket.ghiChu
+        ].filter(Boolean);
+        const noteStr = noteParts.join(' — ') || 'Đang được nghệ nhân Blink Blink chăm sóc và gia công.';
+
+        return `
+            <div class="warranty-result-card" style="display: block;">
+                <div class="ticket-header">
+                    <div>
+                        <span class="ticket-no">${soPhieu}</span>
+                        <div class="ticket-customer">${tenKH}${sdt}</div>
+                    </div>
+                    <div class="${statusInfo.badgeClass}">${statusInfo.text}</div>
+                </div>
+                <div class="ticket-details-grid">
+                    <div class="detail-item">
+                        <span class="detail-item-lbl">Kiệt tác trang sức</span>
+                        <span class="detail-item-val">${tenSP}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-item-lbl">Ngày tiếp nhận</span>
+                        <span class="detail-item-val">${ngayVao}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-item-lbl">Hẹn giao trả</span>
+                        <span class="detail-item-val">${ngayRa}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-item-lbl">Chi phí bảo dưỡng</span>
+                        <span class="detail-item-val" style="color: var(--gold-primary); font-weight: 600;">${costStr}</span>
+                    </div>
+                </div>
+                <div class="ticket-service-note">
+                    <strong>Nội dung gia công & Lưu ý kỹ thuật:</strong><br />
+                    <span>${noteStr}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Hiển thị phân trang nếu > 3 phiếu
+    if (paginationEl) {
+        if (totalPages <= 1) {
+            paginationEl.style.display = 'none';
+            paginationEl.innerHTML = '';
         } else {
-            badgeEl.className = 'badge-status-processing';
-            badgeEl.textContent = 'Đang Gia Công Bảo Dưỡng';
+            paginationEl.style.display = 'flex';
+            let pageBtns = '';
+
+            // Nút Trang trước
+            pageBtns += `<button type="button" class="warranty-page-btn" ${currentWarrantyPage === 1 ? 'disabled' : ''} onclick="changeWarrantyPage(${currentWarrantyPage - 1})">‹ Trang trước</button>`;
+
+            // Các nút số trang
+            for (let i = 1; i <= totalPages; i++) {
+                pageBtns += `<button type="button" class="warranty-page-btn ${i === currentWarrantyPage ? 'active' : ''}" onclick="changeWarrantyPage(${i})">${i}</button>`;
+            }
+
+            // Nút Trang sau
+            pageBtns += `<button type="button" class="warranty-page-btn" ${currentWarrantyPage === totalPages ? 'disabled' : ''} onclick="changeWarrantyPage(${currentWarrantyPage + 1})">Trang sau ›</button>`;
+
+            paginationEl.innerHTML = pageBtns;
         }
     }
+}
 
-    if (card) {
-        card.style.display = 'block';
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+/**
+ * Chuyển trang kết quả bảo hành
+ */
+function changeWarrantyPage(targetPage) {
+    const totalPages = Math.ceil(warrantyTicketsData.length / WARRANTY_PAGE_SIZE);
+    if (targetPage < 1 || targetPage > totalPages || targetPage === currentWarrantyPage) return;
+    currentWarrantyPage = targetPage;
+    renderWarrantyResults();
+    const container = document.getElementById('warranty-results-container');
+    if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-
-    showToast(`Đã tìm thấy thông tin bảo hành ${code}`);
 }
 
 /**
@@ -1333,10 +1403,20 @@ function initEventListeners() {
         });
     }
 
-    // Nút tra cứu bảo hành
+    // Nút tra cứu bảo hành và bắt sự kiện phím Enter
     const btnSearchWarranty = document.getElementById('btn-search-warranty');
     if (btnSearchWarranty) {
         btnSearchWarranty.addEventListener('click', () => lookupWarranty());
+    }
+
+    const inputWarranty = document.getElementById('warranty-search-input');
+    if (inputWarranty) {
+        inputWarranty.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                lookupWarranty();
+            }
+        });
     }
 
     // Nút thanh toán đơn hàng (Mở form thông tin người nhận)
@@ -2148,6 +2228,18 @@ async function handleRegisterSubmit(event) {
         showAuthFeedback('register', 'Vui lòng điền đầy đủ các trường thông tin bắt buộc (*).');
         showToast('Vui lòng điền đầy đủ các trường thông tin.', 'warning');
         return;
+    }
+
+    if (ngaySinh) {
+        const selectedDate = new Date(ngaySinh);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        if (selectedDate > today) {
+            showAuthFeedback('register', 'Ngày sinh không hợp lệ. Vui lòng không chọn ngày trong tương lai.');
+            showToast('Ngày sinh không được chọn ngày trong tương lai.', 'warning');
+            document.getElementById('reg-dob')?.focus();
+            return;
+        }
     }
 
     if (password.length < 6) {

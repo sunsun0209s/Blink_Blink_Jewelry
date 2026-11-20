@@ -286,6 +286,18 @@ public class InMemoryDataContext
         public Task<List<PhieuBaoHanh>> LayTheoKhachHangAsync(string maKH, CancellationToken ct = default) => Task.FromResult(LayTheoKhachHang(maKH));
         public List<PhieuBaoHanh> LayDanhSachPhieu() => _ctx.PhieuBaoHanhs.OrderByDescending(p => p.NgayTiepNhan).ToList();
         public Task<List<PhieuBaoHanh>> LayDanhSachPhieuAsync(CancellationToken ct = default) => Task.FromResult(LayDanhSachPhieu());
+
+        public List<PhieuBaoHanh> TraCuuBaoHanh(string tuKhoa)
+        {
+            if (string.IsNullOrWhiteSpace(tuKhoa)) return new List<PhieuBaoHanh>();
+            var kw = tuKhoa.Trim();
+            return _ctx.PhieuBaoHanhs
+                .Where(p => string.Equals(p.SoPhieuBH, kw, StringComparison.OrdinalIgnoreCase) ||
+                            (!string.IsNullOrEmpty(p.SoDienThoai) && p.SoDienThoai.Contains(kw)))
+                .OrderByDescending(p => p.NgayTiepNhan)
+                .ToList();
+        }
+        public Task<List<PhieuBaoHanh>> TraCuuBaoHanhAsync(string tuKhoa, CancellationToken ct = default) => Task.FromResult(TraCuuBaoHanh(tuKhoa));
         public void CapNhatPhieu(PhieuBaoHanh pbh)
         {
             var idx = _ctx.PhieuBaoHanhs.FindIndex(p => p.SoPhieuBH == pbh.SoPhieuBH);

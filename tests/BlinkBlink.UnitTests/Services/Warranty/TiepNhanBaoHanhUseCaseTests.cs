@@ -82,6 +82,18 @@ public class TiepNhanBaoHanhUseCaseTests
             Data[pbh.SoPhieuBH] = pbh;
             return Task.CompletedTask;
         }
+
+        public List<PhieuBaoHanh> TraCuuBaoHanh(string tuKhoa)
+        {
+            if (string.IsNullOrWhiteSpace(tuKhoa)) return new List<PhieuBaoHanh>();
+            var kw = tuKhoa.Trim();
+            return Data.Values.Where(p => p.SoPhieuBH == kw || p.SoDienThoai == kw).ToList();
+        }
+
+        public Task<List<PhieuBaoHanh>> TraCuuBaoHanhAsync(string tuKhoa, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(TraCuuBaoHanh(tuKhoa));
+        }
     }
 
     private class FakeSanPhamRepository : ISanPhamRepository
@@ -123,7 +135,7 @@ public class TiepNhanBaoHanhUseCaseTests
         var baoHanhRepo = new FakeBaoHanhRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
-        var sp = new SanPhamTrangSuc("SP001", "Nhẫn kim cương Solitaire", "DM01", "Vàng trắng 18K", "Size 10", 15000000m, 25000000m, "DaBan");
+        var sp = new SanPhamTrangSuc("SP001", "Nhẫn kim cương Solitaire", "DM01", "Vàng trắng 18K", "Size 10", 15000000m, 25000000m, "HetHang");
         sanPhamRepo.Data[sp.MaSanPham] = sp;
 
         var useCase = new TiepNhanBaoHanhUseCase(baoHanhRepo, sanPhamRepo);
@@ -148,7 +160,7 @@ public class TiepNhanBaoHanhUseCaseTests
         Assert.Equal("TiepNhan", phieu.TrangThaiXuLy);
         Assert.Equal(0m, phieu.ChiPhiBaoHanh);
         // Trạng thái kinh doanh của sản phẩm được bảo toàn, không bị ép thành DangBaoHanh
-        Assert.Equal("DaBan", sp.TrangThai);
+        Assert.Equal("HetHang", sp.TrangThai);
     }
 
     [Fact]
@@ -212,7 +224,7 @@ public class TiepNhanBaoHanhUseCaseTests
         var baoHanhRepo = new FakeBaoHanhRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
-        var sp = new SanPhamTrangSuc("SP001", "Dây chuyền vàng Ý", "DM02", "Vàng 24K", "Size 45cm", 8000000m, 12000000m, "DaBan");
+        var sp = new SanPhamTrangSuc("SP001", "Dây chuyền vàng Ý", "DM02", "Vàng 24K", "Size 45cm", 8000000m, 12000000m, "HetHang");
         sanPhamRepo.Data[sp.MaSanPham] = sp;
 
         var useCase = new TiepNhanBaoHanhUseCase(baoHanhRepo, sanPhamRepo);
@@ -238,7 +250,7 @@ public class TiepNhanBaoHanhUseCaseTests
         var baoHanhRepo = new FakeBaoHanhRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
-        var sp = new SanPhamTrangSuc("SP005", "Nhẫn kim cương Solitaire", "DM01", "Vàng trắng 18K", "Size 12", 20000000m, 32000000m, "DaBan");
+        var sp = new SanPhamTrangSuc("SP005", "Nhẫn kim cương Solitaire", "DM01", "Vàng trắng 18K", "Size 12", 20000000m, 32000000m, "HetHang");
         sanPhamRepo.Data[sp.MaSanPham] = sp;
 
         var useCase = new TiepNhanBaoHanhUseCase(baoHanhRepo, sanPhamRepo);
@@ -269,7 +281,7 @@ public class TiepNhanBaoHanhUseCaseTests
         var baoHanhRepo = new FakeBaoHanhRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
-        var sp = new SanPhamTrangSuc("SP006", "Lắc tay vàng hồng", "DM03", "Vàng hồng 18K", "Size 16cm", 15000000m, 22000000m, "DaBan");
+        var sp = new SanPhamTrangSuc("SP006", "Lắc tay vàng hồng", "DM03", "Vàng hồng 18K", "Size 16cm", 15000000m, 22000000m, "HetHang");
         sanPhamRepo.Data[sp.MaSanPham] = sp;
 
         var useCase = new TiepNhanBaoHanhUseCase(baoHanhRepo, sanPhamRepo);
@@ -302,7 +314,7 @@ public class TiepNhanBaoHanhUseCaseTests
         var kh = new KhachHang { MaKhachHang = "KH001", MaNguoiDung = "USER_KH001", HoTen = "Trần Văn An", SoDienThoai = "0912345678" };
         khachHangRepo.Data[kh.MaKhachHang] = kh;
 
-        var sp = new SanPhamTrangSuc("SP001", "Nhẫn Kim Cương", "DM01", "Vàng trắng", "14", 10000000m, 15000000m, "DaBan");
+        var sp = new SanPhamTrangSuc("SP001", "Nhẫn Kim Cương", "DM01", "Vàng trắng", "14", 10000000m, 15000000m, "HetHang");
         sanPhamRepo.Data[sp.MaSanPham] = sp;
 
         var useCase = new TiepNhanBaoHanhUseCase(baoHanhRepo, sanPhamRepo, khachHangRepo);

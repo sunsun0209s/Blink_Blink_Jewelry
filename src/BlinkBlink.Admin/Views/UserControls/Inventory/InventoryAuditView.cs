@@ -408,11 +408,12 @@ public class InventoryAuditView : UserControl
         using var dialog = new Form
         {
             Text = "Lập Biên Bản Kiểm Kê Kho Hàng - Blink Blink Jewelry",
-            Width = 1040,
-            Height = 720,
+            Width = 1060,
+            Height = 740,
+            MinimumSize = new Size(1000, 660),
             StartPosition = FormStartPosition.CenterParent,
-            FormBorderStyle = FormBorderStyle.FixedDialog,
-            MaximizeBox = false,
+            FormBorderStyle = FormBorderStyle.Sizable,
+            MaximizeBox = true,
             MinimizeBox = false,
             BackColor = Color.White,
             Font = UITheme.RegularFont
@@ -528,7 +529,7 @@ public class InventoryAuditView : UserControl
         // Hàng 1: Tìm kiếm nhanh và chọn sản phẩm trang sức
         var rowSelect1 = new FlowLayoutPanel
         {
-            Width = 980,
+            Width = 1000,
             Height = 42,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = false,
@@ -546,7 +547,7 @@ public class InventoryAuditView : UserControl
         };
         var txtSearchSp = new TextBox
         {
-            Width = 140,
+            Width = 110,
             Font = UITheme.RegularFont,
             PlaceholderText = "🔍 Tìm SP...",
             Margin = new Padding(0, 2, 25, 0)
@@ -562,7 +563,7 @@ public class InventoryAuditView : UserControl
         };
         var cboSp = new ComboBox
         {
-            Width = 520,
+            Width = 470,
             DropDownStyle = ComboBoxStyle.DropDownList,
             Font = UITheme.RegularFont,
             Margin = new Padding(0, 2, 0, 0)
@@ -573,7 +574,7 @@ public class InventoryAuditView : UserControl
         // Hàng 2: Tồn sổ sách, Tồn thực tế, Lý do lệch và nút Thêm
         var rowSelect2 = new FlowLayoutPanel
         {
-            Width = 980,
+            Width = 1000,
             Height = 44,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = false,
@@ -591,7 +592,7 @@ public class InventoryAuditView : UserControl
         };
         var txtTonSoSach = new TextBox
         {
-            Width = 90,
+            Width = 70,
             ReadOnly = true,
             BackColor = Color.FromArgb(241, 245, 249),
             ForeColor = UITheme.TextPrimary,
@@ -609,7 +610,7 @@ public class InventoryAuditView : UserControl
         };
         var txtTonThucTe = new TextBox
         {
-            Width = 90,
+            Width = 70,
             Font = UITheme.TabularNumericFont,
             Margin = new Padding(0, 2, 20, 0)
         };
@@ -624,7 +625,7 @@ public class InventoryAuditView : UserControl
         };
         var txtLyDo = new TextBox
         {
-            Width = 230,
+            Width = 170,
             Font = UITheme.RegularFont,
             PlaceholderText = "Thất thoát, thừa hàng...",
             Margin = new Padding(0, 2, 20, 0)
@@ -632,7 +633,7 @@ public class InventoryAuditView : UserControl
 
         var btnAddToList = UITheme.CreateFlatButton("+ Thêm vào danh sách", UITheme.PrimaryGold, Color.Black);
         btnAddToList.Height = 32;
-        btnAddToList.AutoSize = true;
+        btnAddToList.Width = 175;
         btnAddToList.Padding = new Padding(14, 2, 14, 2);
         btnAddToList.Margin = new Padding(0, 0, 0, 0);
 
@@ -696,20 +697,20 @@ public class InventoryAuditView : UserControl
         };
 
         // DataGridView danh sách mặt hàng kiểm kê
-        var pnlGridHolder = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 10, 0, 10) };
+        var pnlGridHolder = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0, 6, 0, 0) };
         var dgvItems = new DataGridView();
         UITheme.ApplyGridViewStyle(dgvItems);
+        dgvItems.Dock = DockStyle.Fill;
 
-        var colItmMa = new DataGridViewTextBoxColumn { Name = "MaSanPham", HeaderText = "MÃ SẢN PHẨM", FillWeight = 110, MinimumWidth = 110 };
-        var colItmTen = new DataGridViewTextBoxColumn { Name = "TenSanPham", HeaderText = "TÊN TRANG SỨC", FillWeight = 220, MinimumWidth = 200 };
-        var colItmSize = new DataGridViewTextBoxColumn { Name = "Size", HeaderText = "SIZE", FillWeight = 80, MinimumWidth = 80 };
-        var colItmTonSS = new DataGridViewTextBoxColumn { Name = "TonSoSach", HeaderText = "TỒN SỔ SÁCH", FillWeight = 100, MinimumWidth = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
-        var colItmTonTT = new DataGridViewTextBoxColumn { Name = "TonThucTe", HeaderText = "TỒN THỰC TẾ", FillWeight = 100, MinimumWidth = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
-        var colItmChenhLech = new DataGridViewTextBoxColumn { Name = "ChenhLech", HeaderText = "CHÊNH LỆCH", FillWeight = 100, MinimumWidth = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
-        var colItmLyDo = new DataGridViewTextBoxColumn { Name = "LyDoChenhLech", HeaderText = "LÝ DO CHÊNH LỆCH", FillWeight = 180, MinimumWidth = 150 };
+        var colItmMa = new DataGridViewTextBoxColumn { Name = "MaSanPham", HeaderText = "MÃ SẢN PHẨM", FillWeight = 100, MinimumWidth = 95 };
+        var colItmTen = new DataGridViewTextBoxColumn { Name = "TenSanPham", HeaderText = "TÊN TRANG SỨC", FillWeight = 220, MinimumWidth = 160 };
+        var colItmSize = new DataGridViewTextBoxColumn { Name = "Size", HeaderText = "SIZE", FillWeight = 70, MinimumWidth = 65 };
+        var colItmTonSS = new DataGridViewTextBoxColumn { Name = "TonSoSach", HeaderText = "TỒN SỔ SÁCH", FillWeight = 95, MinimumWidth = 85, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
+        var colItmTonTT = new DataGridViewTextBoxColumn { Name = "TonThucTe", HeaderText = "TỒN THỰC TẾ", FillWeight = 95, MinimumWidth = 85, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
+        var colItmChenhLech = new DataGridViewTextBoxColumn { Name = "ChenhLech", HeaderText = "CHÊNH LỆCH", FillWeight = 95, MinimumWidth = 85, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } };
+        var colItmLyDo = new DataGridViewTextBoxColumn { Name = "LyDoChenhLech", HeaderText = "LÝ DO CHÊNH LỆCH", FillWeight = 160, MinimumWidth = 130 };
 
         dgvItems.Columns.AddRange(colItmMa, colItmTen, colItmSize, colItmTonSS, colItmTonTT, colItmChenhLech, colItmLyDo);
-        pnlGridHolder.Controls.Add(dgvItems);
 
         var auditItemsList = new List<ChiTietKiemKeItemDTO>();
 
@@ -734,6 +735,31 @@ public class InventoryAuditView : UserControl
                 else clr.Style.ForeColor = UITheme.TextSecondary;
             }
         }
+
+        // Thanh thao tác trực tiếp dưới bảng: nút Loại khỏi danh sách dài 100% bằng chiều rộng bảng, cao ráo không bị che chữ
+        var pnlGridToolbar = new Panel { Dock = DockStyle.Bottom, Height = 44, Padding = new Padding(0, 4, 0, 2) };
+        var btnRemoveItem = UITheme.CreateFlatButton("➖ Loại khỏi danh sách", Color.FromArgb(254, 226, 226), Color.FromArgb(153, 27, 27));
+        btnRemoveItem.AutoSize = false;
+        btnRemoveItem.Dock = DockStyle.Fill;
+        btnRemoveItem.Height = 38;
+        btnRemoveItem.TextAlign = ContentAlignment.MiddleCenter;
+        btnRemoveItem.Padding = new Padding(0, 2, 0, 2);
+        btnRemoveItem.Click += (s, e) =>
+        {
+            if (dgvItems.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Vui lòng chọn một mặt hàng trong bảng để loại bỏ.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var maSp = dgvItems.SelectedRows[0].Cells["MaSanPham"].Value?.ToString();
+            auditItemsList.RemoveAll(x => x.MaSanPham == maSp);
+            RefreshGridItems();
+        };
+        pnlGridToolbar.Controls.Add(btnRemoveItem);
+
+        pnlGridHolder.Controls.Add(pnlGridToolbar);
+        pnlGridHolder.Controls.Add(dgvItems);
 
         // Nút thêm sản phẩm vào danh sách kiểm kê
         btnAddToList.Click += (s, e) =>
@@ -794,37 +820,15 @@ public class InventoryAuditView : UserControl
             txtLyDo.Text = string.Empty;
         };
 
-        // Panel dưới bảng: Nút loại khỏi danh sách và Ghi chú
-        var pnlBottomActions = new Panel { Dock = DockStyle.Bottom, Height = 95, Padding = new Padding(0, 5, 0, 0) };
-
-        var btnRemoveItem = UITheme.CreateFlatButton("➖ Loại khỏi danh sách", Color.FromArgb(254, 226, 226), Color.FromArgb(153, 27, 27));
-        btnRemoveItem.Dock = DockStyle.Top;
-        btnRemoveItem.Height = 30;
-        btnRemoveItem.Click += (s, e) =>
-        {
-            if (dgvItems.SelectedRows.Count == 0)
-            {
-                MessageBox.Show("Vui lòng chọn một mặt hàng trong bảng để loại bỏ.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            var maSp = dgvItems.SelectedRows[0].Cells["MaSanPham"].Value?.ToString();
-            auditItemsList.RemoveAll(x => x.MaSanPham == maSp);
-            RefreshGridItems();
-        };
-
-        var pnlGhiChu = new Panel { Dock = DockStyle.Bottom, Height = 56, Padding = new Padding(0, 6, 0, 0) };
-        var lblGhiChu = new Label { Text = "Ghi chú kiểm kê:", Dock = DockStyle.Left, Width = 140, ForeColor = UITheme.TextSecondary, Font = UITheme.RegularFont };
-        var txtGhiChu = new TextBox { Dock = DockStyle.Fill, Multiline = true, Height = 48, ScrollBars = ScrollBars.Vertical, Font = UITheme.RegularFont };
-        pnlGhiChu.Controls.Add(lblGhiChu);
-        pnlGhiChu.Controls.Add(txtGhiChu);
-        txtGhiChu.SendToBack();
-
-        pnlBottomActions.Controls.Add(btnRemoveItem);
-        pnlBottomActions.Controls.Add(pnlGhiChu);
+        // Khung ghi chú kiểm kê độc lập ở đáy
+        var pnlGhiChuHolder = new Panel { Dock = DockStyle.Bottom, Height = 78, Padding = new Padding(0, 4, 0, 0) };
+        var lblGhiChu = new Label { Text = "Ghi chú kiểm kê:", Dock = DockStyle.Top, Height = 20, ForeColor = UITheme.TextSecondary, Font = UITheme.RegularFont };
+        var txtGhiChu = new TextBox { Dock = DockStyle.Fill, Multiline = true, ScrollBars = ScrollBars.Vertical, Font = UITheme.RegularFont };
+        pnlGhiChuHolder.Controls.Add(txtGhiChu);
+        pnlGhiChuHolder.Controls.Add(lblGhiChu);
 
         pnlBody.Controls.Add(pnlGridHolder);
-        pnlBody.Controls.Add(pnlBottomActions);
+        pnlBody.Controls.Add(pnlGhiChuHolder);
         pnlBody.Controls.Add(pnlSelectSp);
         pnlBody.Controls.Add(pnlTopInfo);
 

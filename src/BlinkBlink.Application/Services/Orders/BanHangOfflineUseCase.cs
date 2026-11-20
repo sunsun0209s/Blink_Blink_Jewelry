@@ -92,12 +92,12 @@ public class BanHangOfflineUseCase
             );
             hoaDon.ChiTietHoaDons.Add(ct);
 
-            // Cập nhật trạng thái và số lượng tồn kho sản phẩm: Chỉ chuyển sang 'DaBan' khi tồn kho sau bán <= 0; nếu vẫn còn tồn kho thì giữ 'SanSang'
+            // Cập nhật trạng thái và số lượng tồn kho sản phẩm: Chuyển sang 'HetHang' khi tồn kho sau bán <= 0; nếu vẫn còn tồn kho thì giữ 'SanSang'
             var tonConLai = sp.SoLuongTon - (item.SoLuong > 0 ? item.SoLuong : 1);
             sp.SoLuongTon = Math.Max(0, tonConLai);
             if (tonConLai <= 0)
             {
-                sp.CapNhatTrangThai("DaBan");
+                sp.CapNhatTrangThai("HetHang");
             }
             else
             {

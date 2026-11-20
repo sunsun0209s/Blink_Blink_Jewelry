@@ -149,8 +149,8 @@ public class DatHangUseCaseTests
         var gioHangRepo = new FakeGioHangRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
-        var sp1 = new SanPhamTrangSuc("SP001", "Nhẫn kim cương Solitaire", "DM01", "Vàng trắng 18K", "Size 10", 15000000m, 25000000m, "SanSang");
-        var sp2 = new SanPhamTrangSuc("SP002", "Dây chuyền vàng Ý", "DM02", "Vàng 24K", "Size 45cm", 8000000m, 12000000m, "SanSang");
+        var sp1 = new SanPhamTrangSuc("SP001", "Nhẫn kim cương Solitaire", "DM01", "Vàng trắng 18K", "Size 10", 15000000m, 25000000m, "SanSang") { SoLuongTon = 5 };
+        var sp2 = new SanPhamTrangSuc("SP002", "Dây chuyền vàng Ý", "DM02", "Vàng 24K", "Size 45cm", 8000000m, 12000000m, "SanSang") { SoLuongTon = 5 };
         sanPhamRepo.Data[sp1.MaSanPham] = sp1;
         sanPhamRepo.Data[sp2.MaSanPham] = sp2;
 
@@ -221,8 +221,8 @@ public class DatHangUseCaseTests
         var gioHangRepo = new FakeGioHangRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
-        // Sản phẩm đã bán
-        var sp1 = new SanPhamTrangSuc("SP001", "Nhẫn kim cương", "DM01", "Vàng trắng", "10", 10000000m, 20000000m, "DaBan");
+        // Sản phẩm đã bán hết
+        var sp1 = new SanPhamTrangSuc("SP001", "Nhẫn kim cương", "DM01", "Vàng trắng", "10", 10000000m, 20000000m, "HetHang");
         sanPhamRepo.Data[sp1.MaSanPham] = sp1;
 
         var gioHang = new GioHang("GH_KH01", "KH01");

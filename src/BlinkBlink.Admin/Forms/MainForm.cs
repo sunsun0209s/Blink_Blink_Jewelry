@@ -155,7 +155,14 @@ public partial class MainForm : Form
     {
         btnSales.Click += (s, e) => ShowView(GetOrdersView(), "Quản Lý Đơn Hàng Online & Offline", btnSales);
         _btnOfflineSales.Click += (s, e) => ShowView(GetOfflineSalesView(), "Bán Hàng Tại Quầy (POS Bán Lẻ)", _btnOfflineSales);
-        btnProducts.Click += (s, e) => ShowView(GetProductsContainerView(), "Quản Lý Sản Phẩm, Danh Mục & Kho Hàng", btnProducts);
+        btnProducts.Click += (s, e) =>
+        {
+            var title = string.Equals(_currentRole, "WAREHOUSE", StringComparison.OrdinalIgnoreCase)
+                ? "Quản Lý Kho Hàng Trang Sức & Kiểm Kê"
+                : "Quản Lý Sản Phẩm, Danh Mục & Kho Hàng";
+            GetProductsContainerView().ApplyRolePermissions(_currentRole);
+            ShowView(GetProductsContainerView(), title, btnProducts);
+        };
         btnWarranty.Click += (s, e) => ShowView(GetWarrantyView(), "Dịch Vụ & Tiếp Nhận Bảo Hành Kim Hoàn", btnWarranty);
         btnUsers.Click += (s, e) => ShowView(GetUsersView(), "Quản Lý Khách Hàng & Phân Quyền Nhân Sự", btnUsers);
         btnReports.Click += (s, e) => ShowView(GetReportingView(), "Báo Cáo Doanh Thu & Thống Kê Kho Hàng", btnReports);
@@ -231,6 +238,7 @@ public partial class MainForm : Form
                 btnUsers.Visible = true;
                 btnReports.Visible = true;
 
+                GetProductsContainerView().ApplyRolePermissions("ADMIN");
                 lblUserRole.ForeColor = UITheme.PrimaryGold;
                 ShowView(GetOrdersView(), "Quản Lý Đơn Hàng Online & Offline", btnSales);
                 break;
@@ -260,7 +268,8 @@ public partial class MainForm : Form
                 btnReports.Visible = false;
 
                 lblUserRole.ForeColor = Color.FromArgb(56, 189, 248);
-                ShowView(GetProductsContainerView(), "Quản Lý Sản Phẩm, Danh Mục & Kho Hàng", btnProducts);
+                GetProductsContainerView().ApplyRolePermissions("WAREHOUSE");
+                ShowView(GetProductsContainerView(), "Quản Lý Kho Hàng Trang Sức & Kiểm Kê", btnProducts);
                 break;
 
             case "TECHNICIAN":

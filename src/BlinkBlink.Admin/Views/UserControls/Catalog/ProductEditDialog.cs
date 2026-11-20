@@ -330,7 +330,45 @@ public class ProductEditDialog : Form
             Height = 205,
             BorderStyle = BorderStyle.FixedSingle,
             SizeMode = PictureBoxSizeMode.Zoom,
-            BackColor = Color.FromArgb(248, 250, 252)
+            BackColor = Color.FromArgb(248, 250, 252),
+            AllowDrop = true
+        };
+
+        _picPreview.DragEnter += (s, e) =>
+        {
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        };
+
+        _picPreview.DragDrop += (s, e) =>
+        {
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = (string[]?)e.Data.GetData(DataFormats.FileDrop);
+                if (files != null && files.Length > 0)
+                {
+                    var file = files[0];
+                    var ext = Path.GetExtension(file).ToLowerInvariant();
+                    if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".webp" || ext == ".bmp" || ext == ".gif")
+                    {
+                        _isInternalUpdating = true;
+                        _selectedImagePath = file;
+                        _txtHinhAnhUrl.Text = file;
+                        _isInternalUpdating = false;
+                        LoadPreviewImage(file);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Vui lòng kéo thả tệp hình ảnh hợp lệ (.jpg, .png, .webp, .jpeg).", "Định dạng không hỗ trợ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+            }
         };
 
         var lblUrl = new Label
@@ -755,7 +793,7 @@ public class ProductEditDialog : Form
             var success = _services.QuanLySanPham.ThemSanPhamMoi(createDto);
             if (success)
             {
-                MessageBox.Show($"Đã tạo mới sản phẩm [{maSP}] thành công!\n\nLưu ý: Sản phẩm vừa tạo có trạng thái 'Hết Hàng' (Tồn kho = 0). Vui lòng vào phân hệ 'Nhập Kho' để lập phiếu nhập hàng, hệ thống sẽ tự động tính giá vốn bình quân gia quyền và chuyển trạng thái sang 'Sẵn Sàng Bán'.", "Tạo mới thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Đã tạo mới sản phẩm [{maSP}] thành công!\n\nLưu ý: Sản phẩm vừa tạo có trạng thái 'Chưa Nhập Hàng' (Tồn kho = 0) và chưa hiển thị trên Website bán hàng. Vui lòng vào phân hệ 'Quản Lý Nhập Kho Hàng' để lập phiếu nhập, hệ thống sẽ tự động chuyển trạng thái sang 'Sẵn Sàng Bán' để xuất hiện trên Web.", "Tạo mới thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

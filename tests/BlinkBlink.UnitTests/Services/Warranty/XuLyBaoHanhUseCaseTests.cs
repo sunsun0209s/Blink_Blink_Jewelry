@@ -78,6 +78,18 @@ public class XuLyBaoHanhUseCaseTests
             Data[pbh.SoPhieuBH] = pbh;
             return Task.CompletedTask;
         }
+
+        public List<PhieuBaoHanh> TraCuuBaoHanh(string tuKhoa)
+        {
+            if (string.IsNullOrWhiteSpace(tuKhoa)) return new List<PhieuBaoHanh>();
+            var kw = tuKhoa.Trim();
+            return Data.Values.Where(p => p.SoPhieuBH == kw || p.SoDienThoai == kw).ToList();
+        }
+
+        public Task<List<PhieuBaoHanh>> TraCuuBaoHanhAsync(string tuKhoa, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(TraCuuBaoHanh(tuKhoa));
+        }
     }
 
     private class FakeSanPhamRepository : ISanPhamRepository
@@ -155,8 +167,8 @@ public class XuLyBaoHanhUseCaseTests
         Assert.Equal("DaTraKhach", phieu.TrangThaiXuLy);
         Assert.Equal(250000m, phieu.ChiPhiBaoHanh);
         Assert.Equal(250000m, phieu.TinhPhiBaoHanh());
-        // Trạng thái sản phẩm được hoàn lại DaBan
-        Assert.Equal("DaBan", sp.TrangThai);
+        // Trạng thái sản phẩm được hoàn lại HetHang (vì tồn kho = 0)
+        Assert.Equal("HetHang", sp.TrangThai);
     }
 
     [Fact]

@@ -61,6 +61,11 @@ public class KhachHangController : ControllerBase
             return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Mật khẩu phải có độ dài từ 6 ký tự trở lên.", _logger);
         }
 
+        if (request.NgaySinh != default && request.NgaySinh.Date > DateTime.Today)
+        {
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Ngày sinh không hợp lệ. Vui lòng không chọn ngày trong tương lai.", _logger);
+        }
+
         try
         {
             var result = _dangKyUseCase.Execute(request);

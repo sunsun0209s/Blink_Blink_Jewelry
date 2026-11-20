@@ -117,8 +117,8 @@ public class SanPhamController : ControllerBase
     public async Task<IActionResult> LayDanhSach(CancellationToken cancellationToken)
     {
         var allItems = await _sanPhamRepository.LayTatCaAsync(cancellationToken);
-        // Lọc bỏ các sản phẩm bị ẩn để không hiển thị trên trang Web mua hàng của khách hàng
-        var items = allItems.Where(sp => !sp.IsHidden).ToList();
+        // Lọc bỏ các sản phẩm bị ẩn hoặc chưa nhập hàng để không hiển thị trên trang Web mua hàng của khách hàng
+        var items = allItems.Where(sp => !sp.IsHidden && !string.Equals(sp.TrangThai, "ChuaNhap", StringComparison.OrdinalIgnoreCase)).ToList();
         var response = items.Select(sp =>
         {
             decimal giaSauGiam = sp.PhanTramGiamGia > 0
@@ -169,8 +169,8 @@ public class SanPhamController : ControllerBase
         }
 
         var allItems = await _sanPhamRepository.LayTheoNhomAsync(maNhom, cancellationToken);
-        // Lọc bỏ sản phẩm bị ẩn trong danh sách chọn size của nhóm
-        var items = allItems.Where(sp => !sp.IsHidden).ToList();
+        // Lọc bỏ sản phẩm bị ẩn hoặc chưa nhập hàng trong danh sách chọn size của nhóm
+        var items = allItems.Where(sp => !sp.IsHidden && !string.Equals(sp.TrangThai, "ChuaNhap", StringComparison.OrdinalIgnoreCase)).ToList();
         var response = items.Select(sp =>
         {
             decimal giaSauGiam = sp.PhanTramGiamGia > 0

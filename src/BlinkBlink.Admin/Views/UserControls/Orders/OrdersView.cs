@@ -407,6 +407,10 @@ public class OrdersView : UserControl
                               o.MaHoaDon.ToLowerInvariant().Contains(query) ||
                               o.SoDienThoaiNhan.Contains(query) ||
                               o.MaKhachHang.ToLowerInvariant().Contains(query) ||
+                              (o.KhachHang != null && (
+                                  o.KhachHang.HoTen.ToLowerInvariant().Contains(query) ||
+                                  (!string.IsNullOrEmpty(o.KhachHang.TenDangNhap) && o.KhachHang.TenDangNhap.ToLowerInvariant().Contains(query)) ||
+                                  (!string.IsNullOrEmpty(o.KhachHang.MaKhachHang) && o.KhachHang.MaKhachHang.ToLowerInvariant().Contains(query)))) ||
                               o.DiaChiGiaoHang.ToLowerInvariant().Contains(query);
 
             var matchSource = true;
@@ -430,10 +434,27 @@ public class OrdersView : UserControl
 
         foreach (var hd in filtered)
         {
+            string tenKhachHienThi;
+            if (hd.KhachHang != null && !string.IsNullOrWhiteSpace(hd.KhachHang.HoTen))
+            {
+                var tenDn = !string.IsNullOrWhiteSpace(hd.KhachHang.TenDangNhap) ? $"[{hd.KhachHang.TenDangNhap}] " : "";
+                tenKhachHienThi = $"{tenDn}{hd.KhachHang.HoTen}";
+            }
+            else if (hd.MaKhachHang == "0" || hd.MaKhachHang == "KH_0" || hd.MaKhachHang == "KH_GUEST_POS")
+            {
+                tenKhachHienThi = string.IsNullOrWhiteSpace(hd.SoDienThoaiNhan) || hd.SoDienThoaiNhan == "0000000000"
+                    ? "Khách vãng lai"
+                    : $"Khách vãng lai ({hd.SoDienThoaiNhan})";
+            }
+            else
+            {
+                tenKhachHienThi = hd.MaKhachHang;
+            }
+
             var rowIdx = _dgvOrders.Rows.Add(
                 hd.MaHoaDon,
                 hd.NgayLap.ToString("dd/MM/yyyy HH:mm"),
-                hd.MaKhachHang,
+                tenKhachHienThi,
                 hd.SoDienThoaiNhan,
                 hd.DiaChiGiaoHang,
                 hd.PhuongThucThanhToan,
@@ -549,16 +570,17 @@ public class OrdersView : UserControl
 
         try
         {
-            // Thực thi Use Case phê duyệt đơn
-            var success = _services.XuLyDonHang.DuyetDonHang(maHoaDon, "USER_NV001");
+            // Thực thi Use Case phê duyệt đơn kèm kiểm tra tồn kho
+            var adminId = _services.CurrentStaff?.MaNhanVien ?? _services.CurrentUser?.MaNguoiDung ?? "USER_NV001";
+            var success = _services.XuLyDonHang.DuyetDonHang(maHoaDon, adminId, out var error);
             if (success)
             {
-                MessageBox.Show($"Đã phê duyệt thành công đơn hàng #{maHoaDon}. Trạng thái đã chuyển sang: DangDongGoi.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"Đã phê duyệt thành công đơn hàng #{maHoaDon}. Trạng thái đã chuyển sang: Đang đóng gói (DangDongGoi).", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadOrderData();
             }
             else
             {
-                MessageBox.Show("Không thể duyệt đơn hàng này do lỗi ràng buộc nghiệp vụ.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Không thể phê duyệt đơn hàng #{maHoaDon}:\n\n{error}", "Không Đủ Điều Kiện Duyệt Đơn", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
         catch (Exception ex)

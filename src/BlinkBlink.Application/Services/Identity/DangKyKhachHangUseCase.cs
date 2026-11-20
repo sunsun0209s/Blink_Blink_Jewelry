@@ -58,6 +58,12 @@ public class DangKyKhachHangUseCase
             return false;
         }
 
+        // Ràng buộc nghiệp vụ: Ngày sinh không được ở thời điểm tương lai
+        if (request.NgaySinh != default && request.NgaySinh.Date > DateTime.Today)
+        {
+            return false;
+        }
+
         // Tạo định danh tự động cho khách hàng mới
         var maDinhDanh = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         var maKhachHang = $"KH_{maDinhDanh}";

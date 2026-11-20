@@ -266,6 +266,48 @@ public class BaoHanhRepository : IBaoHanhRepository
         cmd.ExecuteNonQuery();
     }
 
+    public List<PhieuBaoHanh> TraCuuBaoHanh(string tuKhoa)
+    {
+        var list = new List<PhieuBaoHanh>();
+        if (string.IsNullOrWhiteSpace(tuKhoa))
+        {
+            return list;
+        }
+
+        var kw = tuKhoa.Trim();
+        const string sql = @"
+            SELECT b.SoPhieuBH, b.MaKhachHang, b.MaSanPham, b.LyDoBaoHanh, b.TinhTrangTiepNhan, b.GhiChu,
+                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.ChiPhiBaoHanh, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
+                   u.HoTen AS TenKhachHang, u.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
+                   s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai AS TrangThaiSanPham
+            FROM dbo.PhieuBaoHanh b
+            LEFT JOIN dbo.NguoiDung u ON b.MaKhachHang = u.MaNguoiDung
+            LEFT JOIN dbo.KhachHang kh ON u.MaNguoiDung = kh.MaNguoiDung
+            LEFT JOIN dbo.SanPhamTrangSuc s ON b.MaSanPham = s.MaSanPham
+            WHERE b.SoPhieuBH = @TuKhoa
+               OR b.SoDienThoai = @TuKhoa
+               OR u.SoDienThoai = @TuKhoa
+               OR (b.SoDienThoai LIKE '%' + @TuKhoa AND LEN(@TuKhoa) >= 9)
+            ORDER BY b.NgayTiepNhan DESC;";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@TuKhoa", SqlDbType.VarChar, 50) { Value = kw });
+
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            list.Add(MapReaderToPhieuBaoHanh(reader));
+        }
+
+        return list;
+    }
+
+    public Task<List<PhieuBaoHanh>> TraCuuBaoHanhAsync(string tuKhoa, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(TraCuuBaoHanh(tuKhoa));
+    }
+
     private static PhieuBaoHanh MapReaderToPhieuBaoHanh(SqlDataReader reader)
     {
         decimal chiPhiUocTinh = 0m;

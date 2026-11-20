@@ -106,9 +106,9 @@ public class XuLyDonHangUseCaseTests
     }
 
     [Fact]
-    public async Task DuyetDonHang_ThanhCong_ChuyenTrangThaiVaCapNhatSanPham()
+    public async Task DuyetDonHang_ThanhCong_ChuyenSangDangDongGoi()
     {
-        // Sắp đặt
+        // Sắp đặt: Đơn hàng ở trạng thái Chờ duyệt
         var hoaDonRepo = new FakeHoaDonRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
@@ -125,11 +125,31 @@ public class XuLyDonHangUseCaseTests
         // Thực thi
         var result = await useCase.DuyetDonHangAsync("HD100", "NV001");
 
-        // Kiểm tra
+        // Kiểm tra: Đơn hàng chuyển sang Đang đóng gói và gán đúng mã nhân viên duyệt
         Assert.True(result);
         Assert.Equal("DangDongGoi", hd.TrangThaiDonHang);
         Assert.Equal("NV001", hd.MaNhanVien);
-        Assert.Equal("DaBan", sp.TrangThai);
+    }
+
+    [Fact]
+    public void DuyetDonHang_ThatBai_KhiDonHangKhongOTrangThaiChoDuyet()
+    {
+        // Sắp đặt: Đơn hàng đang ở trạng thái DangGiao, không thể duyệt lại
+        var hoaDonRepo = new FakeHoaDonRepository();
+        var sanPhamRepo = new FakeSanPhamRepository();
+
+        var hd = new HoaDon("HD100", DateTime.UtcNow, "KH01", "123 Lê Lợi", "0909123456", "COD", "DangGiao", maNhanVien: "NV001");
+        hoaDonRepo.Data[hd.MaHoaDon] = hd;
+
+        var useCase = new XuLyDonHangUseCase(hoaDonRepo, sanPhamRepo);
+
+        // Thực thi
+        var result = useCase.DuyetDonHang("HD100", "NV002", out string error);
+
+        // Kiểm tra: Từ chối duyệt và trả về thông báo lỗi
+        Assert.False(result);
+        Assert.Contains("không ở trạng thái Chờ duyệt", error);
+        Assert.Equal("DangGiao", hd.TrangThaiDonHang);
     }
 
     [Fact]
@@ -159,7 +179,7 @@ public class XuLyDonHangUseCaseTests
         var hoaDonRepo = new FakeHoaDonRepository();
         var sanPhamRepo = new FakeSanPhamRepository();
 
-        var sp = new SanPhamTrangSuc("SP01", "Nhẫn kim cương", "DM01", "Bạch kim", "12", 20000000m, 35000000m, "DaBan");
+        var sp = new SanPhamTrangSuc("SP01", "Nhẫn kim cương", "DM01", "Bạch kim", "12", 20000000m, 35000000m, "HetHang");
         sanPhamRepo.Data[sp.MaSanPham] = sp;
 
         var hd = new HoaDon("HD200", DateTime.UtcNow, "KH01", "123 Lê Lợi", "0909123456", "COD", "ChoDuyet");
