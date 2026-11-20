@@ -65,17 +65,9 @@ public class PhieuBaoHanh
     public decimal ChiPhiThucTe { get; set; }
 
     /// <summary>
-    /// Chi phí bảo hành chung (tương thích ngược với hệ thống cũ)
+    /// Chi phí bảo hành thực tế hoặc ước tính (thuộc tính tính toán dẫn xuất)
     /// </summary>
-    public decimal ChiPhiBaoHanh
-    {
-        get => ChiPhiThucTe > 0 ? ChiPhiThucTe : ChiPhiUocTinh;
-        set
-        {
-            ChiPhiThucTe = value;
-            if (ChiPhiUocTinh == 0) ChiPhiUocTinh = value;
-        }
-    }
+    public decimal ChiPhiBaoHanh => ChiPhiThucTe > 0 ? ChiPhiThucTe : ChiPhiUocTinh;
 
     /// <summary>
     /// Trạng thái xử lý: TiepNhan, DangXuLy, DaXuLy, DaTraKhach, DaHuy (hoặc tương thích DangBaoHanh, DaHoanTat)

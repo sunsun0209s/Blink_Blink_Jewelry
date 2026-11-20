@@ -51,7 +51,6 @@ public class BaoHanhRepository : IBaoHanhRepository
                     GhiChu = @GhiChu,
                     ChiPhiUocTinh = @ChiPhiUocTinh,
                     ChiPhiThucTe = @ChiPhiThucTe,
-                    ChiPhiBaoHanh = @ChiPhiBaoHanh,
                     TrangThaiXuLy = @TrangThaiXuLy,
                     NgayTiepNhan = @NgayTiepNhan,
                     NgayHenTra = @NgayHenTra,
@@ -60,7 +59,7 @@ public class BaoHanhRepository : IBaoHanhRepository
             END
             ELSE
             BEGIN
-                INSERT INTO dbo.PhieuBaoHanh (SoPhieuBH, MaKhachHang, MaSanPham, LyDoBaoHanh, TinhTrangTiepNhan, GhiChu, ChiPhiUocTinh, ChiPhiThucTe, ChiPhiBaoHanh, TrangThaiXuLy, NgayTiepNhan, NgayHenTra, SoDienThoai)
+                INSERT INTO dbo.PhieuBaoHanh (SoPhieuBH, MaKhachHang, MaSanPham, LyDoBaoHanh, TinhTrangTiepNhan, GhiChu, ChiPhiUocTinh, ChiPhiThucTe, TrangThaiXuLy, NgayTiepNhan, NgayHenTra, SoDienThoai)
                 VALUES (
                     @SoPhieuBH, 
                     CASE 
@@ -68,7 +67,7 @@ public class BaoHanhRepository : IBaoHanhRepository
                         WHEN EXISTS (SELECT 1 FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHang) THEN (SELECT TOP 1 MaNguoiDung FROM dbo.KhachHang WHERE MaKhachHang = @MaKhachHang)
                         ELSE @MaKhachHang
                     END, 
-                    @MaSanPham, @LyDoBaoHanh, @TinhTrangTiepNhan, @GhiChu, @ChiPhiUocTinh, @ChiPhiThucTe, @ChiPhiBaoHanh, @TrangThaiXuLy, @NgayTiepNhan, @NgayHenTra, @SoDienThoai);
+                    @MaSanPham, @LyDoBaoHanh, @TinhTrangTiepNhan, @GhiChu, @ChiPhiUocTinh, @ChiPhiThucTe, @TrangThaiXuLy, @NgayTiepNhan, @NgayHenTra, @SoDienThoai);
             END";
 
         var parameters = new[]
@@ -81,7 +80,6 @@ public class BaoHanhRepository : IBaoHanhRepository
             new SqlParameter("@GhiChu", SqlDbType.NVarChar, 500) { Value = (object?)pbh.GhiChu ?? DBNull.Value },
             new SqlParameter("@ChiPhiUocTinh", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = pbh.ChiPhiUocTinh },
             new SqlParameter("@ChiPhiThucTe", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = pbh.ChiPhiThucTe },
-            new SqlParameter("@ChiPhiBaoHanh", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = pbh.ChiPhiBaoHanh },
             new SqlParameter("@TrangThaiXuLy", SqlDbType.NVarChar, 50) { Value = pbh.TrangThaiXuLy },
             new SqlParameter("@NgayTiepNhan", SqlDbType.DateTime2) { Value = pbh.NgayTiepNhan },
             new SqlParameter("@NgayHenTra", SqlDbType.DateTime2) { Value = (object?)pbh.NgayHenTra ?? DBNull.Value },
@@ -100,7 +98,7 @@ public class BaoHanhRepository : IBaoHanhRepository
 
         const string sql = @"
             SELECT b.SoPhieuBH, b.MaKhachHang, b.MaSanPham, b.LyDoBaoHanh, b.TinhTrangTiepNhan, b.GhiChu,
-                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.ChiPhiBaoHanh, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
+                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
                    u.HoTen AS TenKhachHang, u.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
                    s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai AS TrangThaiSanPham
             FROM dbo.PhieuBaoHanh b
@@ -132,7 +130,7 @@ public class BaoHanhRepository : IBaoHanhRepository
 
         const string sql = @"
             SELECT b.SoPhieuBH, b.MaKhachHang, b.MaSanPham, b.LyDoBaoHanh, b.TinhTrangTiepNhan, b.GhiChu,
-                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.ChiPhiBaoHanh, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
+                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
                    u.HoTen AS TenKhachHang, u.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
                    s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai AS TrangThaiSanPham
             FROM dbo.PhieuBaoHanh b
@@ -161,7 +159,7 @@ public class BaoHanhRepository : IBaoHanhRepository
 
         const string sql = @"
             SELECT b.SoPhieuBH, b.MaKhachHang, b.MaSanPham, b.LyDoBaoHanh, b.TinhTrangTiepNhan, b.GhiChu,
-                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.ChiPhiBaoHanh, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
+                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
                    u.HoTen AS TenKhachHang, u.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
                    s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai AS TrangThaiSanPham
             FROM dbo.PhieuBaoHanh b
@@ -195,7 +193,6 @@ public class BaoHanhRepository : IBaoHanhRepository
                 GhiChu = @GhiChu,
                 ChiPhiUocTinh = @ChiPhiUocTinh,
                 ChiPhiThucTe = @ChiPhiThucTe,
-                ChiPhiBaoHanh = @ChiPhiBaoHanh,
                 TrangThaiXuLy = @TrangThaiXuLy,
                 NgayHenTra = @NgayHenTra
             WHERE SoPhieuBH = @SoPhieuBH;";
@@ -207,7 +204,6 @@ public class BaoHanhRepository : IBaoHanhRepository
             new SqlParameter("@GhiChu", SqlDbType.NVarChar, 500) { Value = (object?)pbh.GhiChu ?? DBNull.Value },
             new SqlParameter("@ChiPhiUocTinh", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = pbh.ChiPhiUocTinh },
             new SqlParameter("@ChiPhiThucTe", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = pbh.ChiPhiThucTe },
-            new SqlParameter("@ChiPhiBaoHanh", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = pbh.ChiPhiBaoHanh },
             new SqlParameter("@TrangThaiXuLy", SqlDbType.NVarChar, 50) { Value = pbh.TrangThaiXuLy },
             new SqlParameter("@NgayHenTra", SqlDbType.DateTime2) { Value = (object?)pbh.NgayHenTra ?? DBNull.Value }
         };
@@ -277,7 +273,7 @@ public class BaoHanhRepository : IBaoHanhRepository
         var kw = tuKhoa.Trim();
         const string sql = @"
             SELECT b.SoPhieuBH, b.MaKhachHang, b.MaSanPham, b.LyDoBaoHanh, b.TinhTrangTiepNhan, b.GhiChu,
-                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.ChiPhiBaoHanh, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
+                   b.ChiPhiUocTinh, b.ChiPhiThucTe, b.TrangThaiXuLy, b.NgayTiepNhan, b.NgayHenTra, b.SoDienThoai,
                    u.HoTen AS TenKhachHang, u.SoDienThoai AS SdtKhachHang, kh.MaKhachHang AS MaDinhDanhKhachHang, kh.NgaySinh AS NgaySinhKhachHang,
                    s.TenSanPham, s.MaDanhMuc, s.ChatLieu, s.Size, s.GiaNhap, s.GiaBan, s.TrangThai AS TrangThaiSanPham
             FROM dbo.PhieuBaoHanh b
@@ -326,15 +322,6 @@ public class BaoHanhRepository : IBaoHanhRepository
             if (!reader.IsDBNull(ordThucTe)) chiPhiThucTe = reader.GetDecimal(ordThucTe);
         }
         catch { }
-
-        decimal chiPhiBaoHanh = 0m;
-        try
-        {
-            chiPhiBaoHanh = reader.GetDecimal(reader.GetOrdinal("ChiPhiBaoHanh"));
-        }
-        catch { }
-
-        if (chiPhiUocTinh == 0 && chiPhiBaoHanh > 0) chiPhiUocTinh = chiPhiBaoHanh;
 
         string tinhTrang = string.Empty;
         try

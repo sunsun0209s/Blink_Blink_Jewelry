@@ -18,18 +18,38 @@ namespace BlinkBlink.IntegrationTests;
 /// </summary>
 public class DatabaseWorkflowIntegrationTests
 {
-    private const string ConnectionString = "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;";
+    private static readonly string[] CandidateConnections = new[]
+    {
+        "Server=.\\MSSQL;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=5;",
+        "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=5;"
+    };
 
     private readonly DatabaseHelper _dbHelper;
     private readonly bool _isDbAvailable;
 
     public DatabaseWorkflowIntegrationTests()
     {
-        _dbHelper = new DatabaseHelper(ConnectionString);
-        _isDbAvailable = _dbHelper.TestConnection();
-        if (_isDbAvailable)
+        DatabaseHelper? validHelper = null;
+        foreach (var connStr in CandidateConnections)
         {
+            var helper = new DatabaseHelper(connStr);
+            if (helper.TestConnection())
+            {
+                validHelper = helper;
+                break;
+            }
+        }
+
+        if (validHelper != null)
+        {
+            _dbHelper = validHelper;
+            _isDbAvailable = true;
             _dbHelper.EnsureSchemaCompatibility();
+        }
+        else
+        {
+            _dbHelper = new DatabaseHelper(CandidateConnections[0]);
+            _isDbAvailable = false;
         }
     }
 
