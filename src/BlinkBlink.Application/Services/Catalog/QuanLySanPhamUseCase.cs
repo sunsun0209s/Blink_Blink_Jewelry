@@ -283,4 +283,60 @@ public class QuanLySanPhamUseCase
         await _sanPhamRepo.LuuSanPhamAsync(sanPham, cancellationToken);
         return true;
     }
+
+    /// <summary>
+    /// Xóa sản phẩm khỏi hệ thống nếu chưa từng phát sinh giao dịch nhập kho hoặc bán hàng.
+    /// Nếu đã phát sinh giao dịch, trả về false kèm lý do và hướng dẫn chuyển sang ẩn sản phẩm.
+    /// </summary>
+    /// <param name="maSanPham">Mã sản phẩm cần xóa</param>
+    /// <param name="thongBao">Thông báo kết quả hoặc lý do không thể xóa</param>
+    /// <returns>True nếu xóa thành công, False nếu vi phạm ràng buộc giao dịch hoặc không tìm thấy</returns>
+    public bool XoaSanPham(string maSanPham, out string thongBao)
+    {
+        if (string.IsNullOrWhiteSpace(maSanPham))
+        {
+            thongBao = "Mã sản phẩm không hợp lệ.";
+            return false;
+        }
+
+        var sp = _sanPhamRepo.TimTheoId(maSanPham.Trim());
+        if (sp == null)
+        {
+            thongBao = "Không tìm thấy sản phẩm cần xóa.";
+            return false;
+        }
+
+        if (_sanPhamRepo.KiemTraPhatSinhGiaoDich(sp.MaSanPham, out var lyDo))
+        {
+            thongBao = $"{lyDo} Sản phẩm chỉ có thể ẨN khỏi hệ thống thay vì xóa.";
+            return false;
+        }
+
+        _sanPhamRepo.XoaSanPham(sp.MaSanPham);
+        thongBao = $"Đã xóa vĩnh viễn sản phẩm [{sp.MaSanPham}] khỏi hệ thống.";
+        return true;
+    }
+
+    public async Task<(bool Success, string Message)> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(maSanPham))
+        {
+            return (false, "Mã sản phẩm không hợp lệ.");
+        }
+
+        var sp = await _sanPhamRepo.TimTheoIdAsync(maSanPham.Trim(), cancellationToken);
+        if (sp == null)
+        {
+            return (false, "Không tìm thấy sản phẩm cần xóa.");
+        }
+
+        var (coGiaoDich, lyDo) = await _sanPhamRepo.KiemTraPhatSinhGiaoDichAsync(sp.MaSanPham, cancellationToken);
+        if (coGiaoDich)
+        {
+            return (false, $"{lyDo} Sản phẩm chỉ có thể ẨN khỏi hệ thống thay vì xóa.");
+        }
+
+        await _sanPhamRepo.XoaSanPhamAsync(sp.MaSanPham, cancellationToken);
+        return (true, $"Đã xóa vĩnh viễn sản phẩm [{sp.MaSanPham}] khỏi hệ thống.");
+    }
 }

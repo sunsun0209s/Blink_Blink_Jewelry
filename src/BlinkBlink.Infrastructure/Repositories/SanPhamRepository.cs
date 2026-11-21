@@ -172,6 +172,87 @@ public class SanPhamRepository : ISanPhamRepository
         return Task.FromResult(LayTheoNhom(maNhom));
     }
 
+    public bool KiemTraPhatSinhGiaoDich(string maSanPham, out string lyDo)
+    {
+        lyDo = string.Empty;
+        if (string.IsNullOrWhiteSpace(maSanPham))
+        {
+            return false;
+        }
+
+        const string sql = @"
+            SELECT 
+                (SELECT COUNT(1) FROM dbo.ChiTietNhapKho WHERE MaSanPham = @MaSP) AS SoNhapKho,
+                (SELECT COUNT(1) FROM dbo.ChiTietHoaDon WHERE MaSanPham = @MaSP) AS SoHoaDon,
+                (SELECT COUNT(1) FROM dbo.ChiTietKiemKe WHERE MaSanPham = @MaSP) AS SoKiemKe,
+                (SELECT COUNT(1) FROM dbo.PhieuBaoHanh WHERE MaSanPham = @MaSP) AS SoBaoHanh;";
+
+        using var conn = _dbHelper.GetConnection();
+        using var cmd = new SqlCommand(sql, conn);
+        cmd.Parameters.Add(new SqlParameter("@MaSP", SqlDbType.VarChar, 50) { Value = maSanPham.Trim() });
+
+        using var reader = cmd.ExecuteReader();
+        if (reader.Read())
+        {
+            var soNhapKho = reader.GetInt32(0);
+            var soHoaDon = reader.GetInt32(1);
+            var soKiemKe = reader.GetInt32(2);
+            var soBaoHanh = reader.GetInt32(3);
+
+            if (soNhapKho > 0)
+            {
+                lyDo = "Sản phẩm đã từng có phiếu nhập hàng vào kho.";
+                return true;
+            }
+            if (soHoaDon > 0)
+            {
+                lyDo = "Sản phẩm đã từng phát sinh hóa đơn bán hàng.";
+                return true;
+            }
+            if (soKiemKe > 0)
+            {
+                lyDo = "Sản phẩm đã từng nằm trong biên bản kiểm kê kho.";
+                return true;
+            }
+            if (soBaoHanh > 0)
+            {
+                lyDo = "Sản phẩm đã từng phát sinh phiếu tiếp nhận bảo hành.";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void XoaSanPham(string maSanPham)
+    {
+        if (string.IsNullOrWhiteSpace(maSanPham))
+        {
+            return;
+        }
+
+        const string sql = @"
+            DELETE FROM dbo.ChiTietGioHang WHERE MaSanPham = @MaSP;
+            DELETE FROM dbo.SanPhamTrangSuc WHERE MaSanPham = @MaSP;";
+
+        _dbHelper.ExecuteNonQuery(sql, new[]
+        {
+            new SqlParameter("@MaSP", SqlDbType.VarChar, 50) { Value = maSanPham.Trim() }
+        });
+    }
+
+    public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
+    {
+        var coGiaoDich = KiemTraPhatSinhGiaoDich(maSanPham, out var lyDo);
+        return Task.FromResult((coGiaoDich, lyDo));
+    }
+
+    public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
+    {
+        XoaSanPham(maSanPham);
+        return Task.CompletedTask;
+    }
+
     public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
     {
         LuuSanPham(sp);

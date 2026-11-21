@@ -26,6 +26,7 @@ public class ProductsView : UserControl
     private Button _btnAddProduct = null!;
     private Button _btnEditProduct = null!;
     private Button _btnToggleVisibility = null!;
+    private Button _btnDeleteProduct = null!;
     private Button _btnRefresh = null!;
 
     private Label _lblKpiTotalSku = null!;
@@ -157,6 +158,10 @@ public class ProductsView : UserControl
         _btnToggleVisibility.Margin = new Padding(0, 2, 8, 2);
         _btnToggleVisibility.Click += (s, e) => ToggleSelectedProductVisibility();
 
+        _btnDeleteProduct = UITheme.CreateFlatButton("🗑 Xóa Sản Phẩm", UITheme.DangerColor, Color.White);
+        _btnDeleteProduct.Margin = new Padding(0, 2, 8, 2);
+        _btnDeleteProduct.Click += (s, e) => DeleteSelectedProduct();
+
         _btnRefresh = UITheme.CreateFlatButton("⟳ Nạp Lại", Color.FromArgb(241, 245, 249), UITheme.TextPrimary);
         _btnRefresh.Margin = new Padding(0, 2, 0, 2);
         _btnRefresh.Click += (s, e) => LoadProductsData();
@@ -168,6 +173,7 @@ public class ProductsView : UserControl
         toolbarPanel.Controls.Add(_btnAddProduct);
         toolbarPanel.Controls.Add(_btnEditProduct);
         toolbarPanel.Controls.Add(_btnToggleVisibility);
+        toolbarPanel.Controls.Add(_btnDeleteProduct);
         toolbarPanel.Controls.Add(_btnRefresh);
 
         // Grid Container
@@ -594,6 +600,63 @@ public class ProductsView : UserControl
                 "Thành công",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+        }
+    }
+
+    /// <summary>
+    /// Xóa vĩnh viễn sản phẩm được chọn nếu chưa từng phát sinh chứng từ/giao dịch (nhập kho, bán hàng, kiểm kê, bảo hành).
+    /// Nếu đã từng có giao dịch, hiển thị hộp thoại cảnh báo từ chối và hướng dẫn/gợi ý chuyển sang trạng thái Ẩn.
+    /// </summary>
+    private void DeleteSelectedProduct()
+    {
+        if (_dgvProducts.SelectedRows.Count == 0)
+        {
+            MessageBox.Show("Vui lòng chọn một sản phẩm trong danh sách cần xóa.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var maSP = _dgvProducts.SelectedRows[0].Cells["MaSanPham"].Value?.ToString();
+        var targetProduct = _allProducts.FirstOrDefault(p => p.MaSanPham == maSP);
+        if (targetProduct == null) return;
+
+        // Kiểm tra xem sản phẩm đã từng phát sinh chứng từ/giao dịch hay chưa
+        if (_services.SanPhamRepo.KiemTraPhatSinhGiaoDich(targetProduct.MaSanPham, out var lyDo))
+        {
+            var msg = $"KHÔNG THỂ XÓA sản phẩm [{targetProduct.MaSanPham}] {targetProduct.TenSanPham}.\n" +
+                      $"Lý do: {lyDo}\n\n" +
+                      "Theo quy chuẩn kế toán và toàn vẹn dữ liệu kho, sản phẩm đã có chứng từ/giao dịch chỉ có thể chuyển sang trạng thái ẨN để ngừng kinh doanh.\n\n" +
+                      "Bạn có muốn chuyển sản phẩm này sang trạng thái ẨN ngay bây giờ không?";
+
+            var result = MessageBox.Show(msg, "Từ chối xóa - Ràng buộc giao dịch", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result == DialogResult.Yes)
+            {
+                targetProduct.IsHidden = true;
+                _services.SanPhamRepo.LuuSanPham(targetProduct);
+                LoadProductsData();
+                MessageBox.Show($"Đã chuyển sản phẩm [{targetProduct.MaSanPham}] sang trạng thái ẨN.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            return;
+        }
+
+        // Nếu chưa từng phát sinh giao dịch, cảnh báo và xác nhận xóa
+        var confirm = MessageBox.Show(
+            $"CẢNH BÁO: Bạn có chắc chắn muốn xóa VĨNH VIỄN sản phẩm:\n[{targetProduct.MaSanPham}] {targetProduct.TenSanPham}?\n\nThao tác này sẽ xóa toàn bộ thông tin sản phẩm và không thể hoàn tác!",
+            "Xác nhận xóa vĩnh viễn sản phẩm",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+
+        if (confirm == DialogResult.Yes)
+        {
+            var success = _services.QuanLySanPham.XoaSanPham(targetProduct.MaSanPham, out var thongBao);
+            if (success)
+            {
+                LoadProductsData();
+                MessageBox.Show(thongBao, "Xóa sản phẩm thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show(thongBao, "Lỗi xóa sản phẩm", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

@@ -103,6 +103,26 @@ public class XuLyDonHangUseCaseTests
         public List<SanPhamTrangSuc> LayTheoNhom(string maNhom) => Data.Values.Where(s => s.MaNhom == maNhom).ToList();
         public Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken cancellationToken = default) => Task.FromResult(LayTatCa());
         public Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken cancellationToken = default) => Task.FromResult(LayTheoNhom(maNhom));
+
+        public bool KiemTraPhatSinhGiaoDich(string maSanPham, out string lyDo)
+        {
+            lyDo = string.Empty;
+            return false;
+        }
+
+        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+
+        public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
+        {
+            var hasTx = KiemTraPhatSinhGiaoDich(maSanPham, out var lyDo);
+            return Task.FromResult((hasTx, lyDo));
+        }
+
+        public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
+        {
+            XoaSanPham(maSanPham);
+            return Task.CompletedTask;
+        }
     }
 
     [Fact]
