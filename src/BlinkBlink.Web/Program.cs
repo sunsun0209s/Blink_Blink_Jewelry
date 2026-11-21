@@ -39,10 +39,12 @@ var candidateConnections = new[]
     builder.Configuration.GetConnectionString("DefaultConnection"),
     "Server=localhost,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
     "Server=127.0.0.1,1433;Database=BlinkBlinkJewelryDb;User Id=sa;Password=BlinkBlink@Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true;Connect Timeout=4;",
-    "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
-    "Server=localhost;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
-    "Server=.\\MSSQL;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;",
-    "Server=(localdb)\\mssqllocaldb;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=3;"
+    "Server=.\\MSSQL;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=5;",
+    "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=5;",
+    "Server=localhost;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=5;",
+    "Server=.\\SQLEXPRESS;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=4;",
+    "Server=localhost\\SQLEXPRESS;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=4;",
+    "Server=(localdb)\\mssqllocaldb;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=4;"
 }.Where(s => !string.IsNullOrWhiteSpace(s));
 
 DatabaseHelper? dbHelper = null;
@@ -105,10 +107,21 @@ if (dbHelper == null)
 {
     appLogger.DefaultContext.DataMode = "SqlServerUnavailable";
     appLogger.LogError("WebStartup", "Không thể kết nối tới bất kỳ SQL Server instance nào khi khởi động Web.", ErrorCodes.DatabaseUnavailable);
+    var fallbackConn = candidateConnections.FirstOrDefault() ?? "Server=.;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;TrustServerCertificate=True";
+    dbHelper = new DatabaseHelper(fallbackConn, appLogger);
+}
+else
+{
+    try
+    {
+        dbHelper.EnsureSchemaCompatibility();
+    }
+    catch (Exception ex)
+    {
+        appLogger.LogWarning("WebStartup", "Không thể chạy migration lược đồ CSDL tự động.", ErrorCodes.DatabaseUnavailable, ex);
+    }
 }
 
-dbHelper ??= new DatabaseHelper("Server=(localdb)\\mssqllocaldb;Database=BlinkBlinkJewelryDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True", appLogger);
-dbHelper.EnsureSchemaCompatibility();
 builder.Services.AddSingleton(dbHelper);
 
 // Đăng ký các Kho dữ liệu (Repositories) sử dụng ADO.NET thuần

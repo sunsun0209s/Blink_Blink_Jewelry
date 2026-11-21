@@ -36,7 +36,7 @@ timeout /t 1 /nobreak > nul
 curl.exe -s -o nul !WEB_URL!/ >nul 2>&1
 if %ERRORLEVEL% equ 0 goto WEB_READY
 set /a RETRY_COUNT+=1
-if !RETRY_COUNT! lss 30 (
+if !RETRY_COUNT! lss 45 (
     echo      Dang cho Web Server bien dich va mo cong... (!RETRY_COUNT!s)
     goto WAIT_WEB
 )

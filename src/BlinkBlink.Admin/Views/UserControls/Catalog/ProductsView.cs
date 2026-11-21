@@ -7,7 +7,9 @@ using System.Linq;
 using System.Windows.Forms;
 using BlinkBlink.Admin.Services;
 using BlinkBlink.Admin.Views.Helpers;
+using BlinkBlink.Application.Common.Logging;
 using BlinkBlink.Domain.Entities.Catalog;
+using BlinkBlink.Domain.Exceptions;
 
 namespace BlinkBlink.Admin.Views.UserControls.Catalog;
 
@@ -376,12 +378,34 @@ public class ProductsView : UserControl
 
     public void LoadProductsData()
     {
-        _allProducts = _services.SanPhamRepo.LayTatCa();
-        _allCategories = _services.DanhMucRepo.LayTatCa();
+        if (!_services.IsDatabaseConnected)
+        {
+            _allProducts = new List<SanPhamTrangSuc>();
+            _allCategories = new List<DanhMuc>();
+            PopulateCategoryDropdown();
+            UpdateKpis();
+            FilterProducts();
+            return;
+        }
 
-        PopulateCategoryDropdown();
-        UpdateKpis();
-        FilterProducts();
+        try
+        {
+            _allProducts = _services.SanPhamRepo.LayTatCa();
+            _allCategories = _services.DanhMucRepo.LayTatCa();
+
+            PopulateCategoryDropdown();
+            UpdateKpis();
+            FilterProducts();
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.LogWarning(nameof(ProductsView), "Không thể tải sản phẩm từ CSDL.", ErrorCodes.DatabaseUnavailable, ex);
+            _allProducts = new List<SanPhamTrangSuc>();
+            _allCategories = new List<DanhMuc>();
+            PopulateCategoryDropdown();
+            UpdateKpis();
+            FilterProducts();
+        }
     }
 
     private void PopulateCategoryDropdown()
