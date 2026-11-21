@@ -6,8 +6,10 @@ using System.Linq;
 using System.Windows.Forms;
 using BlinkBlink.Admin.Services;
 using BlinkBlink.Admin.Views.Helpers;
+using BlinkBlink.Application.Common.Logging;
 using BlinkBlink.Application.DTOs.Catalog;
 using BlinkBlink.Domain.Entities.Catalog;
+using BlinkBlink.Domain.Exceptions;
 
 namespace BlinkBlink.Admin.Views.UserControls.Catalog;
 
@@ -279,6 +281,16 @@ public class ProductGroupsView : UserControl
 
     public void LoadGroupData()
     {
+        if (!_services.IsDatabaseConnected)
+        {
+            _allGroups = new List<NhomSanPhamDTO>();
+            _allProducts = new List<SanPhamTrangSuc>();
+            FilterGroups();
+            _lblKpiTotalGroups.Text = "0";
+            _lblKpiGroupedProducts.Text = "0";
+            return;
+        }
+
         try
         {
             _allGroups = _services.QuanLyNhomSanPham.LayDanhSachNhom();
@@ -292,7 +304,12 @@ public class ProductGroupsView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Lỗi tải danh sách nhóm sản phẩm: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _services.Logger.LogWarning(nameof(ProductGroupsView), "Không thể tải danh sách nhóm sản phẩm từ CSDL.", ErrorCodes.DatabaseUnavailable, ex);
+            _allGroups = new List<NhomSanPhamDTO>();
+            _allProducts = new List<SanPhamTrangSuc>();
+            FilterGroups();
+            _lblKpiTotalGroups.Text = "0";
+            _lblKpiGroupedProducts.Text = "0";
         }
     }
 

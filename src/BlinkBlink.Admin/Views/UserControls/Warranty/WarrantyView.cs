@@ -7,9 +7,11 @@ using System.Linq;
 using System.Windows.Forms;
 using BlinkBlink.Admin.Services;
 using BlinkBlink.Admin.Views.Helpers;
+using BlinkBlink.Application.Common.Logging;
 using BlinkBlink.Application.DTOs.Warranty;
 using BlinkBlink.Domain.Entities.Catalog;
 using BlinkBlink.Domain.Entities.Warranty;
+using BlinkBlink.Domain.Exceptions;
 
 namespace BlinkBlink.Admin.Views.UserControls.Warranty;
 
@@ -306,9 +308,27 @@ public class WarrantyView : UserControl
 
     private void LoadWarrantyData()
     {
-        _allTickets = _services.BaoHanhRepo.LayDanhSachPhieu();
-        UpdateKpis();
-        FilterWarranty();
+        if (!_services.IsDatabaseConnected)
+        {
+            _allTickets = new List<PhieuBaoHanh>();
+            UpdateKpis();
+            FilterWarranty();
+            return;
+        }
+
+        try
+        {
+            _allTickets = _services.BaoHanhRepo.LayDanhSachPhieu();
+            UpdateKpis();
+            FilterWarranty();
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.LogWarning(nameof(WarrantyView), "Không thể tải danh sách phiếu bảo hành từ CSDL.", ErrorCodes.DatabaseUnavailable, ex);
+            _allTickets = new List<PhieuBaoHanh>();
+            UpdateKpis();
+            FilterWarranty();
+        }
     }
 
     private void UpdateKpis()

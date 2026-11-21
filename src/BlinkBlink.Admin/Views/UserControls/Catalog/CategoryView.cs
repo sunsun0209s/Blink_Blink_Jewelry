@@ -6,7 +6,9 @@ using System.Linq;
 using System.Windows.Forms;
 using BlinkBlink.Admin.Services;
 using BlinkBlink.Admin.Views.Helpers;
+using BlinkBlink.Application.Common.Logging;
 using BlinkBlink.Domain.Entities.Catalog;
+using BlinkBlink.Domain.Exceptions;
 
 namespace BlinkBlink.Admin.Views.UserControls.Catalog;
 
@@ -230,11 +232,31 @@ public class CategoryView : UserControl
 
     public void LoadCategoryData()
     {
-        _allCategories = _services.DanhMucRepo.LayTatCa();
-        _allProducts = _services.ThongKeRepo.TruyVanSanPhamTonKho();
+        if (!_services.IsDatabaseConnected)
+        {
+            _allCategories = new List<DanhMuc>();
+            _allProducts = new List<SanPhamTrangSuc>();
+            UpdateKpis();
+            FilterCategories();
+            return;
+        }
 
-        UpdateKpis();
-        FilterCategories();
+        try
+        {
+            _allCategories = _services.DanhMucRepo.LayTatCa();
+            _allProducts = _services.ThongKeRepo.TruyVanSanPhamTonKho();
+
+            UpdateKpis();
+            FilterCategories();
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.LogWarning(nameof(CategoryView), "Không thể tải danh mục từ CSDL.", ErrorCodes.DatabaseUnavailable, ex);
+            _allCategories = new List<DanhMuc>();
+            _allProducts = new List<SanPhamTrangSuc>();
+            UpdateKpis();
+            FilterCategories();
+        }
     }
 
     private void UpdateKpis()
