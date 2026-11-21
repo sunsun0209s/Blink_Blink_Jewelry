@@ -85,7 +85,7 @@ public class ProductsAndInventoryContainerView : UserControl
 
         // Khởi động các tab theo vai trò của tài khoản hiện hành
         var currentUser = AdminServiceScope.Instance.CurrentUser;
-        var currentRole = currentUser != null ? currentUser.VaiTro.ToString() : "ADMIN";
+        var currentRole = currentUser?.VaiTro != null ? currentUser.VaiTro.ToString() : (currentUser?.MaVaiTro ?? "ADMIN");
         ApplyRolePermissions(currentRole);
     }
 
