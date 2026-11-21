@@ -32,6 +32,26 @@ public class StockAuditWorkflowTests
         public Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken ct = default) => Task.FromResult(TimTheoId(maSanPham));
         public Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken ct = default) => Task.FromResult(LayTatCa());
         public Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken ct = default) => Task.FromResult(LayTheoNhom(maNhom));
+
+        public bool KiemTraPhatSinhGiaoDich(string maSanPham, out string lyDo)
+        {
+            lyDo = string.Empty;
+            return false;
+        }
+
+        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+
+        public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken ct = default)
+        {
+            var hasTx = KiemTraPhatSinhGiaoDich(maSanPham, out var lyDo);
+            return Task.FromResult((hasTx, lyDo));
+        }
+
+        public Task XoaSanPhamAsync(string maSanPham, CancellationToken ct = default)
+        {
+            XoaSanPham(maSanPham);
+            return Task.CompletedTask;
+        }
     }
 
     private class FakePhieuKiemKeRepository : IPhieuKiemKeRepository

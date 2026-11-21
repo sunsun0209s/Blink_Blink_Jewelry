@@ -42,6 +42,36 @@ public class QuanLySanPhamUseCaseTests
         public List<SanPhamTrangSuc> LayTheoNhom(string maNhom) => Data.Values.Where(s => s.MaNhom == maNhom).ToList();
         public Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken cancellationToken = default) => Task.FromResult(LayTatCa());
         public Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken cancellationToken = default) => Task.FromResult(LayTheoNhom(maNhom));
+
+        public HashSet<string> ProductsWithTransactions = new();
+
+        public bool KiemTraPhatSinhGiaoDich(string maSanPham, out string lyDo)
+        {
+            if (ProductsWithTransactions.Contains(maSanPham))
+            {
+                lyDo = "Sản phẩm đã phát sinh giao dịch trong hệ thống.";
+                return true;
+            }
+            lyDo = string.Empty;
+            return false;
+        }
+
+        public void XoaSanPham(string maSanPham)
+        {
+            Data.Remove(maSanPham);
+        }
+
+        public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
+        {
+            var hasTx = KiemTraPhatSinhGiaoDich(maSanPham, out var lyDo);
+            return Task.FromResult((hasTx, lyDo));
+        }
+
+        public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
+        {
+            XoaSanPham(maSanPham);
+            return Task.CompletedTask;
+        }
     }
 
     private class FakeDanhMucRepository : IDanhMucRepository
@@ -372,5 +402,87 @@ public class QuanLySanPhamUseCaseTests
         Assert.Single(danhSachKhaDung);
         Assert.Equal("SP_HIEN", danhSachKhaDung[0].MaSanPham);
         Assert.DoesNotContain(danhSachKhaDung, p => p.MaSanPham == "SP_AN");
+    }
+
+    [Fact]
+    public void XoaSanPham_ThanhCong_KhiChuaPhatSinhGiaoDich()
+    {
+        // Sắp đặt: Sản phẩm SP_NEW chưa từng phát sinh chứng từ hay giao dịch
+        var spRepo = new FakeSanPhamRepository();
+        var dmRepo = new FakeDanhMucRepository();
+        var useCase = new QuanLySanPhamUseCase(spRepo, dmRepo);
+
+        var sp = new SanPhamTrangSuc("SP_NEW", "Nhẫn mới tạo", "DM01", "Vàng 18K", "12", 5000000, 7500000, "ChuaNhap");
+        spRepo.LuuSanPham(sp);
+
+        // Hành động: Xóa sản phẩm
+        var result = useCase.XoaSanPham("SP_NEW", out var thongBao);
+
+        // Kiểm tra: Xóa thành công và không còn trong repo
+        Assert.True(result);
+        Assert.Contains("Đã xóa vĩnh viễn", thongBao);
+        Assert.Null(spRepo.TimTheoId("SP_NEW"));
+    }
+
+    [Fact]
+    public void XoaSanPham_BiChan_KhiDaPhatSinhGiaoDich()
+    {
+        // Sắp đặt: Sản phẩm SP_OLD đã từng phát sinh giao dịch nhập kho / bán hàng
+        var spRepo = new FakeSanPhamRepository();
+        var dmRepo = new FakeDanhMucRepository();
+        var useCase = new QuanLySanPhamUseCase(spRepo, dmRepo);
+
+        var sp = new SanPhamTrangSuc("SP_OLD", "Nhẫn kim cương đã bán", "DM01", "Bạch kim", "14", 10000000, 15000000, "SanSang");
+        spRepo.LuuSanPham(sp);
+        spRepo.ProductsWithTransactions.Add("SP_OLD");
+
+        // Hành động: Cố gắng xóa sản phẩm đã có giao dịch
+        var result = useCase.XoaSanPham("SP_OLD", out var thongBao);
+
+        // Kiểm tra: Bị từ chối xóa và sản phẩm vẫn còn nguyên
+        Assert.False(result);
+        Assert.Contains("Sản phẩm chỉ có thể ẨN khỏi hệ thống thay vì xóa", thongBao);
+        Assert.NotNull(spRepo.TimTheoId("SP_OLD"));
+    }
+
+    [Fact]
+    public async Task XoaSanPhamAsync_ThanhCong_KhiChuaPhatSinhGiaoDich()
+    {
+        // Sắp đặt: Sản phẩm SP_ASYNC chưa từng phát sinh chứng từ
+        var spRepo = new FakeSanPhamRepository();
+        var dmRepo = new FakeDanhMucRepository();
+        var useCase = new QuanLySanPhamUseCase(spRepo, dmRepo);
+
+        var sp = new SanPhamTrangSuc("SP_ASYNC", "Dây chuyền vàng", "DM02", "Vàng 24K", "45cm", 12000000, 18000000, "ChuaNhap");
+        await spRepo.LuuSanPhamAsync(sp);
+
+        // Hành động: Xóa bất đồng bộ
+        var (success, msg) = await useCase.XoaSanPhamAsync("SP_ASYNC");
+
+        // Kiểm tra: Thành công
+        Assert.True(success);
+        Assert.Contains("Đã xóa vĩnh viễn", msg);
+        Assert.Null(await spRepo.TimTheoIdAsync("SP_ASYNC"));
+    }
+
+    [Fact]
+    public async Task XoaSanPhamAsync_BiChan_KhiDaPhatSinhGiaoDich()
+    {
+        // Sắp đặt: Sản phẩm SP_ASYNC_TX đã phát sinh giao dịch
+        var spRepo = new FakeSanPhamRepository();
+        var dmRepo = new FakeDanhMucRepository();
+        var useCase = new QuanLySanPhamUseCase(spRepo, dmRepo);
+
+        var sp = new SanPhamTrangSuc("SP_ASYNC_TX", "Lắc tay vàng", "DM03", "Vàng trắng", "17cm", 8000000, 12000000, "SanSang");
+        await spRepo.LuuSanPhamAsync(sp);
+        spRepo.ProductsWithTransactions.Add("SP_ASYNC_TX");
+
+        // Hành động: Cố gắng xóa
+        var (success, msg) = await useCase.XoaSanPhamAsync("SP_ASYNC_TX");
+
+        // Kiểm tra: Bị từ chối
+        Assert.False(success);
+        Assert.Contains("Sản phẩm chỉ có thể ẨN khỏi hệ thống thay vì xóa", msg);
+        Assert.NotNull(await spRepo.TimTheoIdAsync("SP_ASYNC_TX"));
     }
 }

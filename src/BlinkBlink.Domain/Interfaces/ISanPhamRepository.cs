@@ -33,9 +33,25 @@ public interface ISanPhamRepository
     /// </summary>
     List<SanPhamTrangSuc> LayTheoNhom(string maNhom);
 
+    /// <summary>
+    /// Kiểm tra xem sản phẩm đã từng phát sinh giao dịch (nhập kho, bán hàng, kiểm kê, bảo hành) hay chưa.
+    /// </summary>
+    /// <param name="maSanPham">Mã sản phẩm</param>
+    /// <param name="lyDo">Lý do chi tiết nếu đã phát sinh giao dịch</param>
+    /// <returns>True nếu đã có giao dịch, False nếu chưa từng có giao dịch</returns>
+    bool KiemTraPhatSinhGiaoDich(string maSanPham, out string lyDo);
+
+    /// <summary>
+    /// Xóa hoàn toàn sản phẩm khỏi hệ thống (chỉ áp dụng khi sản phẩm chưa từng phát sinh giao dịch).
+    /// </summary>
+    /// <param name="maSanPham">Mã sản phẩm cần xóa</param>
+    void XoaSanPham(string maSanPham);
+
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
     Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default);
     Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken cancellationToken = default);
     Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken cancellationToken = default);
     Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken cancellationToken = default);
+    Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default);
+    Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default);
 }

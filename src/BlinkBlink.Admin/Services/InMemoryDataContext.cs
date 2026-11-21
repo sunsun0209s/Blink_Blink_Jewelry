@@ -158,10 +158,22 @@ public class InMemoryDataContext
         public SanPhamTrangSuc? TimTheoId(string id) => _ctx.SanPhams.FirstOrDefault(s => s.MaSanPham == id);
         public List<SanPhamTrangSuc> LayTatCa() => _ctx.SanPhams.ToList();
         public List<SanPhamTrangSuc> LayTheoNhom(string maNhom) => _ctx.SanPhams.Where(s => s.MaNhom == maNhom).ToList();
+        public bool KiemTraPhatSinhGiaoDich(string maSanPham, out string lyDo)
+        {
+            lyDo = string.Empty;
+            return false;
+        }
+        public void XoaSanPham(string maSanPham)
+        {
+            var existing = _ctx.SanPhams.FirstOrDefault(s => s.MaSanPham == maSanPham);
+            if (existing != null) _ctx.SanPhams.Remove(existing);
+        }
         public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken ct = default) { LuuSanPham(sp); return Task.CompletedTask; }
         public Task<SanPhamTrangSuc?> TimTheoIdAsync(string id, CancellationToken ct = default) => Task.FromResult(TimTheoId(id));
         public Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken ct = default) => Task.FromResult(LayTatCa());
         public Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken ct = default) => Task.FromResult(LayTheoNhom(maNhom));
+        public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken ct = default) => Task.FromResult((false, string.Empty));
+        public Task XoaSanPhamAsync(string maSanPham, CancellationToken ct = default) { XoaSanPham(maSanPham); return Task.CompletedTask; }
     }
 
     private class MemoryNhomSanPhamRepository : INhomSanPhamRepository
