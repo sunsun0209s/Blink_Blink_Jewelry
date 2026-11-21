@@ -18,8 +18,10 @@ public class LoginForm : Form
 {
     private TextBox _txtUsername = null!;
     private TextBox _txtPassword = null!;
+    private Label _lblInstruction = null!;
     private Label _lblError = null!;
     private Button _btnLogin = null!;
+    private Button _btnRetry = null!;
     private Button _btnExit = null!;
 
     /// <summary>
@@ -36,7 +38,7 @@ public class LoginForm : Form
     {
         this.Text = "Đăng Nhập - Blink Blink Jewelry Management";
         // Sử dụng ClientSize để đảm bảo diện tích bên trong luôn cố định trên mọi tỷ lệ DPI / viền cửa sổ
-        this.ClientSize = new Size(440, 450);
+        this.ClientSize = new Size(440, 480);
         this.StartPosition = FormStartPosition.CenterScreen;
         this.FormBorderStyle = FormBorderStyle.FixedDialog;
         this.MaximizeBox = false;
@@ -73,20 +75,15 @@ public class LoginForm : Form
             TextAlign = ContentAlignment.MiddleCenter
         };
 
-        var isDbConnected = AdminServiceScope.Instance.IsDatabaseConnected;
-        var lblInstruction = new Label
+        _lblInstruction = new Label
         {
-            Text = isDbConnected 
-                ? "Vui lòng đăng nhập tài khoản nội bộ để tiếp tục" 
-                : "Chế độ Offline bộ nhớ tạm (admin / 123456789)",
             Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
-            ForeColor = isDbConnected ? Color.FromArgb(148, 163, 184) : UITheme.PrimaryGold,
             Dock = DockStyle.Top,
             Height = 20,
             TextAlign = ContentAlignment.MiddleCenter
         };
 
-        pnlHeader.Controls.Add(lblInstruction);
+        pnlHeader.Controls.Add(_lblInstruction);
         pnlHeader.Controls.Add(lblSubtitle);
         pnlHeader.Controls.Add(lblBrand);
 
@@ -124,14 +121,14 @@ public class LoginForm : Form
             Text = "Mật khẩu:",
             Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
             ForeColor = UITheme.TextPrimary,
-            Location = new Point(35, 80),
+            Location = new Point(35, 78),
             AutoSize = true,
             TabStop = false
         };
 
         _txtPassword = new TextBox
         {
-            Location = new Point(35, 103),
+            Location = new Point(35, 101),
             Width = 370,
             Height = 30,
             Font = new Font("Segoe UI", 10.5F),
@@ -143,9 +140,9 @@ public class LoginForm : Form
 
         _lblError = new Label
         {
-            Location = new Point(35, 142),
+            Location = new Point(35, 138),
             Width = 370,
-            Height = 30,
+            Height = 32,
             ForeColor = UITheme.DangerColor,
             Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
             TextAlign = ContentAlignment.MiddleLeft,
@@ -156,7 +153,7 @@ public class LoginForm : Form
         _btnLogin = new Button
         {
             Text = "ĐĂNG NHẬP HỆ THỐNG",
-            Location = new Point(35, 180),
+            Location = new Point(35, 175),
             Width = 370,
             Height = 44,
             BackColor = UITheme.PrimaryGold,
@@ -170,10 +167,28 @@ public class LoginForm : Form
         _btnLogin.FlatAppearance.BorderSize = 0;
         _btnLogin.Click += BtnLogin_Click;
 
+        _btnRetry = new Button
+        {
+            Text = "🔄 Thử kết nối lại CSDL",
+            Location = new Point(35, 227),
+            Width = 370,
+            Height = 36,
+            BackColor = UITheme.DarkHeader,
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            FlatStyle = FlatStyle.Flat,
+            Cursor = Cursors.Hand,
+            TabIndex = 3,
+            TabStop = true,
+            Visible = false
+        };
+        _btnRetry.FlatAppearance.BorderSize = 0;
+        _btnRetry.Click += BtnRetry_Click;
+
         _btnExit = new Button
         {
             Text = "Thoát Ứng Dụng",
-            Location = new Point(35, 234),
+            Location = new Point(35, 271),
             Width = 370,
             Height = 34,
             BackColor = Color.White,
@@ -181,7 +196,7 @@ public class LoginForm : Form
             Font = new Font("Segoe UI", 9F),
             FlatStyle = FlatStyle.Flat,
             Cursor = Cursors.Hand,
-            TabIndex = 3,
+            TabIndex = 4,
             TabStop = true
         };
         _btnExit.FlatAppearance.BorderSize = 0;
@@ -193,6 +208,7 @@ public class LoginForm : Form
         pnlBody.Controls.Add(_txtPassword);
         pnlBody.Controls.Add(_lblError);
         pnlBody.Controls.Add(_btnLogin);
+        pnlBody.Controls.Add(_btnRetry);
         pnlBody.Controls.Add(_btnExit);
 
         this.Controls.Add(pnlBody);
@@ -202,13 +218,90 @@ public class LoginForm : Form
         this.AcceptButton = _btnLogin;
         this.CancelButton = _btnExit;
 
+        // Cập nhật trạng thái hiển thị theo kết nối CSDL hiện hành
+        UpdateDatabaseConnectionState(AdminServiceScope.Instance.IsDatabaseConnected);
+
         // Focus vào ô username khi mở
-        this.Shown += (s, e) => _txtUsername.Focus();
+        this.Shown += (s, e) =>
+        {
+            if (AdminServiceScope.Instance.IsDatabaseConnected)
+            {
+                _txtUsername.Focus();
+            }
+            else
+            {
+                _btnRetry.Focus();
+            }
+        };
+    }
+
+    /// <summary>
+    /// Cập nhật giao diện đồng bộ theo trạng thái kết nối cơ sở dữ liệu
+    /// </summary>
+    private void UpdateDatabaseConnectionState(bool isConnected)
+    {
+        if (isConnected)
+        {
+            _lblInstruction.Text = "Vui lòng đăng nhập tài khoản nội bộ để tiếp tục";
+            _lblInstruction.ForeColor = Color.FromArgb(148, 163, 184);
+            _btnLogin.Enabled = true;
+            _btnLogin.BackColor = UITheme.PrimaryGold;
+            _btnLogin.Cursor = Cursors.Hand;
+            _btnRetry.Visible = false;
+            _lblError.Visible = false;
+            _txtUsername.Enabled = true;
+            _txtPassword.Enabled = true;
+        }
+        else
+        {
+            _lblInstruction.Text = "🔴 Không thể kết nối cơ sở dữ liệu SQL Server!";
+            _lblInstruction.ForeColor = UITheme.DangerColor;
+            _btnLogin.Enabled = false;
+            _btnLogin.BackColor = Color.FromArgb(226, 232, 240);
+            _btnLogin.Cursor = Cursors.No;
+            _btnRetry.Visible = true;
+            _txtUsername.Enabled = false;
+            _txtPassword.Enabled = false;
+            ShowError("Chưa kết nối máy chủ CSDL. Bật SQL Server/Docker rồi bấm 'Thử kết nối lại'.");
+        }
+    }
+
+    private void BtnRetry_Click(object? sender, EventArgs e)
+    {
+        _btnRetry.Enabled = false;
+        _btnRetry.Text = "Đang kiểm tra kết nối...";
+        System.Windows.Forms.Application.DoEvents();
+
+        var connected = AdminServiceScope.Instance.TryConnectOrProvision();
+        UpdateDatabaseConnectionState(connected);
+        _btnRetry.Enabled = true;
+        _btnRetry.Text = "🔄 Thử kết nối lại CSDL";
+
+        if (connected)
+        {
+            MessageBox.Show(
+                "Kết nối cơ sở dữ liệu SQL Server thành công!\nBạn có thể tiến hành đăng nhập.",
+                "Kết nối thành công",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            _txtUsername.Focus();
+        }
+        else
+        {
+            ShowError("Không tìm thấy máy chủ SQL Server khả dụng. Vui lòng kiểm tra Docker hoặc SQL Server.");
+        }
     }
 
     private void BtnLogin_Click(object? sender, EventArgs e)
     {
         _lblError.Visible = false;
+
+        if (!AdminServiceScope.Instance.IsDatabaseConnected)
+        {
+            ShowError("Không thể đăng nhập: Hệ thống chưa kết nối được máy chủ cơ sở dữ liệu.");
+            return;
+        }
+
         var username = _txtUsername.Text.Trim();
         var password = _txtPassword.Text.Trim();
 
