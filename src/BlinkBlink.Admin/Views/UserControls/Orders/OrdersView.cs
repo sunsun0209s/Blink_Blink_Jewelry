@@ -367,6 +367,7 @@ public class OrdersView : UserControl
         _dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "GiamGia", HeaderText = "GIẢM GIÁ (VND)", FillWeight = 85, MinimumWidth = 105, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont } });
         _dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TongCong", HeaderText = "TỔNG TT (VND)", FillWeight = 115, MinimumWidth = 140, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleRight, Font = UITheme.TabularNumericFont, ForeColor = UITheme.PrimaryGold } });
         _dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "TrangThai", HeaderText = "TRẠNG THÁI", FillWeight = 85, MinimumWidth = 100 });
+        _dgvOrders.Columns.Add(new DataGridViewTextBoxColumn { Name = "GhiChu", HeaderText = "GHI CHÚ", FillWeight = 130, MinimumWidth = 140 });
     }
 
     private void ConfigureOrderItemsGrid()
@@ -411,7 +412,8 @@ public class OrdersView : UserControl
                                   o.KhachHang.HoTen.ToLowerInvariant().Contains(query) ||
                                   (!string.IsNullOrEmpty(o.KhachHang.TenDangNhap) && o.KhachHang.TenDangNhap.ToLowerInvariant().Contains(query)) ||
                                   (!string.IsNullOrEmpty(o.KhachHang.MaKhachHang) && o.KhachHang.MaKhachHang.ToLowerInvariant().Contains(query)))) ||
-                              o.DiaChiGiaoHang.ToLowerInvariant().Contains(query);
+                              o.DiaChiGiaoHang.ToLowerInvariant().Contains(query) ||
+                              (!string.IsNullOrEmpty(o.GhiChu) && o.GhiChu.ToLowerInvariant().Contains(query));
 
             var matchSource = true;
             if (selectedSource == 1) // Online
@@ -461,7 +463,8 @@ public class OrdersView : UserControl
                 hd.TongTienHang.ToString("N0", viVn),
                 hd.TienGiamGia.ToString("N0", viVn),
                 hd.TongThanhToan.ToString("N0", viVn),
-                hd.TrangThaiDonHang
+                hd.TrangThaiDonHang,
+                string.IsNullOrWhiteSpace(hd.GhiChu) ? "-" : hd.GhiChu
             );
 
             // Gán màu sắc trực quan cho trạng thái
@@ -608,7 +611,8 @@ public class OrdersView : UserControl
 
         try
         {
-            var success = _services.XuLyDonHang.CapNhatTrangThai(maHoaDon, newStatus, "USER_NV001");
+            var adminId = _services.CurrentStaff?.MaNhanVien ?? _services.CurrentUser?.MaNguoiDung ?? "USER_NV001";
+            var success = _services.XuLyDonHang.CapNhatTrangThai(maHoaDon, newStatus, adminId);
             if (success)
             {
                 MessageBox.Show($"Đã cập nhật trạng thái đơn #{maHoaDon} sang '{newStatus}'.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);

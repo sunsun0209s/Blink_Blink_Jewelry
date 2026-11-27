@@ -68,8 +68,7 @@ public class QuanLyNhanVienUseCase
             trangThai: true
         );
 
-        _nhanVienRepo.LuuNhanVien(nhanVienMoi);
-        return true;
+        return _nhanVienRepo.LuuNhanVien(nhanVienMoi);
     }
 
     /// <summary>
@@ -101,8 +100,7 @@ public class QuanLyNhanVienUseCase
         }
         
         // Lưu lại thay đổi vào cơ sở dữ liệu
-        _nhanVienRepo.LuuNhanVien(nhanVien);
-        return true;
+        return _nhanVienRepo.LuuNhanVien(nhanVien);
     }
 
     /// <summary>
@@ -132,8 +130,7 @@ public class QuanLyNhanVienUseCase
         nhanVien.LuongCoBan = luongCoBan;
         nhanVien.MaVaiTro = maVaiTro.Trim();
 
-        _nhanVienRepo.CapNhatNhanVien(nhanVien);
-        return true;
+        return _nhanVienRepo.CapNhatNhanVien(nhanVien);
     }
 
     /// <summary>
@@ -158,8 +155,7 @@ public class QuanLyNhanVienUseCase
         const string matKhauMacDinh = "123456789";
         nhanVien.DoiMatKhau(matKhauMacDinh);
 
-        _nhanVienRepo.LuuNhanVien(nhanVien);
-        return true;
+        return _nhanVienRepo.LuuNhanVien(nhanVien);
     }
 
     /// <summary>

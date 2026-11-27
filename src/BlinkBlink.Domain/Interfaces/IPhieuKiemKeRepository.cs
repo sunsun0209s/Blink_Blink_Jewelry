@@ -14,7 +14,8 @@ public interface IPhieuKiemKeRepository
     /// Lưu phiếu kiểm kê và biên bản chênh lệch vào CSDL.
     /// </summary>
     /// <param name="phieu">Thực thể phiếu kiểm kê</param>
-    void LuuPhieuKiemKe(PhieuKiemKe phieu);
+    /// <returns>True nếu lưu thành công</returns>
+    bool LuuPhieuKiemKe(PhieuKiemKe phieu);
 
     /// <summary>
     /// Tìm phiếu kiểm kê theo mã.
@@ -31,14 +32,16 @@ public interface IPhieuKiemKeRepository
     /// <summary>
     /// Xóa phiếu kiểm kê (chỉ cho phép khi phiếu ở trạng thái ChoDuyet).
     /// </summary>
-    void XoaPhieuKiemKe(string maPhieu);
+    /// <returns>True nếu có bản ghi được xóa</returns>
+    bool XoaPhieuKiemKe(string maPhieu);
 
     /// <summary>
     /// Cập nhật trạng thái phiếu kiểm kê (ChoDuyet, DaDuyet).
     /// </summary>
-    void CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null);
+    /// <returns>True nếu có bản ghi được cập nhật</returns>
+    bool CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null);
 
     // Mở rộng bất đồng bộ chuẩn .NET 8
-    Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default);
+    Task<bool> LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default);
     Task<PhieuKiemKe?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default);
 }

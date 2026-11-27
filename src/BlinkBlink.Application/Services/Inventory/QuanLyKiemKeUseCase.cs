@@ -113,14 +113,14 @@ public class QuanLyKiemKeUseCase
         }
 
         var maPhieu = string.IsNullOrWhiteSpace(request.MaPhieuKiemKe)
-            ? $"PKK_{DateTime.UtcNow.Ticks % 1000000:D6}"
+            ? $"PKK_{DateTime.Now.Ticks % 1000000:D6}"
             : request.MaPhieuKiemKe.Trim();
 
         var phieu = new PhieuKiemKe(
             maPhieuKiemKe: maPhieu,
             viTriKiemKe: request.ViTriKiemKe.Trim(),
             maNhanVienKho: request.MaNhanVienKho.Trim(),
-            ngayKiemKe: DateTime.UtcNow,
+            ngayKiemKe: DateTime.Now,
             trangThai: "ChoDuyet",
             ghiChu: request.GhiChu?.Trim() ?? string.Empty
         );
@@ -140,7 +140,11 @@ public class QuanLyKiemKeUseCase
             phieu.ChiTietKiemKes.Add(chiTiet);
         }
 
-        _kiemKeRepo.LuuPhieuKiemKe(phieu);
+        if (!_kiemKeRepo.LuuPhieuKiemKe(phieu))
+        {
+            error = "Không thể lưu phiếu kiểm kê xuống cơ sở dữ liệu.";
+            return false;
+        }
         return true;
     }
 
@@ -194,7 +198,11 @@ public class QuanLyKiemKeUseCase
             phieu.ChiTietKiemKes.Add(chiTiet);
         }
 
-        _kiemKeRepo.LuuPhieuKiemKe(phieu);
+        if (!_kiemKeRepo.LuuPhieuKiemKe(phieu))
+        {
+            error = "Không thể lưu phiếu kiểm kê xuống cơ sở dữ liệu.";
+            return false;
+        }
         return true;
     }
 
@@ -223,7 +231,11 @@ public class QuanLyKiemKeUseCase
             return false;
         }
 
-        _kiemKeRepo.XoaPhieuKiemKe(maPhieu);
+        if (!_kiemKeRepo.XoaPhieuKiemKe(maPhieu))
+        {
+            error = $"Không thể xóa phiếu kiểm kê #{maPhieu} khỏi cơ sở dữ liệu.";
+            return false;
+        }
         return true;
     }
 
@@ -284,7 +296,11 @@ public class QuanLyKiemKeUseCase
         }
 
         // Bước 2: Cập nhật trạng thái phiếu sang DaDuyet trong kho lưu trữ
-        _kiemKeRepo.CapNhatTrangThai(maPhieu, "DaDuyet", DateTime.UtcNow);
+        if (!_kiemKeRepo.CapNhatTrangThai(maPhieu, "DaDuyet", DateTime.Now))
+        {
+            error = $"Không thể cập nhật trạng thái duyệt cho phiếu kiểm kê #{maPhieu} trong cơ sở dữ liệu.";
+            return false;
+        }
 
         // Bước 3: Đồng bộ số lượng tồn kho và cập nhật trạng thái kinh doanh tương ứng của sản phẩm
         foreach (var ct in phieu.ChiTietKiemKes)
@@ -305,7 +321,11 @@ public class QuanLyKiemKeUseCase
                     sp.CapNhatTrangThai("SanSang");
                 }
 
-                _sanPhamRepo.LuuSanPham(sp);
+                if (!_sanPhamRepo.LuuSanPham(sp))
+                {
+                    error = $"Không thể cập nhật tồn kho sản phẩm [{ct.MaSanPham}] xuống cơ sở dữ liệu.";
+                    return false;
+                }
             }
         }
 

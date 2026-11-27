@@ -20,13 +20,12 @@ public interface IGioHangRepository
 
     /// <summary>
     /// Cập nhật thông tin giỏ hàng vào cơ sở dữ liệu.
-    /// Khớp phương thức: + CapNhatGioHang(gh: GioHang): void trong Diagram.
     /// </summary>
     /// <param name="gh">Thực thể giỏ hàng cần cập nhật</param>
-    void CapNhatGioHang(GioHang gh);
+    /// <returns>True nếu lưu thành công</returns>
+    bool CapNhatGioHang(GioHang gh);
 
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
     Task<GioHang?> LayGioHangAsync(string maKH, CancellationToken cancellationToken = default);
-    Task CapNhatGioHangAsync(GioHang gh, CancellationToken cancellationToken = default);
-    Task LuuGioHangAsync(GioHang gh, CancellationToken cancellationToken = default);
+    Task<bool> CapNhatGioHangAsync(GioHang gh, CancellationToken cancellationToken = default);
 }

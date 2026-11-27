@@ -14,7 +14,7 @@ public interface ISanPhamRepository
     /// Lưu thông tin sản phẩm trang sức vào CSDL.
     /// </summary>
     /// <param name="sp">Thực thể sản phẩm trang sức</param>
-    void LuuSanPham(SanPhamTrangSuc sp);
+    bool LuuSanPham(SanPhamTrangSuc sp);
 
     /// <summary>
     /// Tìm kiếm thông tin sản phẩm theo mã sản phẩm.
@@ -45,13 +45,13 @@ public interface ISanPhamRepository
     /// Xóa hoàn toàn sản phẩm khỏi hệ thống (chỉ áp dụng khi sản phẩm chưa từng phát sinh giao dịch).
     /// </summary>
     /// <param name="maSanPham">Mã sản phẩm cần xóa</param>
-    void XoaSanPham(string maSanPham);
+    bool XoaSanPham(string maSanPham);
 
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
-    Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default);
+    Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default);
     Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken cancellationToken = default);
     Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken cancellationToken = default);
     Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken cancellationToken = default);
     Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default);
-    Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default);
+    Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default);
 }

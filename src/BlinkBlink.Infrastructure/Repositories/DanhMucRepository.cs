@@ -26,7 +26,7 @@ public class DanhMucRepository : IDanhMucRepository
     {
     }
 
-    public void LuuDanhMuc(DanhMuc dm)
+    public bool LuuDanhMuc(DanhMuc dm)
     {
         if (dm == null)
         {
@@ -38,23 +38,25 @@ public class DanhMucRepository : IDanhMucRepository
             BEGIN
                 UPDATE dbo.DanhMuc
                 SET TenDanhMuc = @TenDanhMuc,
-                    MoTa = @MoTa
+                    MoTa = @MoTa,
+                    IsHidden = @IsHidden
                 WHERE MaDanhMuc = @MaDanhMuc;
             END
             ELSE
             BEGIN
-                INSERT INTO dbo.DanhMuc (MaDanhMuc, TenDanhMuc, MoTa)
-                VALUES (@MaDanhMuc, @TenDanhMuc, @MoTa);
+                INSERT INTO dbo.DanhMuc (MaDanhMuc, TenDanhMuc, MoTa, IsHidden)
+                VALUES (@MaDanhMuc, @TenDanhMuc, @MoTa, @IsHidden);
             END";
 
         var parameters = new[]
         {
             new SqlParameter("@MaDanhMuc", SqlDbType.VarChar, 50) { Value = dm.MaDanhMuc },
             new SqlParameter("@TenDanhMuc", SqlDbType.NVarChar, 150) { Value = dm.TenDanhMuc },
-            new SqlParameter("@MoTa", SqlDbType.NVarChar, 500) { Value = (object?)dm.MoTa ?? DBNull.Value }
+            new SqlParameter("@MoTa", SqlDbType.NVarChar, 500) { Value = (object?)dm.MoTa ?? DBNull.Value },
+            new SqlParameter("@IsHidden", SqlDbType.Bit) { Value = dm.IsHidden }
         };
 
-        _dbHelper.ExecuteNonQuery(sql, parameters);
+        return _dbHelper.ExecuteNonQuery(sql, parameters) > 0;
     }
 
     public DanhMuc? TimTheoId(string maDanhMuc)
@@ -64,7 +66,7 @@ public class DanhMucRepository : IDanhMucRepository
             return null;
         }
 
-        const string sql = "SELECT MaDanhMuc, TenDanhMuc, MoTa FROM dbo.DanhMuc WHERE MaDanhMuc = @MaDanhMuc;";
+        const string sql = "SELECT MaDanhMuc, TenDanhMuc, MoTa, ISNULL(IsHidden, 0) AS IsHidden FROM dbo.DanhMuc WHERE MaDanhMuc = @MaDanhMuc;";
 
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
@@ -76,7 +78,8 @@ public class DanhMucRepository : IDanhMucRepository
             return new DanhMuc(
                 maDanhMuc: reader.GetString(reader.GetOrdinal("MaDanhMuc")),
                 tenDanhMuc: reader.GetString(reader.GetOrdinal("TenDanhMuc")),
-                moTa: reader.IsDBNull(reader.GetOrdinal("MoTa")) ? string.Empty : reader.GetString(reader.GetOrdinal("MoTa"))
+                moTa: reader.IsDBNull(reader.GetOrdinal("MoTa")) ? string.Empty : reader.GetString(reader.GetOrdinal("MoTa")),
+                isHidden: reader.GetBoolean(reader.GetOrdinal("IsHidden"))
             );
         }
 
@@ -86,7 +89,7 @@ public class DanhMucRepository : IDanhMucRepository
     public List<DanhMuc> LayTatCa()
     {
         var list = new List<DanhMuc>();
-        const string sql = "SELECT MaDanhMuc, TenDanhMuc, MoTa FROM dbo.DanhMuc ORDER BY MaDanhMuc ASC;";
+        const string sql = "SELECT MaDanhMuc, TenDanhMuc, MoTa, ISNULL(IsHidden, 0) AS IsHidden FROM dbo.DanhMuc ORDER BY MaDanhMuc ASC;";
 
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
@@ -97,16 +100,17 @@ public class DanhMucRepository : IDanhMucRepository
             list.Add(new DanhMuc(
                 maDanhMuc: reader.GetString(reader.GetOrdinal("MaDanhMuc")),
                 tenDanhMuc: reader.GetString(reader.GetOrdinal("TenDanhMuc")),
-                moTa: reader.IsDBNull(reader.GetOrdinal("MoTa")) ? string.Empty : reader.GetString(reader.GetOrdinal("MoTa"))
+                moTa: reader.IsDBNull(reader.GetOrdinal("MoTa")) ? string.Empty : reader.GetString(reader.GetOrdinal("MoTa")),
+                isHidden: reader.GetBoolean(reader.GetOrdinal("IsHidden"))
             ));
         }
 
         return list;
     }
 
-    public void XoaDanhMuc(string maDanhMuc)
+    public bool XoaDanhMuc(string maDanhMuc)
     {
-        if (string.IsNullOrWhiteSpace(maDanhMuc)) return;
+        if (string.IsNullOrWhiteSpace(maDanhMuc)) return false;
         var cleanMa = maDanhMuc.Trim();
 
         // Không cho phép xóa danh mục mặc định 'Chưa phân loại' (DM00)
@@ -140,14 +144,22 @@ public class DanhMucRepository : IDanhMucRepository
             }
 
             // 3. Xóa danh mục khỏi bảng DanhMuc
+            int rowsAffected;
             const string sqlDel = "DELETE FROM dbo.DanhMuc WHERE MaDanhMuc = @MaDanhMuc;";
             using (var cmdDel = new SqlCommand(sqlDel, conn, tx))
             {
                 cmdDel.Parameters.Add(new SqlParameter("@MaDanhMuc", SqlDbType.VarChar, 50) { Value = cleanMa });
-                cmdDel.ExecuteNonQuery();
+                rowsAffected = cmdDel.ExecuteNonQuery();
+            }
+
+            if (rowsAffected <= 0)
+            {
+                tx.Rollback();
+                return false;
             }
 
             tx.Commit();
+            return true;
         }
         catch
         {
@@ -156,10 +168,9 @@ public class DanhMucRepository : IDanhMucRepository
         }
     }
 
-    public Task LuuDanhMucAsync(DanhMuc dm, CancellationToken cancellationToken = default)
+    public Task<bool> LuuDanhMucAsync(DanhMuc dm, CancellationToken cancellationToken = default)
     {
-        LuuDanhMuc(dm);
-        return Task.CompletedTask;
+        return Task.FromResult(LuuDanhMuc(dm));
     }
 
     public Task<DanhMuc?> TimTheoIdAsync(string maDanhMuc, CancellationToken cancellationToken = default)
@@ -172,9 +183,8 @@ public class DanhMucRepository : IDanhMucRepository
         return Task.FromResult(LayTatCa());
     }
 
-    public Task XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default)
+    public Task<bool> XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default)
     {
-        XoaDanhMuc(maDanhMuc);
-        return Task.CompletedTask;
+        return Task.FromResult(XoaDanhMuc(maDanhMuc));
     }
 }

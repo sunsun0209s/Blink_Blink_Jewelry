@@ -91,21 +91,16 @@ public class DatHangUseCaseTests
             return Task.FromResult(gh);
         }
 
-        public void CapNhatGioHang(GioHang gh)
+        public bool CapNhatGioHang(GioHang gh)
         {
             Data[gh.MaKhachHang] = gh;
+            return true;
         }
 
-        public Task CapNhatGioHangAsync(GioHang gh, CancellationToken cancellationToken = default)
+        public Task<bool> CapNhatGioHangAsync(GioHang gh, CancellationToken cancellationToken = default)
         {
             Data[gh.MaKhachHang] = gh;
-            return Task.CompletedTask;
-        }
-
-        public Task LuuGioHangAsync(GioHang gh, CancellationToken cancellationToken = default)
-        {
-            Data[gh.MaKhachHang] = gh;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
     }
 
@@ -113,15 +108,16 @@ public class DatHangUseCaseTests
     {
         public readonly Dictionary<string, SanPhamTrangSuc> Data = new();
 
-        public void LuuSanPham(SanPhamTrangSuc sp)
+        public bool LuuSanPham(SanPhamTrangSuc sp)
         {
             Data[sp.MaSanPham] = sp;
+            return true;
         }
 
-        public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
+        public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
         {
             Data[sp.MaSanPham] = sp;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public SanPhamTrangSuc? TimTheoId(string maSanPham)
@@ -146,7 +142,7 @@ public class DatHangUseCaseTests
             return false;
         }
 
-        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+        public bool XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
 
         public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
         {
@@ -154,11 +150,7 @@ public class DatHangUseCaseTests
             return Task.FromResult((hasTx, lyDo));
         }
 
-        public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
-        {
-            XoaSanPham(maSanPham);
-            return Task.CompletedTask;
-        }
+        public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default) => Task.FromResult(XoaSanPham(maSanPham));
     }
 
     [Fact]

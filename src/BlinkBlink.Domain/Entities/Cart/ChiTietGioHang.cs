@@ -37,25 +37,4 @@ public class ChiTietGioHang
         MaSanPham = maSanPham;
         SoLuongSanPham = Math.Max(1, soLuongSanPham);
     }
-
-    /// <summary>
-    /// Tăng số lượng sản phẩm trong dòng giỏ hàng.
-    /// Khớp phương thức: + TangSoLuong(): void trong Diagram.
-    /// </summary>
-    public void TangSoLuong()
-    {
-        SoLuongSanPham++;
-    }
-
-    /// <summary>
-    /// Giảm số lượng sản phẩm trong dòng giỏ hàng (tối thiểu là 1).
-    /// Khớp phương thức: + GiamSoLuong(): void trong Diagram.
-    /// </summary>
-    public void GiamSoLuong()
-    {
-        if (SoLuongSanPham > 1)
-        {
-            SoLuongSanPham--;
-        }
-    }
 }
