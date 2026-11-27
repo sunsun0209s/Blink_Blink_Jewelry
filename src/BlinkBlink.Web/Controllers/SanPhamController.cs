@@ -21,15 +21,18 @@ public class SanPhamController : ControllerBase
 {
     private readonly QuanLySanPhamUseCase _quanLySanPhamUseCase;
     private readonly ISanPhamRepository _sanPhamRepository;
+    private readonly IDanhMucRepository? _danhMucRepository;
     private readonly IAppLogger _logger;
 
     public SanPhamController(
         QuanLySanPhamUseCase quanLySanPhamUseCase,
         ISanPhamRepository sanPhamRepository,
+        IDanhMucRepository? danhMucRepository = null,
         IAppLogger? logger = null)
     {
         _quanLySanPhamUseCase = quanLySanPhamUseCase ?? throw new ArgumentNullException(nameof(quanLySanPhamUseCase));
         _sanPhamRepository = sanPhamRepository ?? throw new ArgumentNullException(nameof(sanPhamRepository));
+        _danhMucRepository = danhMucRepository;
         _logger = logger ?? NullAppLogger.Instance;
     }
 
@@ -113,12 +116,39 @@ public class SanPhamController : ControllerBase
     /// </summary>
     /// <param name="cancellationToken">Token hủy tác vụ</param>
     /// <returns>Danh sách sản phẩm trang sức</returns>
+    [HttpGet("danh-muc")]
+    public async Task<IActionResult> LayDanhSachDanhMuc(CancellationToken cancellationToken)
+    {
+        if (_danhMucRepository == null)
+        {
+            return Ok(new { Success = true, Data = Array.Empty<object>() });
+        }
+
+        var allCategories = await _danhMucRepository.LayTatCaAsync(cancellationToken);
+        var visible = allCategories
+            .Where(dm => !dm.IsHidden)
+            .Select(dm => new { dm.MaDanhMuc, dm.TenDanhMuc, dm.MoTa });
+
+        return Ok(new { Success = true, Data = visible });
+    }
+
     [HttpGet]
     public async Task<IActionResult> LayDanhSach(CancellationToken cancellationToken)
     {
         var allItems = await _sanPhamRepository.LayTatCaAsync(cancellationToken);
-        // Lọc bỏ các sản phẩm bị ẩn hoặc chưa nhập hàng để không hiển thị trên trang Web mua hàng của khách hàng
-        var items = allItems.Where(sp => !sp.IsHidden && !string.Equals(sp.TrangThai, "ChuaNhap", StringComparison.OrdinalIgnoreCase)).ToList();
+        var hiddenCategoryIds = _danhMucRepository != null
+            ? (await _danhMucRepository.LayTatCaAsync(cancellationToken))
+                .Where(dm => dm.IsHidden)
+                .Select(dm => dm.MaDanhMuc)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Lọc bỏ các sản phẩm bị ẩn, thuộc danh mục bị ẩn hoặc chưa nhập hàng để không hiển thị trên trang Web mua hàng của khách hàng
+        var items = allItems
+            .Where(sp => !sp.IsHidden
+                && !hiddenCategoryIds.Contains(sp.MaDanhMuc)
+                && !string.Equals(sp.TrangThai, "ChuaNhap", StringComparison.OrdinalIgnoreCase))
+            .ToList();
         var response = items.Select(sp =>
         {
             decimal giaSauGiam = sp.PhanTramGiamGia > 0
@@ -209,7 +239,8 @@ public class SanPhamController : ControllerBase
         }
 
         var sp = await _sanPhamRepository.TimTheoIdAsync(maSanPham, cancellationToken);
-        if (sp == null || sp.IsHidden)
+        var dmHidden = sp != null && _danhMucRepository != null && (_danhMucRepository.TimTheoId(sp.MaDanhMuc)?.IsHidden == true);
+        if (sp == null || sp.IsHidden || dmHidden)
         {
             return ApiResponseHelper.Fail(this, 404, ErrorCodes.ProductNotFound, $"Không tìm thấy sản phẩm mã '{maSanPham}'.", _logger);
         }

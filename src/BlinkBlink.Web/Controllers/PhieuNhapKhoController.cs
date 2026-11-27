@@ -41,7 +41,12 @@ public class PhieuNhapKhoController : ControllerBase
             return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Danh sách sản phẩm nhập kho không được để trống.", _logger);
         }
 
-        await _usecase.ExecuteAsync(request, cancellationToken);
+        var saved = await _usecase.ExecuteAsync(request, cancellationToken);
+        if (!saved)
+        {
+            return ApiResponseHelper.Fail(this, 500, ErrorCodes.DatabaseQueryError, "Không thể lưu phiếu nhập kho xuống cơ sở dữ liệu.", _logger);
+        }
+
         _logger.LogInfo(nameof(PhieuNhapKhoController), $"Lập phiếu nhập kho thành công từ '{request.NhaCungCap}'.");
         return Ok(new { Success = true, Message = "Xác nhận nhập kho thành công." });
     }

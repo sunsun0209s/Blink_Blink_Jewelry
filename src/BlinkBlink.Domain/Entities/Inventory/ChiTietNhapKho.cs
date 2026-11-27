@@ -39,14 +39,4 @@ public class ChiTietNhapKho
         // Khớp hàm TinhGiaTri(): decimal trong Diagram
         return SoLuong * GiaVonNhap;
     }
-
-    /// <summary>
-    /// Cập nhật và thẩm định lại giá vốn nhập của sản phẩm.
-    /// </summary>
-    /// <returns>True nếu giá vốn > 0 và hợp lệ</returns>
-    public bool CapNhatGiaVon()
-    {
-        // Khớp hàm CapNhatGiaVon(): bool trong Diagram
-        return GiaVonNhap >= 0;
-    }
 }

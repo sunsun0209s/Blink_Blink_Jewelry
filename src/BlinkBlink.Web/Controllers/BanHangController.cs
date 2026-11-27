@@ -142,11 +142,32 @@ public class BanHangController : ControllerBase
     /// <param name="cancellationToken">Mã token hủy tác vụ</param>
     /// <returns>HTTP Status 200 nếu thành công, 400 nếu không thể hủy</returns>
     [HttpPut("{maHoaDon}/huy")]
-    public async Task<IActionResult> HuyDonHang(string maHoaDon, CancellationToken cancellationToken)
+    public async Task<IActionResult> HuyDonHang(string maHoaDon, [FromQuery] string? maKhachHang, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(maHoaDon))
         {
             return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Mã hóa đơn không hợp lệ.", _logger);
+        }
+
+        if (!string.IsNullOrWhiteSpace(maKhachHang))
+        {
+            var khach = _khachHangRepo.TimTheoMa(maKhachHang.Trim());
+            if (khach != null && !khach.TrangThai)
+            {
+                return ApiResponseHelper.Fail(this, 403, ErrorCodes.AccountLocked, "Tài khoản của quý khách hiện đang bị tạm khóa. Vui lòng liên hệ bộ phận hỗ trợ khách hàng Blink Blink.", _logger);
+            }
+
+            var (success, message) = await _xuLyDonHangUseCase.HuyDonHangChoKhachAsync(
+                maHoaDon,
+                maKhachHang,
+                cancellationToken,
+                khach?.MaNguoiDung);
+            if (!success)
+            {
+                return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidStateTransition, message, _logger);
+            }
+
+            return Ok(new { Success = true, Message = message });
         }
 
         var result = await _xuLyDonHangUseCase.HuyDonHangAsync(maHoaDon, cancellationToken);

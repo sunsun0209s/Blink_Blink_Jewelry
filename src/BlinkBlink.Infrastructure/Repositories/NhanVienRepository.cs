@@ -25,7 +25,7 @@ public class NhanVienRepository : INhanVienRepository
     {
     }
 
-    public void LuuNhanVien(NhanVien nv)
+    public bool LuuNhanVien(NhanVien nv)
     {
         if (nv == null)
         {
@@ -55,6 +55,7 @@ public class NhanVienRepository : INhanVienRepository
                     VALUES (@MaNguoiDung, @HoTen, @SoDienThoai, @TenDangNhap, @MatKhau, @MaVaiTro, @TrangThai);
                 END";
 
+            int rowsUser;
             using (var cmdUser = new SqlCommand(sqlNguoiDung, conn, transaction))
             {
                 cmdUser.Parameters.Add(new SqlParameter("@MaNguoiDung", SqlDbType.VarChar, 50) { Value = nv.MaNguoiDung });
@@ -64,7 +65,7 @@ public class NhanVienRepository : INhanVienRepository
                 cmdUser.Parameters.Add(new SqlParameter("@MatKhau", SqlDbType.NVarChar, 255) { Value = nv.MatKhau });
                 cmdUser.Parameters.Add(new SqlParameter("@MaVaiTro", SqlDbType.VarChar, 20) { Value = nv.MaVaiTro });
                 cmdUser.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.Bit) { Value = nv.TrangThai });
-                cmdUser.ExecuteNonQuery();
+                rowsUser = cmdUser.ExecuteNonQuery();
             }
 
             const string sqlNhanVien = @"
@@ -81,15 +82,23 @@ public class NhanVienRepository : INhanVienRepository
                     VALUES (@MaNguoiDung, @MaNhanVien, @LuongCoBan);
                 END";
 
+            int rowsNv;
             using (var cmdNv = new SqlCommand(sqlNhanVien, conn, transaction))
             {
                 cmdNv.Parameters.Add(new SqlParameter("@MaNguoiDung", SqlDbType.VarChar, 50) { Value = nv.MaNguoiDung });
                 cmdNv.Parameters.Add(new SqlParameter("@MaNhanVien", SqlDbType.VarChar, 50) { Value = nv.MaNhanVien });
                 cmdNv.Parameters.Add(new SqlParameter("@LuongCoBan", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = nv.LuongCoBan });
-                cmdNv.ExecuteNonQuery();
+                rowsNv = cmdNv.ExecuteNonQuery();
+            }
+
+            if (rowsUser <= 0 || rowsNv <= 0)
+            {
+                transaction.Rollback();
+                return false;
             }
 
             transaction.Commit();
+            return true;
         }
         catch
         {
@@ -192,9 +201,9 @@ public class NhanVienRepository : INhanVienRepository
         return list;
     }
 
-    public void CapNhatNhanVien(NhanVien nv)
+    public bool CapNhatNhanVien(NhanVien nv)
     {
-        LuuNhanVien(nv);
+        return LuuNhanVien(nv);
     }
 
     public bool KiemTraCoTheXoa(string maNV)

@@ -28,7 +28,7 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
     {
     }
 
-    public void LuuPhieuKiemKe(PhieuKiemKe phieu)
+    public bool LuuPhieuKiemKe(PhieuKiemKe phieu)
     {
         if (phieu == null)
         {
@@ -79,6 +79,7 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
                     VALUES (@MaPhieuKiemKe, @NgayKiemKe, @ViTriKiemKe, @MaNhanVienKho, @TrangThai, @TrangThaiDuyet, @GhiChu, @NgayDuyet);
                 END";
 
+            int rowsAffected;
             using (var cmdP = new SqlCommand(sqlPhieu, conn, tx))
             {
                 cmdP.Parameters.Add(new SqlParameter("@MaPhieuKiemKe", SqlDbType.VarChar, 50) { Value = phieu.MaPhieuKiemKe });
@@ -89,7 +90,7 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
                 cmdP.Parameters.Add(new SqlParameter("@TrangThaiDuyet", SqlDbType.Bit) { Value = phieu.TrangThaiDuyet });
                 cmdP.Parameters.Add(new SqlParameter("@GhiChu", SqlDbType.NVarChar, 500) { Value = (object?)phieu.GhiChu ?? DBNull.Value });
                 cmdP.Parameters.Add(new SqlParameter("@NgayDuyet", SqlDbType.DateTime2) { Value = (object?)phieu.NgayDuyet ?? DBNull.Value });
-                cmdP.ExecuteNonQuery();
+                rowsAffected = cmdP.ExecuteNonQuery();
             }
 
             const string sqlDeleteCt = "DELETE FROM dbo.ChiTietKiemKe WHERE MaPhieuKiemKe = @MaPhieuKiemKe;";
@@ -119,6 +120,7 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
             }
 
             tx.Commit();
+            return rowsAffected > 0;
         }
         catch
         {
@@ -216,9 +218,9 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
         return list;
     }
 
-    public void XoaPhieuKiemKe(string maPhieu)
+    public bool XoaPhieuKiemKe(string maPhieu)
     {
-        if (string.IsNullOrWhiteSpace(maPhieu)) return;
+        if (string.IsNullOrWhiteSpace(maPhieu)) return false;
 
         using var conn = _dbHelper.GetConnection();
         using var tx = conn.BeginTransaction();
@@ -231,13 +233,21 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
                 cmdCt.ExecuteNonQuery();
             }
 
+            int rowsAffected;
             using (var cmdP = new SqlCommand("DELETE FROM dbo.PhieuKiemKe WHERE MaPhieuKiemKe = @MaPhieu AND TrangThai = 'ChoDuyet';", conn, tx))
             {
                 cmdP.Parameters.Add(new SqlParameter("@MaPhieu", SqlDbType.VarChar, 50) { Value = maPhieu.Trim() });
-                cmdP.ExecuteNonQuery();
+                rowsAffected = cmdP.ExecuteNonQuery();
+            }
+
+            if (rowsAffected <= 0)
+            {
+                tx.Rollback();
+                return false;
             }
 
             tx.Commit();
+            return true;
         }
         catch
         {
@@ -246,9 +256,9 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
         }
     }
 
-    public void CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null)
+    public bool CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null)
     {
-        if (string.IsNullOrWhiteSpace(maPhieu)) return;
+        if (string.IsNullOrWhiteSpace(maPhieu)) return false;
 
         const string sql = @"
             UPDATE dbo.PhieuKiemKe
@@ -263,13 +273,12 @@ public class PhieuKiemKeRepository : IPhieuKiemKeRepository
         cmd.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.NVarChar, 50) { Value = trangThaiMoi });
         cmd.Parameters.Add(new SqlParameter("@TrangThaiDuyet", SqlDbType.Bit) { Value = string.Equals(trangThaiMoi, "DaDuyet", StringComparison.OrdinalIgnoreCase) });
         cmd.Parameters.Add(new SqlParameter("@NgayDuyet", SqlDbType.DateTime2) { Value = (object?)ngayDuyet ?? DBNull.Value });
-        cmd.ExecuteNonQuery();
+        return cmd.ExecuteNonQuery() > 0;
     }
 
-    public Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default)
+    public Task<bool> LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken cancellationToken = default)
     {
-        LuuPhieuKiemKe(phieu);
-        return Task.CompletedTask;
+        return Task.FromResult(LuuPhieuKiemKe(phieu));
     }
 
     public Task<PhieuKiemKe?> TimTheoIdAsync(string maPhieu, CancellationToken cancellationToken = default)

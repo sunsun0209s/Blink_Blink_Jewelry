@@ -20,7 +20,7 @@ public class HoaDon
     /// <summary>
     /// Thời điểm lập hóa đơn hoặc đặt hàng
     /// </summary>
-    public DateTime NgayLap { get; set; } = DateTime.UtcNow;
+    public DateTime NgayLap { get; set; } = DateTime.Now;
 
     /// <summary>
     /// Mã nhân viên phụ trách duyệt / xử lý đơn (cho phép null/rỗng khi khách đặt hàng online)

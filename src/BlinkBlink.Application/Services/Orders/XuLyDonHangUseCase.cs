@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BlinkBlink.Domain.Entities.Orders;
 using BlinkBlink.Domain.Interfaces;
 
 namespace BlinkBlink.Application.Services.Orders;
@@ -182,6 +183,54 @@ public class XuLyDonHangUseCase
             return false;
         }
 
+        return await HoanTatHuyHoaDonAsync(hoaDon, cancellationToken);
+    }
+
+    /// <summary>
+    /// Hủy đơn đặt hàng dành cho khách hàng trực tuyến (chỉ cho phép khi đơn thuộc về khách và đang ở trạng thái Chờ duyệt).
+    /// </summary>
+    /// <param name="maHoaDon">Mã hóa đơn cần hủy</param>
+    /// <param name="maKhachHang">Mã khách hàng yêu cầu hủy</param>
+    /// <param name="cancellationToken">Mã token theo dõi hủy tác vụ</param>
+    /// <param name="maNguoiDung">Mã người dùng liên kết với khách hàng (nếu có)</param>
+    /// <returns>Cặp kết quả (Success, Message)</returns>
+    public async Task<(bool Success, string Message)> HuyDonHangChoKhachAsync(
+        string maHoaDon,
+        string maKhachHang,
+        CancellationToken cancellationToken = default,
+        string? maNguoiDung = null)
+    {
+        if (string.IsNullOrWhiteSpace(maHoaDon) || string.IsNullOrWhiteSpace(maKhachHang))
+        {
+            return (false, "Mã hóa đơn hoặc mã khách hàng không hợp lệ.");
+        }
+
+        var hoaDon = await _hoaDonRepo.TimTheoMaAsync(maHoaDon.Trim(), cancellationToken);
+        if (hoaDon == null)
+        {
+            return (false, "Không tìm thấy đơn hàng.");
+        }
+
+        var isOwner = string.Equals(hoaDon.MaKhachHang, maKhachHang.Trim(), StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(maNguoiDung) && string.Equals(hoaDon.MaKhachHang, maNguoiDung.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (!isOwner)
+        {
+            return (false, "Bạn không có quyền hủy đơn hàng này.");
+        }
+
+        if (!string.Equals(hoaDon.TrangThaiDonHang, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
+        {
+            return (false, "Chỉ có thể hủy đơn hàng khi đơn đang ở trạng thái Chờ duyệt.");
+        }
+
+        var ok = await HoanTatHuyHoaDonAsync(hoaDon, cancellationToken);
+        return ok
+            ? (true, "Hủy đơn hàng thành công.")
+            : (false, "Không thể hủy đơn hàng.");
+    }
+
+    private async Task<bool> HoanTatHuyHoaDonAsync(HoaDon hoaDon, CancellationToken cancellationToken)
+    {
         var success = hoaDon.HuyHoaDon();
         if (!success)
         {

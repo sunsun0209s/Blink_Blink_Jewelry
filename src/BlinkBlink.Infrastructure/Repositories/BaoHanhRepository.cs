@@ -29,7 +29,7 @@ public class BaoHanhRepository : IBaoHanhRepository
     {
     }
 
-    public void LuuPhieu(PhieuBaoHanh pbh)
+    public bool LuuPhieu(PhieuBaoHanh pbh)
     {
         if (pbh == null)
         {
@@ -86,7 +86,7 @@ public class BaoHanhRepository : IBaoHanhRepository
             new SqlParameter("@SoDienThoai", SqlDbType.VarChar, 20) { Value = (object?)pbh.SoDienThoai ?? DBNull.Value }
         };
 
-        _dbHelper.ExecuteNonQuery(sql, parameters);
+        return _dbHelper.ExecuteNonQuery(sql, parameters) > 0;
     }
 
     public PhieuBaoHanh? TimTheoSoPhieu(string soPhieu)
@@ -180,11 +180,11 @@ public class BaoHanhRepository : IBaoHanhRepository
         return list;
     }
 
-    public void CapNhatPhieu(PhieuBaoHanh pbh)
+    public bool CapNhatPhieu(PhieuBaoHanh pbh)
     {
         if (pbh == null)
         {
-            return;
+            return false;
         }
 
         const string sql = @"
@@ -208,13 +208,12 @@ public class BaoHanhRepository : IBaoHanhRepository
             new SqlParameter("@NgayHenTra", SqlDbType.DateTime2) { Value = (object?)pbh.NgayHenTra ?? DBNull.Value }
         };
 
-        _dbHelper.ExecuteNonQuery(sql, parameters);
+        return _dbHelper.ExecuteNonQuery(sql, parameters) > 0;
     }
 
-    public Task LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
+    public Task<bool> LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
     {
-        LuuPhieu(pbh);
-        return Task.CompletedTask;
+        return Task.FromResult(LuuPhieu(pbh));
     }
 
     public Task<PhieuBaoHanh?> TimTheoSoPhieuAsync(string soPhieu, CancellationToken cancellationToken = default)
@@ -232,10 +231,9 @@ public class BaoHanhRepository : IBaoHanhRepository
         return Task.FromResult(LayDanhSachPhieu());
     }
 
-    public Task CapNhatPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
+    public Task<bool> CapNhatPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
     {
-        CapNhatPhieu(pbh);
-        return Task.CompletedTask;
+        return Task.FromResult(CapNhatPhieu(pbh));
     }
 
     public void CapNhatKhachHangTheoSoDienThoai(string soDienThoai, string maKhachHangMoi)

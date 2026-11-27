@@ -47,9 +47,28 @@ async function apiRequest(url, options = {}) {
  */
 async function fetchCatalogFromApi() {
     try {
-        const res = await fetch('/api/SanPham');
-        if (res.ok) {
-            const json = await res.json();
+        const [resSp, resDm] = await Promise.all([
+            fetch('/api/SanPham'),
+            fetch('/api/SanPham/danh-muc').catch(() => null)
+        ]);
+
+        if (resDm && resDm.ok) {
+            const jsonDm = await resDm.json().catch(() => null);
+            if (jsonDm?.success && Array.isArray(jsonDm.data)) {
+                const visibleCatIds = new Set(jsonDm.data.map(c => (c.maDanhMuc || c.MaDanhMuc || '').toUpperCase()));
+                document.querySelectorAll('.filter-pill-btn[data-category]').forEach(btn => {
+                    const cat = (btn.dataset.category || '').toUpperCase();
+                    if (cat && cat !== 'ALL' && !visibleCatIds.has(cat)) {
+                        btn.style.display = 'none';
+                    } else {
+                        btn.style.display = '';
+                    }
+                });
+            }
+        }
+
+        if (resSp.ok) {
+            const json = await resSp.json();
             if (json.success && Array.isArray(json.data) && json.data.length > 0) {
                 catalogProducts = json.data;
                 console.log(`[BlinkBlink.Web] Đã nạp thành công ${catalogProducts.length} sản phẩm từ CSDL SQL Server.`);
@@ -162,15 +181,19 @@ async function saveCart() {
                     }))
                 })
             });
+            return true;
         } catch (e) {
             console.error('Không thể đồng bộ giỏ hàng lên máy chủ:', e);
+            return false;
         }
     } else {
         // Khách vãng lai: Lưu vào localStorage
         try {
             localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(cart));
+            return true;
         } catch (e) {
             console.error('Không thể lưu giỏ hàng khách vãng lai:', e);
+            return false;
         }
     }
 }
@@ -916,6 +939,7 @@ async function addToCart(maSanPham) {
         return;
     }
 
+    const previousCart = cart.map(item => ({ ...item }));
     const effectivePrice = product.giaSauGiam || product.giaBan;
     const existingIndex = cart.findIndex(item => item.maSanPham === maSanPham);
     if (existingIndex > -1) {
@@ -938,7 +962,13 @@ async function addToCart(maSanPham) {
         });
     }
 
-    await saveCart();
+    const saved = await saveCart();
+    if (!saved) {
+        cart = previousCart;
+        updateCartUI();
+        showToast('Không thể lưu giỏ hàng lên máy chủ. Vui lòng thử lại sau.', 'error');
+        return;
+    }
     updateCartUI();
     showToast(`Đã thêm "${product.tenSanPham}" vào giỏ hàng thành công!`);
 }
@@ -1019,11 +1049,19 @@ async function changeQty(maSanPham, delta) {
     const item = cart.find(i => i.maSanPham === maSanPham);
     if (!item) return;
 
+    const previousCart = cart.map(i => ({ ...i }));
     item.soLuong += delta;
     if (item.soLuong <= 0) {
+        cart = previousCart;
         await removeFromCart(maSanPham);
     } else {
-        await saveCart();
+        const saved = await saveCart();
+        if (!saved) {
+            cart = previousCart;
+            updateCartUI();
+            showToast('Không thể cập nhật số lượng sản phẩm trên máy chủ. Vui lòng thử lại sau.', 'error');
+            return;
+        }
         updateCartUI();
     }
 }
@@ -1032,8 +1070,15 @@ async function changeQty(maSanPham, delta) {
  * Xóa một món khỏi giỏ hàng
  */
 async function removeFromCart(maSanPham) {
+    const previousCart = cart.map(i => ({ ...i }));
     cart = cart.filter(i => i.maSanPham !== maSanPham);
-    await saveCart();
+    const saved = await saveCart();
+    if (!saved) {
+        cart = previousCart;
+        updateCartUI();
+        showToast('Không thể xóa sản phẩm khỏi giỏ hàng trên máy chủ. Vui lòng thử lại sau.', 'error');
+        return;
+    }
     updateCartUI();
     showToast('Đã xóa món đồ khỏi giỏ hàng.');
 }
@@ -1659,9 +1704,7 @@ function openCheckoutDialog() {
 
     if (nameInput) nameInput.value = currentUser.hoTen || '';
     if (phoneInput) phoneInput.value = currentUser.soDienThoai || '';
-    if (addressInput && !addressInput.value) {
-        addressInput.value = '45 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh';
-    }
+    if (addressInput) addressInput.value = '';
 
     // Nạp danh sách kiệt tác tóm tắt trong modal đặt hàng
     renderCheckoutSummary();
@@ -2431,7 +2474,7 @@ async function syncGuestCartAndReload(user) {
             const guestItems = JSON.parse(guestCartRaw);
             if (Array.isArray(guestItems) && guestItems.length > 0) {
                 // Đẩy các sản phẩm khách vãng lai đã chọn lên CSDL
-                await fetch('/api/GioHang/cap-nhat', {
+                const syncRes = await fetch('/api/GioHang/cap-nhat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({
@@ -2439,12 +2482,15 @@ async function syncGuestCartAndReload(user) {
                         danhSachSanPham: guestItems.map(i => ({ maSanPham: i.maSanPham, soLuong: i.soLuong }))
                     })
                 });
+                if (syncRes.ok) {
+                    localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+                }
+            } else {
+                localStorage.removeItem(GUEST_CART_STORAGE_KEY);
             }
         } catch (e) {
             console.error('Không thể đồng bộ giỏ hàng vãng lai lên máy chủ:', e);
         }
-        // Xóa sạch giỏ hàng vãng lai khỏi localStorage
-        localStorage.removeItem(GUEST_CART_STORAGE_KEY);
     }
 
     // Nạp giỏ hàng chính thức của tài khoản từ CSDL SQL Server (HOÀN TOÀN KHÔNG DÙNG localStorage)
@@ -2644,6 +2690,12 @@ function renderCustomerOrders(orders, user) {
             : (st === 'dathanhtoan' ? 'Mua trực tiếp tại showroom' : (order.diaChi || 'Nhận tại xưởng Blink Blink'));
         const phone = order.soDienThoaiNhan || order.soDienThoai || '';
         const payment = order.phuongThucThanhToan || order.phuongThuc || 'Chuyển khoản';
+        const rawNote = (order.ghiChu ?? order.GhiChu ?? '').trim();
+        const safeNote = rawNote
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
 
         card.innerHTML = `
             <div class="order-card-head">
@@ -2662,18 +2714,50 @@ function renderCustomerOrders(orders, user) {
                 <div><strong>Nơi nhận:</strong> ${address}</div>
                 ${phone ? `<div><strong>Điện thoại:</strong> ${phone}</div>` : ''}
                 <div><strong>Phương thức:</strong> ${payment}</div>
+                ${safeNote ? `<div><strong>Ghi chú:</strong> ${safeNote}</div>` : ''}
                 ${origTotal > finalTotal ? `<div><strong>Tổng tiền gốc:</strong> ${formatCurrency(origTotal)}</div>` : ''}
                 ${discount > 0 ? `<div style="color: #2E7D32;"><strong>Ưu đãi giảm giá SP:</strong> -${formatCurrency(discount)}</div>` : ''}
             </div>
 
-            <div class="order-foot-row">
-                <span class="order-foot-label">Tổng thanh toán:</span>
-                <span class="order-foot-total">${formatCurrency(finalTotal)}</span>
+            <div class="order-foot-row" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div>
+                    <span class="order-foot-label">Tổng thanh toán:</span>
+                    <span class="order-foot-total">${formatCurrency(finalTotal)}</span>
+                </div>
+                ${st === 'choduyet' ? `<button type="button" class="btn-luxury-outline" style="padding: 6px 12px; font-size: 0.75rem; color: #b91c1c; border-color: #fca5a5;" onclick="cancelCustomerOrder('${order.maHoaDon}')">Hủy Đơn Hàng</button>` : ''}
             </div>
         `;
 
         container.appendChild(card);
     });
+}
+
+/**
+ * Khách hàng hủy đơn đặt hàng khi đơn đang ở trạng thái Chờ duyệt (ChoDuyet)
+ */
+async function cancelCustomerOrder(maHoaDon) {
+    if (!currentUser || !maHoaDon) return;
+
+    const confirmed = window.confirm(`Quý khách có chắc chắn muốn hủy đơn hàng ${maHoaDon} không? Chỉ có thể hủy khi đơn đang ở trạng thái Chờ duyệt.`);
+    if (!confirmed) return;
+
+    try {
+        const custId = currentUser.maKhachHang || currentUser.MaKhachHang || currentUser.maNguoiDung;
+        const res = await apiRequest(`/api/BanHang/${encodeURIComponent(maHoaDon)}/huy?maKhachHang=${encodeURIComponent(custId)}`, {
+            method: 'PUT'
+        });
+        if (!res.ok || res.data?.success === false) {
+            showToast(res.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.', 'error');
+            await refreshCustomerOrders();
+            return;
+        }
+        showToast(res.data?.message || 'Hủy đơn hàng thành công!', 'success');
+        await refreshCustomerOrders();
+    } catch (err) {
+        console.error('Lỗi khi hủy đơn hàng:', err);
+        showToast(err.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.', 'error');
+        await refreshCustomerOrders();
+    }
 }
 
 /**

@@ -73,16 +73,7 @@ public class XuLyBaoHanhUseCase
             }
         }
 
-        await _baoHanhRepo.CapNhatPhieuAsync(phieu, cancellationToken);
-        return true;
-    }
-
-    /// <summary>
-    /// Kỹ thuật viên chuyển trạng thái phiếu từ Tiếp nhận sang Đang xử lý.
-    /// </summary>
-    public bool ChuyenSangDangXuLy(string soPhieu)
-    {
-        return CapNhatTienDo(soPhieu, "DangXuLy");
+        return await _baoHanhRepo.CapNhatPhieuAsync(phieu, cancellationToken);
     }
 
     /// <summary>
@@ -113,8 +104,7 @@ public class XuLyBaoHanhUseCase
         }
 
         phieu.QuyetToan(chiPhiThucTe);
-        await _baoHanhRepo.CapNhatPhieuAsync(phieu, cancellationToken);
-        return true;
+        return await _baoHanhRepo.CapNhatPhieuAsync(phieu, cancellationToken);
     }
 
     /// <summary>
@@ -149,7 +139,7 @@ public class XuLyBaoHanhUseCase
             phieu.ChiPhiThucTe = chiPhiBaoHanh;
         }
 
-        phieu.HoanTatBaoHanh();
+        phieu.CapNhatTrangThai("DaTraKhach");
 
         // Hoàn trả trạng thái của món trang sức từ DangBaoHanh về SanSang hoặc HetHang tuỳ tồn kho
         var sanPham = await _sanPhamRepo.TimTheoIdAsync(phieu.MaSanPham, cancellationToken);
@@ -159,7 +149,6 @@ public class XuLyBaoHanhUseCase
             await _sanPhamRepo.LuuSanPhamAsync(sanPham, cancellationToken);
         }
 
-        await _baoHanhRepo.CapNhatPhieuAsync(phieu, cancellationToken);
-        return true;
+        return await _baoHanhRepo.CapNhatPhieuAsync(phieu, cancellationToken);
     }
 }

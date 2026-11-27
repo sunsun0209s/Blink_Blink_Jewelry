@@ -34,11 +34,11 @@ public class BanHangOfflineUseCaseTests
     private class FakeSanPhamRepository : ISanPhamRepository
     {
         public readonly Dictionary<string, SanPhamTrangSuc> Data = new();
-        public void LuuSanPham(SanPhamTrangSuc sp) => Data[sp.MaSanPham] = sp;
+        public bool LuuSanPham(SanPhamTrangSuc sp) { Data[sp.MaSanPham] = sp; return true; }
         public SanPhamTrangSuc? TimTheoId(string maSanPham) => Data.TryGetValue(maSanPham, out var sp) ? sp : null;
         public List<SanPhamTrangSuc> LayTatCa() => Data.Values.ToList();
         public List<SanPhamTrangSuc> LayTheoNhom(string maNhom) => Data.Values.Where(s => s.MaNhom == maNhom).ToList();
-        public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default) { Data[sp.MaSanPham] = sp; return Task.CompletedTask; }
+        public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default) { Data[sp.MaSanPham] = sp; return Task.FromResult(true); }
         public Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken cancellationToken = default) => Task.FromResult(TimTheoId(maSanPham));
         public Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken cancellationToken = default) => Task.FromResult(LayTatCa());
         public Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken cancellationToken = default) => Task.FromResult(LayTheoNhom(maNhom));
@@ -49,7 +49,7 @@ public class BanHangOfflineUseCaseTests
             return false;
         }
 
-        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+        public bool XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
 
         public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
         {
@@ -57,11 +57,7 @@ public class BanHangOfflineUseCaseTests
             return Task.FromResult((hasTx, lyDo));
         }
 
-        public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
-        {
-            XoaSanPham(maSanPham);
-            return Task.CompletedTask;
-        }
+        public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default) => Task.FromResult(XoaSanPham(maSanPham));
     }
 
     private class FakeKhachHangRepository : IKhachHangRepository

@@ -11,7 +11,7 @@ namespace BlinkBlink.Domain.Entities.Inventory;
 public class PhieuNhapKho
 {
     public string MaPhieuNhap { get; set; } = string.Empty; // Khóa chính
-    public DateTime NgayNhap { get; set; } = DateTime.UtcNow;
+    public DateTime NgayNhap { get; set; } = DateTime.Now;
     public string NhaCungCap { get; set; } = string.Empty;
     public string MaNhanVien { get; set; } = string.Empty;
     public int TongSoSanPham { get; set; }
@@ -28,7 +28,7 @@ public class PhieuNhapKho
         MaPhieuNhap = maPhieuNhap;
         NhaCungCap = nhaCungCap;
         MaNhanVien = maNhanVien;
-        NgayNhap = ngayNhap ?? DateTime.UtcNow;
+        NgayNhap = ngayNhap ?? DateTime.Now;
         TrangThai = string.IsNullOrWhiteSpace(trangThai) ? "ChoDuyet" : trangThai;
     }
 
@@ -84,19 +84,6 @@ public class PhieuNhapKho
         }
 
         TongGiaTri = ChiTietNhapKhos.Sum(x => x.TinhGiaTri());
-        return true;
-    }
-
-    /// <summary>
-    /// Hủy bỏ phiếu nhập kho khi có sự cố sai lệch từ nhà cung cấp.
-    /// </summary>
-    /// <returns>True nếu hủy thành công</returns>
-    public bool HuyPhieu()
-    {
-        // Khớp hàm HuyPhieu(): bool trong Diagram
-        ChiTietNhapKhos.Clear();
-        TongSoSanPham = 0;
-        TongGiaTri = 0;
         return true;
     }
 }

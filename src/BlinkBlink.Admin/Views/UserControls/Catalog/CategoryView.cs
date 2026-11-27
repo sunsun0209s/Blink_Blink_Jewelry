@@ -25,6 +25,7 @@ public class CategoryView : UserControl
     private TextBox _txtSearch = null!;
     private Button _btnAddCategory = null!;
     private Button _btnEditCategory = null!;
+    private Button _btnToggleHidden = null!;
     private Button _btnDeleteCategory = null!;
     private Button _btnRefresh = null!;
 
@@ -132,6 +133,10 @@ public class CategoryView : UserControl
         _btnEditCategory.Margin = new Padding(0, 2, 8, 2);
         _btnEditCategory.Click += (s, e) => EditSelectedCategory();
 
+        _btnToggleHidden = UITheme.CreateFlatButton("👁 Ẩn / Hiện", Color.FromArgb(100, 116, 139), Color.White);
+        _btnToggleHidden.Margin = new Padding(0, 2, 8, 2);
+        _btnToggleHidden.Click += (s, e) => ToggleHiddenSelectedCategory();
+
         _btnDeleteCategory = UITheme.CreateFlatButton("🗑 Xóa Danh Mục", Color.FromArgb(185, 28, 28), Color.White);
         _btnDeleteCategory.Margin = new Padding(0, 2, 8, 2);
         _btnDeleteCategory.Click += (s, e) => DeleteSelectedCategory();
@@ -144,6 +149,7 @@ public class CategoryView : UserControl
         toolbarPanel.Controls.Add(_txtSearch);
         toolbarPanel.Controls.Add(_btnAddCategory);
         toolbarPanel.Controls.Add(_btnEditCategory);
+        toolbarPanel.Controls.Add(_btnToggleHidden);
         toolbarPanel.Controls.Add(_btnDeleteCategory);
         toolbarPanel.Controls.Add(_btnRefresh);
 
@@ -166,6 +172,7 @@ public class CategoryView : UserControl
         UITheme.ApplyGridViewStyle(_dgvCategories);
         ConfigureGridColumns();
         _dgvCategories.CellDoubleClick += (s, e) => EditSelectedCategory();
+        _dgvCategories.SelectionChanged += (s, e) => UpdateToggleHiddenButtonState();
 
         pnlWhiteCard.Controls.Add(_dgvCategories);
         pnlGridContainer.Controls.Add(pnlWhiteCard);
@@ -227,7 +234,11 @@ public class CategoryView : UserControl
         var colSl = new DataGridViewTextBoxColumn { Name = "SoLuongSP", HeaderText = "SỐ MẪU TRANG SỨC", FillWeight = 110, MinimumWidth = 130, DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Font = UITheme.TabularNumericFont } };
         colSl.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-        _dgvCategories.Columns.AddRange(colMa, colTen, colMoTa, colSl);
+        var colHidden = new DataGridViewTextBoxColumn { Name = "IsHidden", HeaderText = "HIỂN THỊ", FillWeight = 100, MinimumWidth = 115 };
+        colHidden.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        colHidden.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+
+        _dgvCategories.Columns.AddRange(colMa, colTen, colMoTa, colSl, colHidden);
     }
 
     public void LoadCategoryData()
@@ -281,18 +292,82 @@ public class CategoryView : UserControl
         foreach (var c in filtered)
         {
             var countSp = _allProducts.Count(p => string.Equals(p.MaDanhMuc, c.MaDanhMuc, StringComparison.OrdinalIgnoreCase));
-            _dgvCategories.Rows.Add(
+            var trangThaiText = c.IsHidden ? "👁️ Đang ẩn" : "🟢 Đang hiện";
+            var rowIdx = _dgvCategories.Rows.Add(
                 c.MaDanhMuc,
                 c.TenDanhMuc,
                 string.IsNullOrEmpty(c.MoTa) ? "(Chưa có mô tả)" : c.MoTa,
-                $"{countSp} mẫu"
+                $"{countSp} mẫu",
+                trangThaiText
             );
+            _dgvCategories.Rows[rowIdx].Cells["IsHidden"].Style.ForeColor = c.IsHidden
+                ? Color.FromArgb(148, 163, 184)
+                : UITheme.SuccessColor;
         }
 
         if (_dgvCategories.Rows.Count > 0)
         {
             _dgvCategories.Rows[0].Selected = true;
         }
+        UpdateToggleHiddenButtonState();
+    }
+
+    private void UpdateToggleHiddenButtonState()
+    {
+        if (_btnToggleHidden == null) return;
+        if (_dgvCategories.SelectedRows.Count == 0)
+        {
+            _btnToggleHidden.Enabled = false;
+            return;
+        }
+
+        var maDM = _dgvCategories.SelectedRows[0].Cells["MaDanhMuc"].Value?.ToString();
+        // Danh mục mặc định DM00 (Chưa phân loại) luôn vô hiệu hóa nút Ẩn
+        _btnToggleHidden.Enabled = !string.Equals(maDM, "DM00", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ToggleHiddenSelectedCategory()
+    {
+        if (_dgvCategories.SelectedRows.Count == 0)
+        {
+            MessageBox.Show("Vui lòng chọn một danh mục để thay đổi trạng thái ẩn/hiện.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var maDM = _dgvCategories.SelectedRows[0].Cells["MaDanhMuc"].Value?.ToString();
+        if (string.IsNullOrWhiteSpace(maDM) || string.Equals(maDM, "DM00", StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show("Không thể ẩn danh mục mặc định 'Chưa phân loại' (DM00).", "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var targetCat = _allCategories.FirstOrDefault(c => c.MaDanhMuc == maDM);
+        if (targetCat == null) return;
+
+        var newState = !targetCat.IsHidden;
+        var actionText = newState ? "ẨN danh mục này (không hiển thị trên trang người dùng)" : "HIỂN THỊ lại danh mục này trên trang người dùng";
+        var confirm = MessageBox.Show(
+            $"Bạn có chắc chắn muốn {actionText} đối với danh mục:\n[{targetCat.MaDanhMuc}] {targetCat.TenDanhMuc}?",
+            "Xác nhận ẩn/hiện danh mục",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirm != DialogResult.Yes) return;
+
+        targetCat.IsHidden = newState;
+        if (!_services.DanhMucRepo.LuuDanhMuc(targetCat))
+        {
+            targetCat.IsHidden = !newState;
+            MessageBox.Show("Không thể cập nhật trạng thái danh mục xuống cơ sở dữ liệu.", "Lỗi xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        LoadCategoryData();
+        MessageBox.Show(
+            $"Đã cập nhật: Danh mục [{targetCat.MaDanhMuc}] hiện đã {(newState ? "ĐƯỢC ẨN" : "HIỂN THỊ TRỞ LẠI")}.",
+            "Thành công",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
     }
 
     private void EditSelectedCategory()
@@ -343,15 +418,16 @@ public class CategoryView : UserControl
         {
             try
             {
-                // Gọi qua reflection để bảo đảm tính tương thích độc lập khi các phân hệ merge song song
-                var repo = _services.DanhMucRepo;
-                var method = repo.GetType().GetMethod("XoaDanhMuc", new[] { typeof(string) });
-                if (method != null)
+                var ok = _services.DanhMucRepo.XoaDanhMuc(maDM);
+                if (ok)
                 {
-                    method.Invoke(repo, new object[] { maDM });
+                    MessageBox.Show($"Đã xóa thành công danh mục [{maDM}]! Các sản phẩm liên quan đã được chuyển sang danh mục 'Chưa phân loại'.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadCategoryData();
                 }
-                MessageBox.Show($"Đã xóa thành công danh mục [{maDM}]! Các sản phẩm liên quan đã được chuyển sang danh mục 'Chưa phân loại'.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                LoadCategoryData();
+                else
+                {
+                    MessageBox.Show($"Không thể xóa danh mục [{maDM}] khỏi cơ sở dữ liệu.", "Lỗi xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
@@ -466,8 +542,12 @@ public class CategoryView : UserControl
                 return;
             }
 
-            var category = new DanhMuc(ma, ten, moTa);
-            _services.DanhMucRepo.LuuDanhMuc(category);
+            var category = new DanhMuc(ma, ten, moTa, isEdit && target != null && target.IsHidden);
+            if (!_services.DanhMucRepo.LuuDanhMuc(category))
+            {
+                MessageBox.Show("Không thể lưu danh mục xuống cơ sở dữ liệu.", "Lỗi xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             MessageBox.Show($"Lưu thành công danh mục [{ma}] - {ten}!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
             dialog.DialogResult = DialogResult.OK;

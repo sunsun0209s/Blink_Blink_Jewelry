@@ -59,8 +59,7 @@ public class QuanLyNhomSanPhamUseCase
 
         var maNhom = $"NHOM_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
         var nhom = new NhomSanPham(maNhom, req.TenNhom.Trim(), req.MoTa?.Trim() ?? string.Empty);
-        _nhomRepo.LuuNhom(nhom);
-        return nhom;
+        return _nhomRepo.LuuNhom(nhom) ? nhom : null;
     }
 
     /// <summary>
@@ -76,9 +75,7 @@ public class QuanLyNhomSanPhamUseCase
 
         nhom.TenNhom = tenNhomMoi.Trim();
         if (!string.IsNullOrEmpty(moTaMoi)) nhom.MoTa = moTaMoi.Trim();
-        _nhomRepo.CapNhatNhom(nhom);
-
-        return true;
+        return _nhomRepo.CapNhatNhom(nhom);
     }
 
     /// <summary>
@@ -153,9 +150,7 @@ public class QuanLyNhomSanPhamUseCase
 
         // Giữ nguyên tên gốc của sản phẩm khi thêm vào nhóm, chỉ gán mã nhóm
         sp.MaNhom = maNhom;
-        _sanPhamRepo.LuuSanPham(sp);
-
-        return true;
+        return _sanPhamRepo.LuuSanPham(sp);
     }
 
     /// <summary>
@@ -167,8 +162,7 @@ public class QuanLyNhomSanPhamUseCase
         if (sp == null) return false;
 
         sp.MaNhom = "0";
-        _sanPhamRepo.LuuSanPham(sp);
-        return true;
+        return _sanPhamRepo.LuuSanPham(sp);
     }
 
     /// <summary>

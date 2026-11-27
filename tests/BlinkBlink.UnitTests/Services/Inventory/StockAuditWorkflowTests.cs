@@ -23,12 +23,12 @@ public class StockAuditWorkflowTests
     {
         public readonly Dictionary<string, SanPhamTrangSuc> Data = new();
 
-        public void LuuSanPham(SanPhamTrangSuc sp) => Data[sp.MaSanPham] = sp;
+        public bool LuuSanPham(SanPhamTrangSuc sp) { Data[sp.MaSanPham] = sp; return true; }
         public SanPhamTrangSuc? TimTheoId(string maSanPham) => Data.TryGetValue(maSanPham, out var sp) ? sp : null;
         public List<SanPhamTrangSuc> LayTatCa() => Data.Values.ToList();
         public List<SanPhamTrangSuc> LayTheoNhom(string maNhom) => Data.Values.Where(s => s.MaNhom == maNhom).ToList();
 
-        public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken ct = default) { LuuSanPham(sp); return Task.CompletedTask; }
+        public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken ct = default) => Task.FromResult(LuuSanPham(sp));
         public Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken ct = default) => Task.FromResult(TimTheoId(maSanPham));
         public Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken ct = default) => Task.FromResult(LayTatCa());
         public Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken ct = default) => Task.FromResult(LayTheoNhom(maNhom));
@@ -39,7 +39,7 @@ public class StockAuditWorkflowTests
             return false;
         }
 
-        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+        public bool XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
 
         public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken ct = default)
         {
@@ -47,40 +47,39 @@ public class StockAuditWorkflowTests
             return Task.FromResult((hasTx, lyDo));
         }
 
-        public Task XoaSanPhamAsync(string maSanPham, CancellationToken ct = default)
-        {
-            XoaSanPham(maSanPham);
-            return Task.CompletedTask;
-        }
+        public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken ct = default) => Task.FromResult(XoaSanPham(maSanPham));
     }
 
     private class FakePhieuKiemKeRepository : IPhieuKiemKeRepository
     {
         public readonly Dictionary<string, PhieuKiemKe> Data = new();
 
-        public void LuuPhieuKiemKe(PhieuKiemKe phieu) => Data[phieu.MaPhieuKiemKe] = phieu;
+        public bool LuuPhieuKiemKe(PhieuKiemKe phieu) { Data[phieu.MaPhieuKiemKe] = phieu; return true; }
         public PhieuKiemKe? TimTheoId(string maPhieu) => Data.TryGetValue(maPhieu, out var p) ? p : null;
         public List<PhieuKiemKe> LayTatCa() => Data.Values.OrderByDescending(p => p.NgayKiemKe).ToList();
 
-        public void XoaPhieuKiemKe(string maPhieu)
+        public bool XoaPhieuKiemKe(string maPhieu)
         {
             if (Data.TryGetValue(maPhieu, out var p) && string.Equals(p.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
             {
-                Data.Remove(maPhieu);
+                return Data.Remove(maPhieu);
             }
+            return false;
         }
 
-        public void CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null)
+        public bool CapNhatTrangThai(string maPhieu, string trangThaiMoi, DateTime? ngayDuyet = null)
         {
             if (Data.TryGetValue(maPhieu, out var p))
             {
                 p.TrangThai = trangThaiMoi;
                 p.TrangThaiDuyet = string.Equals(trangThaiMoi, "DaDuyet", StringComparison.OrdinalIgnoreCase);
                 if (ngayDuyet.HasValue) p.NgayDuyet = ngayDuyet.Value;
+                return true;
             }
+            return false;
         }
 
-        public Task LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken ct = default) { LuuPhieuKiemKe(phieu); return Task.CompletedTask; }
+        public Task<bool> LuuPhieuKiemKeAsync(PhieuKiemKe phieu, CancellationToken ct = default) => Task.FromResult(LuuPhieuKiemKe(phieu));
         public Task<PhieuKiemKe?> TimTheoIdAsync(string maPhieu, CancellationToken ct = default) => Task.FromResult(TimTheoId(maPhieu));
     }
 
@@ -88,34 +87,38 @@ public class StockAuditWorkflowTests
     {
         public readonly Dictionary<string, PhieuNhapKho> Data = new();
 
-        public void LuuPhieuNhap(PhieuNhapKho phieu) => Data[phieu.MaPhieuNhap] = phieu;
+        public bool LuuPhieuNhap(PhieuNhapKho phieu) { Data[phieu.MaPhieuNhap] = phieu; return true; }
         public PhieuNhapKho? TimTheoId(string maPhieu) => Data.TryGetValue(maPhieu, out var p) ? p : null;
         public List<PhieuNhapKho> LayTatCa() => Data.Values.OrderByDescending(p => p.NgayNhap).ToList();
-        public void VoHieuHoaPhieuNhap(string maPhieuNhap)
+        public bool VoHieuHoaPhieuNhap(string maPhieuNhap)
         {
             if (Data.TryGetValue(maPhieuNhap, out var p))
             {
                 p.TrangThai = "DaHuy";
+                return true;
             }
+            return false;
         }
-        public void DuyetPhieuNhap(string maPhieuNhap)
+        public bool DuyetPhieuNhap(string maPhieuNhap)
         {
             if (Data.TryGetValue(maPhieuNhap, out var p))
             {
                 p.TrangThai = "DaDuyet";
+                return true;
             }
+            return false;
         }
-        public void XoaPhieuNhap(string maPhieuNhap)
+        public bool XoaPhieuNhap(string maPhieuNhap)
         {
-            Data.Remove(maPhieuNhap);
+            return Data.Remove(maPhieuNhap);
         }
 
-        public Task LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken ct = default) { LuuPhieuNhap(phieu); return Task.CompletedTask; }
+        public Task<bool> LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken ct = default) => Task.FromResult(LuuPhieuNhap(phieu));
         public Task<PhieuNhapKho?> TimTheoIdAsync(string maPhieu, CancellationToken ct = default) => Task.FromResult(TimTheoId(maPhieu));
         public Task<List<PhieuNhapKho>> LayTatCaAsync(CancellationToken ct = default) => Task.FromResult(LayTatCa());
-        public Task DuyetPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) { DuyetPhieuNhap(maPhieuNhap); return Task.CompletedTask; }
-        public Task XoaPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) { XoaPhieuNhap(maPhieuNhap); return Task.CompletedTask; }
-        public Task VoHieuHoaPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) { VoHieuHoaPhieuNhap(maPhieuNhap); return Task.CompletedTask; }
+        public Task<bool> DuyetPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) => Task.FromResult(DuyetPhieuNhap(maPhieuNhap));
+        public Task<bool> XoaPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) => Task.FromResult(XoaPhieuNhap(maPhieuNhap));
+        public Task<bool> VoHieuHoaPhieuNhapAsync(string maPhieuNhap, CancellationToken ct = default) => Task.FromResult(VoHieuHoaPhieuNhap(maPhieuNhap));
     }
 
     [Fact]

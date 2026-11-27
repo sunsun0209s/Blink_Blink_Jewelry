@@ -40,8 +40,8 @@ public class ThongKeController : ControllerBase
         [FromQuery] DateTime? denNgay,
         CancellationToken cancellationToken)
     {
-        var start = tuNgay ?? DateTime.UtcNow.AddDays(-30);
-        var end = denNgay ?? DateTime.UtcNow;
+        var start = tuNgay ?? DateTime.Now.AddDays(-30);
+        var end = denNgay ?? DateTime.Now;
 
         var data = await _doanhThuUseCase.ExecuteAsync(start, end, cancellationToken);
         return Ok(new { Success = true, TuNgay = start, DenNgay = end, Data = data });

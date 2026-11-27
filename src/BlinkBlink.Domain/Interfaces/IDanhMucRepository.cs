@@ -14,7 +14,8 @@ public interface IDanhMucRepository
     /// Lưu thông tin danh mục vào CSDL.
     /// </summary>
     /// <param name="dm">Thực thể danh mục</param>
-    void LuuDanhMuc(DanhMuc dm);
+    /// <returns>True nếu lưu thành công</returns>
+    bool LuuDanhMuc(DanhMuc dm);
 
     /// <summary>
     /// Tìm danh mục theo mã.
@@ -30,11 +31,12 @@ public interface IDanhMucRepository
     /// Xóa một danh mục khỏi hệ thống. Toàn bộ sản phẩm thuộc danh mục sẽ được chuyển sang 'Chưa phân loại' (DM00).
     /// </summary>
     /// <param name="maDanhMuc">Mã danh mục cần xóa</param>
-    void XoaDanhMuc(string maDanhMuc);
+    /// <returns>True nếu xóa thành công</returns>
+    bool XoaDanhMuc(string maDanhMuc);
 
     // Mở rộng bất đồng bộ chuẩn .NET 8
-    Task LuuDanhMucAsync(DanhMuc dm, CancellationToken cancellationToken = default);
+    Task<bool> LuuDanhMucAsync(DanhMuc dm, CancellationToken cancellationToken = default);
     Task<DanhMuc?> TimTheoIdAsync(string maDanhMuc, CancellationToken cancellationToken = default);
     Task<List<DanhMuc>> LayTatCaAsync(CancellationToken cancellationToken = default);
-    Task XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default);
+    Task<bool> XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default);
 }

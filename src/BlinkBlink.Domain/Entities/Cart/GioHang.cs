@@ -56,24 +56,6 @@ public class GioHang
     }
 
     /// <summary>
-    /// Phương thức nghiệp vụ đánh dấu chuẩn bị đặt hàng từ giỏ hàng.
-    /// Khớp phương thức: + DatHang(): void trong Diagram.
-    /// </summary>
-    public void DatHang()
-    {
-        CapNhatTongSoLuong();
-    }
-
-    /// <summary>
-    /// Thêm sản phẩm vào giỏ hàng (signature mặc định từ sơ đồ).
-    /// Khớp phương thức: + ThemSanPham(): void trong Diagram.
-    /// </summary>
-    public void ThemSanPham()
-    {
-        CapNhatTongSoLuong();
-    }
-
-    /// <summary>
     /// Thêm hoặc tăng số lượng món trang sức trong giỏ.
     /// </summary>
     /// <param name="maSanPham">Mã sản phẩm trang sức</param>
@@ -99,15 +81,6 @@ public class GioHang
     }
 
     /// <summary>
-    /// Xóa toàn bộ sản phẩm khỏi giỏ (signature mặc định từ sơ đồ).
-    /// Khớp phương thức: + XoaSanPham(): void trong Diagram.
-    /// </summary>
-    public void XoaSanPham()
-    {
-        DonDepGioHang();
-    }
-
-    /// <summary>
     /// Xóa một món trang sức cụ thể khỏi giỏ hàng theo mã sản phẩm.
     /// </summary>
     /// <param name="maSanPham">Mã sản phẩm trang sức cần gỡ</param>
@@ -129,7 +102,7 @@ public class GioHang
     /// <summary>
     /// Đồng bộ lại tổng số lượng mặt hàng trong giỏ.
     /// </summary>
-    private void CapNhatTongSoLuong()
+    public void CapNhatTongSoLuong()
     {
         SoLuong = DanhSachSanPham.Sum(c => c.SoLuongSanPham);
     }

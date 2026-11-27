@@ -77,15 +77,16 @@ public class XuLyDonHangUseCaseTests
     {
         public readonly Dictionary<string, SanPhamTrangSuc> Data = new();
 
-        public void LuuSanPham(SanPhamTrangSuc sp)
+        public bool LuuSanPham(SanPhamTrangSuc sp)
         {
             Data[sp.MaSanPham] = sp;
+            return true;
         }
 
-        public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
+        public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
         {
             Data[sp.MaSanPham] = sp;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public SanPhamTrangSuc? TimTheoId(string maSanPham)
@@ -110,7 +111,7 @@ public class XuLyDonHangUseCaseTests
             return false;
         }
 
-        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+        public bool XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
 
         public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
         {
@@ -118,11 +119,7 @@ public class XuLyDonHangUseCaseTests
             return Task.FromResult((hasTx, lyDo));
         }
 
-        public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
-        {
-            XoaSanPham(maSanPham);
-            return Task.CompletedTask;
-        }
+        public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default) => Task.FromResult(XoaSanPham(maSanPham));
     }
 
     [Fact]
@@ -235,5 +232,46 @@ public class XuLyDonHangUseCaseTests
         // Kiểm tra
         Assert.False(result);
         Assert.Equal("DaGiao", hd.TrangThaiDonHang);
+    }
+
+    [Fact]
+    public async Task HuyDonHangChoKhach_ThanhCong_KhiChoDuyet()
+    {
+        var hoaDonRepo = new FakeHoaDonRepository();
+        var sanPhamRepo = new FakeSanPhamRepository();
+
+        var sp = new SanPhamTrangSuc("SP01", "Nhẫn kim cương", "DM01", "Bạch kim", "12", 20000000m, 35000000m, "HetHang");
+        sanPhamRepo.Data[sp.MaSanPham] = sp;
+
+        var hd = new HoaDon("HD400", DateTime.UtcNow, "KH01", "123 Lê Lợi", "0909123456", "COD", "ChoDuyet");
+        hd.ChiTietHoaDons.Add(new ChiTietHoaDon("HD400", "SP01", 35000000m, 1));
+        hoaDonRepo.Data[hd.MaHoaDon] = hd;
+
+        var useCase = new XuLyDonHangUseCase(hoaDonRepo, sanPhamRepo);
+
+        var (success, message) = await useCase.HuyDonHangChoKhachAsync("HD400", "KH01");
+
+        Assert.True(success);
+        Assert.Equal("Hủy đơn hàng thành công.", message);
+        Assert.Equal("DaHuy", hd.TrangThaiDonHang);
+        Assert.Equal("SanSang", sp.TrangThai);
+    }
+
+    [Fact]
+    public async Task HuyDonHangChoKhach_ThatBai_KhiKhongOPhaiChoDuyet()
+    {
+        var hoaDonRepo = new FakeHoaDonRepository();
+        var sanPhamRepo = new FakeSanPhamRepository();
+
+        var hd = new HoaDon("HD401", DateTime.UtcNow, "KH01", "123 Lê Lợi", "0909123456", "COD", "DangDongGoi");
+        hoaDonRepo.Data[hd.MaHoaDon] = hd;
+
+        var useCase = new XuLyDonHangUseCase(hoaDonRepo, sanPhamRepo);
+
+        var (success, message) = await useCase.HuyDonHangChoKhachAsync("HD401", "KH01");
+
+        Assert.False(success);
+        Assert.Contains("Chờ duyệt", message);
+        Assert.Equal("DangDongGoi", hd.TrangThaiDonHang);
     }
 }

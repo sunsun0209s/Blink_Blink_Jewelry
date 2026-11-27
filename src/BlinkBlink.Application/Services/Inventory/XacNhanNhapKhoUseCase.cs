@@ -25,10 +25,11 @@ public class XacNhanNhapKhoUseCase
 
     /// <summary>
     /// Thực thi quy trình lập và xác nhận phiếu nhập kho.
-    /// Khớp hàm: + Execute(request: NhapKhoDTO): void trong Diagram.
+    /// Khớp hàm: + Execute(request: NhapKhoDTO): bool trong Diagram.
     /// </summary>
     /// <param name="request">Thông tin phiếu nhập và danh sách sản phẩm nhập kho</param>
-    public void Execute(NhapKhoDTO request)
+    /// <returns>True nếu lưu phiếu thành công</returns>
+    public bool Execute(NhapKhoDTO request)
     {
         if (request == null)
         {
@@ -36,14 +37,14 @@ public class XacNhanNhapKhoUseCase
         }
 
         var maPhieu = string.IsNullOrWhiteSpace(request.MaPhieuNhap)
-            ? $"PNK_{DateTime.UtcNow.Ticks % 1000000:D6}"
+            ? $"PNK_{DateTime.Now.Ticks % 1000000:D6}"
             : request.MaPhieuNhap.Trim();
 
         var phieu = new PhieuNhapKho(
             maPhieuNhap: maPhieu,
             nhaCungCap: request.NhaCungCap?.Trim() ?? string.Empty,
             maNhanVien: request.MaNhanVien?.Trim() ?? string.Empty,
-            ngayNhap: DateTime.UtcNow,
+            ngayNhap: DateTime.Now,
             trangThai: "ChoDuyet"
         );
 
@@ -67,7 +68,7 @@ public class XacNhanNhapKhoUseCase
         phieu.XacNhanNhapKho();
 
         // Lưu phiếu và danh sách chi tiết ở trạng thái "ChoDuyet" (chưa tác động tồn kho và giá)
-        _nhapKhoRepo.LuuPhieuNhap(phieu);
+        return _nhapKhoRepo.LuuPhieuNhap(phieu);
     }
 
     /// <summary>
@@ -102,7 +103,11 @@ public class XacNhanNhapKhoUseCase
         }
 
         // 1. Cập nhật trạng thái phiếu nhập sang "DaDuyet"
-        _nhapKhoRepo.DuyetPhieuNhap(maPhieuNhap);
+        if (!_nhapKhoRepo.DuyetPhieuNhap(maPhieuNhap))
+        {
+            error = $"Không thể phê duyệt phiếu nhập kho #{maPhieuNhap} trong cơ sở dữ liệu.";
+            return false;
+        }
 
         // 2. Lấy toàn bộ phiếu đã duyệt (bao gồm phiếu vừa được duyệt) để tính lại tồn kho và giá bình quân
         var allApprovedReceipts = _nhapKhoRepo.LayTatCa()
@@ -143,7 +148,11 @@ public class XacNhanNhapKhoUseCase
                     // Giá bán = Giá nhập bình quân * (1 + % Lợi nhuận)
                     sp.GiaBan = sp.TinhGiaBanTheoLoiNhuan();
 
-                    _sanPhamRepo.LuuSanPham(sp);
+                    if (!_sanPhamRepo.LuuSanPham(sp))
+                    {
+                        error = $"Không thể cập nhật tồn kho sản phẩm [{ct.MaSanPham}] xuống cơ sở dữ liệu.";
+                        return false;
+                    }
                 }
             }
         }
@@ -179,7 +188,12 @@ public class XacNhanNhapKhoUseCase
             return false;
         }
 
-        _nhapKhoRepo.XoaPhieuNhap(maPhieuNhap);
+        if (!_nhapKhoRepo.XoaPhieuNhap(maPhieuNhap))
+        {
+            error = $"Không thể xóa phiếu nhập kho #{maPhieuNhap} khỏi cơ sở dữ liệu.";
+            return false;
+        }
+
         return true;
     }
 
@@ -217,7 +231,12 @@ public class XacNhanNhapKhoUseCase
         // Nếu phiếu chưa duyệt (ChoDuyet) mà hủy thì chỉ cần đổi trạng thái sang DaHuy
         if (string.Equals(phieu.TrangThai, "ChoDuyet", StringComparison.OrdinalIgnoreCase))
         {
-            _nhapKhoRepo.VoHieuHoaPhieuNhap(maPhieuNhap);
+            if (!_nhapKhoRepo.VoHieuHoaPhieuNhap(maPhieuNhap))
+            {
+                error = $"Không thể hủy phiếu nhập kho #{maPhieuNhap} trong cơ sở dữ liệu.";
+                return false;
+            }
+
             return true;
         }
 
@@ -237,7 +256,11 @@ public class XacNhanNhapKhoUseCase
         }
 
         // 1. Đánh dấu hủy phiếu trong cơ sở dữ liệu
-        _nhapKhoRepo.VoHieuHoaPhieuNhap(maPhieuNhap);
+        if (!_nhapKhoRepo.VoHieuHoaPhieuNhap(maPhieuNhap))
+        {
+            error = $"Không thể hủy phiếu nhập kho #{maPhieuNhap} trong cơ sở dữ liệu.";
+            return false;
+        }
 
         // 2. Cập nhật hoàn trừ tồn kho và tính lại giá vốn cho các sản phẩm trong phiếu
         var allApprovedReceipts = _nhapKhoRepo.LayTatCa()
@@ -293,7 +316,11 @@ public class XacNhanNhapKhoUseCase
                     // Giá bán = Giá nhập bình quân * (1 + % Lợi nhuận) nếu giá nhập > 0; nếu giá nhập = 0 thì giá bán hoàn nguyên về 0
                     sp.GiaBan = sp.GiaNhap > 0 ? sp.TinhGiaBanTheoLoiNhuan() : 0;
 
-                    _sanPhamRepo.LuuSanPham(sp);
+                    if (!_sanPhamRepo.LuuSanPham(sp))
+                    {
+                        error = $"Không thể hoàn trừ tồn kho sản phẩm [{ct.MaSanPham}] xuống cơ sở dữ liệu.";
+                        return false;
+                    }
                 }
             }
         }
@@ -305,7 +332,7 @@ public class XacNhanNhapKhoUseCase
     // MỞ RỘNG BẤT ĐỒNG BỘ CHUẨN CLEAN ARCHITECTURE .NET 8 LTS
     // =========================================================================
 
-    public async Task ExecuteAsync(NhapKhoDTO request, CancellationToken cancellationToken = default)
+    public async Task<bool> ExecuteAsync(NhapKhoDTO request, CancellationToken cancellationToken = default)
     {
         if (request == null)
         {
@@ -313,14 +340,14 @@ public class XacNhanNhapKhoUseCase
         }
 
         var maPhieu = string.IsNullOrWhiteSpace(request.MaPhieuNhap)
-            ? $"PNK_{DateTime.UtcNow.Ticks % 1000000:D6}"
+            ? $"PNK_{DateTime.Now.Ticks % 1000000:D6}"
             : request.MaPhieuNhap.Trim();
 
         var phieu = new PhieuNhapKho(
             maPhieuNhap: maPhieu,
             nhaCungCap: request.NhaCungCap?.Trim() ?? string.Empty,
             maNhanVien: request.MaNhanVien?.Trim() ?? string.Empty,
-            ngayNhap: DateTime.UtcNow
+            ngayNhap: DateTime.Now
         );
 
         if (request.DanhSachSanPham != null)
@@ -340,6 +367,6 @@ public class XacNhanNhapKhoUseCase
         }
 
         phieu.XacNhanNhapKho();
-        await _nhapKhoRepo.LuuPhieuNhapAsync(phieu, cancellationToken);
+        return await _nhapKhoRepo.LuuPhieuNhapAsync(phieu, cancellationToken);
     }
 }
