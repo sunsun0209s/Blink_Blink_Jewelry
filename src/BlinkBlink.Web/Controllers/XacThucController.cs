@@ -18,6 +18,7 @@ namespace BlinkBlink.Web.Controllers;
 public class XacThucController : ControllerBase
 {
     private readonly DangNhapUseCase _dangNhapUseCase;
+    private readonly DoiMatKhauUseCase _doiMatKhauUseCase;
     private readonly INguoiDungRepository _nguoiDungRepo;
     private readonly IKhachHangRepository _khachHangRepo;
     private readonly IAppLogger _logger;
@@ -26,12 +27,14 @@ public class XacThucController : ControllerBase
         DangNhapUseCase dangNhapUseCase,
         INguoiDungRepository nguoiDungRepo,
         IKhachHangRepository khachHangRepo,
-        IAppLogger? logger = null)
+        IAppLogger? logger = null,
+        DoiMatKhauUseCase? doiMatKhauUseCase = null)
     {
         _dangNhapUseCase = dangNhapUseCase ?? throw new ArgumentNullException(nameof(dangNhapUseCase));
         _nguoiDungRepo = nguoiDungRepo ?? throw new ArgumentNullException(nameof(nguoiDungRepo));
         _khachHangRepo = khachHangRepo ?? throw new ArgumentNullException(nameof(khachHangRepo));
         _logger = logger ?? NullAppLogger.Instance;
+        _doiMatKhauUseCase = doiMatKhauUseCase ?? new DoiMatKhauUseCase(_nguoiDungRepo);
     }
 
     /// <summary>
@@ -73,6 +76,46 @@ public class XacThucController : ControllerBase
                 MaVaiTro = user?.MaVaiTro ?? "KHACHHANG",
                 MaKhachHang = khachHang?.MaKhachHang ?? user?.MaNguoiDung ?? userId
             }
+        });
+    }
+
+    /// <summary>
+    /// Đổi mật khẩu tài khoản người dùng sau khi xác thực mật khẩu hiện tại.
+    /// Khớp phương thức: NguoiDung.DoiMatKhau(mkMoi: string): bool trong Diagram.
+    /// </summary>
+    /// <param name="request">Thông tin tên đăng nhập, mật khẩu hiện tại và mật khẩu mới</param>
+    /// <returns>HTTP Status 200 nếu đổi mật khẩu thành công; 400, 401 hoặc 403 nếu thất bại</returns>
+    [HttpPost("doi-mat-khau")]
+    public IActionResult DoiMatKhau([FromBody] DoiMatKhauDTO request)
+    {
+        if (request == null ||
+            string.IsNullOrWhiteSpace(request.TenDangNhap) ||
+            string.IsNullOrWhiteSpace(request.MatKhauHienTai) ||
+            string.IsNullOrWhiteSpace(request.MatKhauMoi))
+        {
+            return ApiResponseHelper.Fail(this, 400, ErrorCodes.InvalidInput, "Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới.", _logger);
+        }
+
+        var result = _doiMatKhauUseCase.Execute(request);
+        if (!result.IsSuccess)
+        {
+            var statusCode = result.ErrorCode switch
+            {
+                ErrorCodes.InvalidCredentials => 401,
+                ErrorCodes.AccountLocked => 403,
+                ErrorCodes.ResourceNotFound => 404,
+                _ => 400
+            };
+
+            return ApiResponseHelper.Fail(this, statusCode, result.ErrorCode ?? ErrorCodes.InvalidInput, result.Message, _logger);
+        }
+
+        _logger.LogInfo(nameof(XacThucController), $"Người dùng '{request.TenDangNhap.Trim()}' đã đổi mật khẩu thành công.");
+
+        return Ok(new
+        {
+            Success = true,
+            Message = "Đổi mật khẩu thành công."
         });
     }
 }

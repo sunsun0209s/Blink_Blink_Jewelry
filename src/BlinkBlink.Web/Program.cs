@@ -144,6 +144,7 @@ builder.Services.AddScoped<QuanLySanPhamUseCase>();
 builder.Services.AddScoped<QuanLyNhomSanPhamUseCase>();
 builder.Services.AddScoped<QuanLyKiemKeUseCase>();
 builder.Services.AddScoped<DangNhapUseCase>();
+builder.Services.AddScoped<DoiMatKhauUseCase>();
 builder.Services.AddScoped<DangKyKhachHangUseCase>();
 builder.Services.AddScoped<QuanLyNhanVienUseCase>();
 builder.Services.AddScoped<QuanLyKhachHangUseCase>();

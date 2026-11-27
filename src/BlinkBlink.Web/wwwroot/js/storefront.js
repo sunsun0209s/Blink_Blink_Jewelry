@@ -1745,7 +1745,7 @@ async function handleCheckoutSubmit(event) {
     const phone = document.getElementById('checkout-phone')?.value.trim();
     const address = document.getElementById('checkout-address')?.value.trim();
     const paymentRadio = document.querySelector('input[name="checkout-payment-method"]:checked');
-    const paymentMethod = paymentRadio ? paymentRadio.value : 'Chuyển khoản ngân hàng';
+    const paymentMethod = paymentRadio ? paymentRadio.value : 'Thanh toán khi nhận hàng (COD)';
     const notes = document.getElementById('checkout-notes')?.value.trim() || '';
 
     const errorBanner = document.getElementById('checkout-error-banner');
@@ -1847,7 +1847,7 @@ function openSuccessModal(order) {
     if (timeEl) timeEl.textContent = order.ngayLap || new Date().toLocaleString('vi-VN');
     if (nameEl) nameEl.textContent = order.nguoiNhan || '-';
     if (addrEl) addrEl.textContent = order.diaChi || '-';
-    if (methodEl) methodEl.textContent = order.phuongThuc || 'Chuyển khoản ngân hàng';
+    if (methodEl) methodEl.textContent = order.phuongThuc || 'Thanh toán khi nhận hàng (COD)';
     if (totalEl) totalEl.textContent = formatCurrency(order.tongTien || 0);
 
     const successModal = document.getElementById('order-success-modal');
@@ -2879,6 +2879,158 @@ async function handleProfileSubmit(event) {
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Lưu Thay Đổi Hồ Sơ';
+        }
+    }
+}
+
+/**
+ * Mở hộp thoại Đổi Mật Khẩu cho thành viên đã đăng nhập
+ */
+function openChangePasswordModal() {
+    closeUserDropdown();
+
+    if (!currentUser) {
+        showToast('Vui lòng đăng nhập để thực hiện đổi mật khẩu.', 'warning');
+        openAuthModal('login');
+        return;
+    }
+
+    const modal = document.getElementById('change-password-modal');
+    if (!modal) return;
+
+    const form = document.getElementById('form-change-password');
+    if (form) form.reset();
+
+    const banner = document.getElementById('change-password-feedback-banner');
+    if (banner) banner.style.display = 'none';
+
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    setTimeout(() => {
+        document.getElementById('cp-current-password')?.focus();
+    }, 100);
+}
+
+/**
+ * Đóng hộp thoại Đổi Mật Khẩu
+ */
+function closeChangePasswordModal() {
+    const modal = document.getElementById('change-password-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+/**
+ * Xử lý biểu mẫu Đổi Mật Khẩu gửi lên RESTful API POST /api/XacThuc/doi-mat-khau
+ * @param {Event} event - Sự kiện submit form
+ */
+async function handleChangePasswordSubmit(event) {
+    if (event) event.preventDefault();
+
+    if (!currentUser || !currentUser.tenDangNhap) {
+        showToast('Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.', 'warning');
+        closeChangePasswordModal();
+        openAuthModal('login');
+        return;
+    }
+
+    const currentPassword = document.getElementById('cp-current-password')?.value || '';
+    const newPassword = document.getElementById('cp-new-password')?.value || '';
+    const confirmPassword = document.getElementById('cp-confirm-password')?.value || '';
+
+    const banner = document.getElementById('change-password-feedback-banner');
+    const bannerText = document.getElementById('change-password-feedback-text');
+
+    const showCpError = (msg) => {
+        if (banner && bannerText) {
+            bannerText.textContent = msg;
+            banner.style.display = 'flex';
+        }
+        showToast(msg, 'warning');
+    };
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showCpError('Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới.');
+        return;
+    }
+
+    if (newPassword.trim().length < 6) {
+        showCpError('Mật khẩu mới phải có độ dài từ 6 ký tự trở lên.');
+        document.getElementById('cp-new-password')?.focus();
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showCpError('Xác nhận mật khẩu mới không khớp.');
+        document.getElementById('cp-confirm-password')?.focus();
+        return;
+    }
+
+    if (newPassword === currentPassword) {
+        showCpError('Mật khẩu mới phải khác mật khẩu hiện tại.');
+        document.getElementById('cp-new-password')?.focus();
+        return;
+    }
+
+    if (banner) banner.style.display = 'none';
+
+    const saveBtn = document.getElementById('btn-save-password');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Đang cập nhật mật khẩu...';
+    }
+
+    try {
+        const response = await fetch('/api/XacThuc/doi-mat-khau', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                TenDangNhap: currentUser.tenDangNhap,
+                MatKhauHienTai: currentPassword,
+                MatKhauMoi: newPassword
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.status === 403) {
+            closeChangePasswordModal();
+            showToast(result.message || 'Tài khoản của quý khách hiện đang bị tạm khóa.', 'error');
+            setTimeout(() => logoutUser(), 1200);
+            return;
+        }
+
+        if (response.ok && result.success) {
+            closeChangePasswordModal();
+            showToast('Đổi mật khẩu thành công! Quý khách có thể sử dụng mật khẩu mới cho lần đăng nhập sau.', 'success');
+        } else {
+            const msg = result.message || 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại.';
+            if (banner && bannerText) {
+                bannerText.textContent = msg;
+                banner.style.display = 'flex';
+            }
+            showToast(msg, 'error');
+        }
+    } catch (err) {
+        console.error('Lỗi khi đổi mật khẩu:', err);
+        const errMsg = 'Lỗi kết nối tới máy chủ xưởng kim hoàn. Vui lòng thử lại sau.';
+        if (banner && bannerText) {
+            bannerText.textContent = errMsg;
+            banner.style.display = 'flex';
+        }
+        showToast(errMsg, 'error');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Cập Nhật Mật Khẩu';
         }
     }
 }
