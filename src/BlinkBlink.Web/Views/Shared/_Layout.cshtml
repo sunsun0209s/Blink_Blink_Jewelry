@@ -94,6 +94,12 @@
                                     Phiếu Bảo Hành Của Tôi
                                 </a>
                             </li>
+                            <li>
+                                <a href="javascript:void(0)" onclick="openChangePasswordModal()">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    Đổi Mật Khẩu
+                                </a>
+                            </li>
                             <li class="dropdown-divider"></li>
                             <li>
                                 <a href="javascript:void(0)" onclick="logoutUser()" class="logout-link">
@@ -365,22 +371,25 @@
                         </div>
 
                         <div class="payment-method-selector">
-                            <label class="payment-method-card active">
-                                <input type="radio" name="checkout-payment-method" value="Chuyển khoản ngân hàng" checked />
+                            <!-- Ẩn tùy chọn thanh toán trực tuyến theo yêu cầu nghiệp vụ cửa hàng, giữ nguyên thẻ HTML không cho chọn -->
+                            <label class="payment-method-card" style="display: none;">
+                                <input type="radio" name="checkout-payment-method" value="Chuyển khoản ngân hàng" disabled />
                                 <div class="payment-card-body">
                                     <div class="payment-name">Chuyển khoản Ngân hàng (Khuyên dùng)</div>
                                     <div class="payment-desc">Nhận ưu đãi đóng dấu niêm phong bảo mật và hộp nhung hoàng gia</div>
                                 </div>
                             </label>
-                            <label class="payment-method-card">
-                                <input type="radio" name="checkout-payment-method" value="Thanh toán khi nhận hàng (COD)" />
+                            <!-- Mặc định chọn sẵn thanh toán khi nhận hàng (COD) -->
+                            <label class="payment-method-card active">
+                                <input type="radio" name="checkout-payment-method" value="Thanh toán khi nhận hàng (COD)" checked />
                                 <div class="payment-card-body">
                                     <div class="payment-name">Thanh toán khi nhận hàng (COD)</div>
                                     <div class="payment-desc">Kiểm tra niêm phong kiện hàng cùng nhân viên bảo an trước khi thanh toán</div>
                                 </div>
                             </label>
-                            <label class="payment-method-card">
-                                <input type="radio" name="checkout-payment-method" value="Thẻ tín dụng quốc tế" />
+                            <!-- Ẩn tùy chọn thẻ quốc tế/nội địa, giữ nguyên thẻ HTML không cho chọn -->
+                            <label class="payment-method-card" style="display: none;">
+                                <input type="radio" name="checkout-payment-method" value="Thẻ tín dụng quốc tế" disabled />
                                 <div class="payment-card-body">
                                     <div class="payment-name">Thẻ Tín Dụng Quốc Tế (Visa / Master / JCB)</div>
                                     <div class="payment-desc">Bảo mật giao dịch mã hóa chuẩn 3D-Secure 256-bit</div>
@@ -567,6 +576,59 @@
                     </button>
                     <button type="submit" class="btn-profile-submit" id="btn-save-profile">
                         Lưu Thay Đổi Hồ Sơ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ====================================================================================
+         HỘP THOẠI ĐỔI MẬT KHẨU THÀNH VIÊN (CHANGE PASSWORD MODAL)
+         ==================================================================================== -->
+    <div class="auth-modal-backdrop" id="change-password-modal" style="display: none;">
+        <div class="auth-card-dialog profile-card-dialog">
+            <button type="button" class="btn-close-modal" id="btn-close-change-password" onclick="closeChangePasswordModal()" aria-label="Đóng">&times;</button>
+
+            <div class="profile-modal-header">
+                <div class="profile-badge-royal">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <h3>Đổi Mật Khẩu Tài Khoản</h3>
+                <p>Bảo mật tài khoản thành viên Blink Blink Haute Joaillerie</p>
+            </div>
+
+            <!-- Banner thông báo lỗi inline -->
+            <div id="change-password-feedback-banner" class="auth-feedback-banner error" style="display: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <span id="change-password-feedback-text">Thông báo lỗi</span>
+            </div>
+
+            <form id="form-change-password" onsubmit="handleChangePasswordSubmit(event)">
+                <div class="form-group-luxury">
+                    <label for="cp-current-password">Mật khẩu hiện tại *</label>
+                    <input type="password" id="cp-current-password" required placeholder="Nhập mật khẩu hiện tại..." autocomplete="current-password" />
+                </div>
+
+                <div class="form-group-luxury">
+                    <label for="cp-new-password">Mật khẩu mới (tối thiểu 6 ký tự) *</label>
+                    <input type="password" id="cp-new-password" required minlength="6" placeholder="Nhập mật khẩu mới..." autocomplete="new-password" />
+                </div>
+
+                <div class="form-group-luxury">
+                    <label for="cp-confirm-password">Xác nhận mật khẩu mới *</label>
+                    <input type="password" id="cp-confirm-password" required minlength="6" placeholder="Nhập lại mật khẩu mới..." autocomplete="new-password" />
+                </div>
+
+                <div class="profile-actions-row">
+                    <button type="button" class="btn-luxury-outline" onclick="closeChangePasswordModal()">
+                        Đóng
+                    </button>
+                    <button type="submit" class="btn-profile-submit" id="btn-save-password">
+                        Cập Nhật Mật Khẩu
                     </button>
                 </div>
             </form>
