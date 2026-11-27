@@ -91,7 +91,7 @@ public class TiepNhanBaoHanhUseCase
         }
 
         // Sinh số phiếu bảo hành duy nhất: Tiền tố BH + NămThángNgàyGiờPhútGiây + Số ngẫu nhiên
-        var soPhieu = $"BH{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";
+        var soPhieu = $"BH{DateTime.Now:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";
 
         var phieuBaoHanh = new PhieuBaoHanh(
             soPhieuBH: soPhieu,
@@ -100,7 +100,7 @@ public class TiepNhanBaoHanhUseCase
             lyDoBaoHanh: request.LyDoBaoHanh.Trim(),
             chiPhiUocTinh: Math.Max(0m, request.ChiPhiBaoHanh),
             trangThaiXuLy: "TiepNhan",
-            ngayTiepNhan: DateTime.UtcNow,
+            ngayTiepNhan: DateTime.Now,
             ngayHenTra: request.NgayHenTra,
             chiPhiThucTe: 0m,
             tinhTrangTiepNhan: request.TinhTrangTiepNhan?.Trim() ?? string.Empty,
@@ -112,9 +112,7 @@ public class TiepNhanBaoHanhUseCase
         // Ghi chú nghiệp vụ: Trạng thái tiếp nhận bảo hành được quản lý độc lập tại PhieuBaoHanh.TrangThaiXuLy.
         // Tuyệt đối không thay đổi thuộc tính TrangThai của SanPhamTrangSuc thành 'DangBaoHanh' để tránh làm
         // gián đoạn trạng thái kinh doanh và tồn kho thực tế của các sản phẩm cùng mã SKU đang bán tại quầy và web.
-        await _baoHanhRepo.LuuPhieuAsync(phieuBaoHanh, cancellationToken);
-
-            return true;
+        return await _baoHanhRepo.LuuPhieuAsync(phieuBaoHanh, cancellationToken);
         }
         catch
         {

@@ -26,7 +26,7 @@ public class SanPhamRepository : ISanPhamRepository
     {
     }
 
-    public void LuuSanPham(SanPhamTrangSuc sp)
+    public bool LuuSanPham(SanPhamTrangSuc sp)
     {
         if (sp == null)
         {
@@ -74,7 +74,7 @@ public class SanPhamRepository : ISanPhamRepository
             new SqlParameter("@IsHidden", SqlDbType.Bit) { Value = sp.IsHidden }
         };
 
-        _dbHelper.ExecuteNonQuery(sql, parameters);
+        return _dbHelper.ExecuteNonQuery(sql, parameters) > 0;
     }
 
     public SanPhamTrangSuc? TimTheoId(string maSanPham)
@@ -224,21 +224,21 @@ public class SanPhamRepository : ISanPhamRepository
         return false;
     }
 
-    public void XoaSanPham(string maSanPham)
+    public bool XoaSanPham(string maSanPham)
     {
         if (string.IsNullOrWhiteSpace(maSanPham))
         {
-            return;
+            return false;
         }
 
         const string sql = @"
             DELETE FROM dbo.ChiTietGioHang WHERE MaSanPham = @MaSP;
             DELETE FROM dbo.SanPhamTrangSuc WHERE MaSanPham = @MaSP;";
 
-        _dbHelper.ExecuteNonQuery(sql, new[]
+        return _dbHelper.ExecuteNonQuery(sql, new[]
         {
             new SqlParameter("@MaSP", SqlDbType.VarChar, 50) { Value = maSanPham.Trim() }
-        });
+        }) > 0;
     }
 
     public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
@@ -247,16 +247,14 @@ public class SanPhamRepository : ISanPhamRepository
         return Task.FromResult((coGiaoDich, lyDo));
     }
 
-    public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
+    public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
     {
-        XoaSanPham(maSanPham);
-        return Task.CompletedTask;
+        return Task.FromResult(XoaSanPham(maSanPham));
     }
 
-    public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
+    public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
     {
-        LuuSanPham(sp);
-        return Task.CompletedTask;
+        return Task.FromResult(LuuSanPham(sp));
     }
 
     public Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken cancellationToken = default)

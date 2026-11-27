@@ -78,7 +78,7 @@ public class PhieuBaoHanh
     /// <summary>
     /// Thời điểm lập phiếu tiếp nhận sản phẩm
     /// </summary>
-    public DateTime NgayTiepNhan { get; set; } = DateTime.UtcNow;
+    public DateTime NgayTiepNhan { get; set; } = DateTime.Now;
 
     /// <summary>
     /// Ngày hẹn bàn giao lại trang sức cho khách hàng
@@ -112,7 +112,7 @@ public class PhieuBaoHanh
         ChiPhiUocTinh = chiPhiUocTinh;
         ChiPhiThucTe = chiPhiThucTe;
         TrangThaiXuLy = trangThaiXuLy;
-        NgayTiepNhan = ngayTiepNhan ?? DateTime.UtcNow;
+        NgayTiepNhan = ngayTiepNhan ?? DateTime.Now;
         NgayHenTra = ngayHenTra;
         TinhTrangTiepNhan = tinhTrangTiepNhan;
         GhiChu = ghiChu;
@@ -137,15 +137,6 @@ public class PhieuBaoHanh
     }
 
     /// <summary>
-    /// Chuyển trạng thái phiếu sang Đang xử lý (dành cho nhân viên kỹ thuật).
-    /// </summary>
-    public bool ChuyenSangDangXuLy()
-    {
-        TrangThaiXuLy = "DangXuLy";
-        return true;
-    }
-
-    /// <summary>
     /// Quyết toán chi phí thực tế cho phiếu bảo hành, chuyển trạng thái sang DaXuLy (chờ khách đến nhận).
     /// Khớp phương thức: + QuyetToan(chiPhi: decimal): bool trong Diagram.
     /// </summary>
@@ -156,17 +147,6 @@ public class PhieuBaoHanh
         if (chiPhiThucTe < 0) return false;
         ChiPhiThucTe = chiPhiThucTe;
         TrangThaiXuLy = "DaXuLy";
-        return true;
-    }
-
-    /// <summary>
-    /// Hoàn tất công tác bảo hành trang sức khi khách hàng đến nhận đồ và thanh toán, chuyển trạng thái sang DaTraKhach.
-    /// Khớp phương thức: + HoanTatBaoHanh(): bool trong Diagram.
-    /// </summary>
-    /// <returns>True nếu cập nhật thành công</returns>
-    public bool HoanTatBaoHanh()
-    {
-        TrangThaiXuLy = "DaTraKhach";
         return true;
     }
 

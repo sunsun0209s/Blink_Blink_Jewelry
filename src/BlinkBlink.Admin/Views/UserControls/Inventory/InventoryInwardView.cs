@@ -1252,7 +1252,12 @@ public class InventoryInwardView : UserControl
 
             try
             {
-                _services.XacNhanNhapKho.Execute(request);
+                var saved = _services.XacNhanNhapKho.Execute(request);
+                if (!saved)
+                {
+                    MessageBox.Show("Không thể lưu phiếu nhập kho xuống cơ sở dữ liệu.", "Lỗi xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
                 MessageBox.Show($"Lập phiếu nhập kho [{request.MaPhieuNhap}] thành công!\n\nPhiếu đang ở trạng thái 'Chờ duyệt'. Sau khi Quản trị viên (Admin) phê duyệt, số lượng hàng sẽ được tính vào tồn kho và tự động cập nhật đơn giá bán theo % lợi nhuận.", "Lập phiếu thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 dialog.DialogResult = DialogResult.OK;
                 dialog.Close();

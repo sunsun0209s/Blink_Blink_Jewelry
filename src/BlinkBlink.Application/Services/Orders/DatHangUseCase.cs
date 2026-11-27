@@ -80,11 +80,11 @@ public class DatHangUseCase
         }
 
         // Sinh mã hóa đơn duy nhất kết hợp chuẩn hệ thống HD_ONLINE_, dấu thời gian và số ngẫu nhiên
-        var maHoaDon = $"HD_ONLINE_{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";
+        var maHoaDon = $"HD_ONLINE_{DateTime.Now:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";
 
         var hoaDon = new HoaDon(
             maHoaDon: maHoaDon,
-            ngayLap: DateTime.UtcNow,
+            ngayLap: DateTime.Now,
             maKhachHang: request.MaKhachHang,
             diaChiGiaoHang: request.DiaChiGiaoHang.Trim(),
             soDienThoaiNhan: request.SoDienThoaiNhan.Trim(),

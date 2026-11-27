@@ -26,7 +26,7 @@ public class NhomSanPhamRepository : INhomSanPhamRepository
     {
     }
 
-    public void LuuNhom(NhomSanPham nhom)
+    public bool LuuNhom(NhomSanPham nhom)
     {
         if (nhom == null)
         {
@@ -54,12 +54,12 @@ public class NhomSanPhamRepository : INhomSanPhamRepository
             new SqlParameter("@MoTa", SqlDbType.NVarChar, 500) { Value = (object?)nhom.MoTa ?? DBNull.Value }
         };
 
-        _dbHelper.ExecuteNonQuery(sql, parameters);
+        return _dbHelper.ExecuteNonQuery(sql, parameters) > 0;
     }
 
-    public void CapNhatNhom(NhomSanPham nhom)
+    public bool CapNhatNhom(NhomSanPham nhom)
     {
-        LuuNhom(nhom);
+        return LuuNhom(nhom);
     }
 
     public bool XoaNhom(string maNhom)
@@ -125,16 +125,14 @@ public class NhomSanPhamRepository : INhomSanPhamRepository
         return list;
     }
 
-    public Task LuuNhomAsync(NhomSanPham nhom, CancellationToken cancellationToken = default)
+    public Task<bool> LuuNhomAsync(NhomSanPham nhom, CancellationToken cancellationToken = default)
     {
-        LuuNhom(nhom);
-        return Task.CompletedTask;
+        return Task.FromResult(LuuNhom(nhom));
     }
 
-    public Task CapNhatNhomAsync(NhomSanPham nhom, CancellationToken cancellationToken = default)
+    public Task<bool> CapNhatNhomAsync(NhomSanPham nhom, CancellationToken cancellationToken = default)
     {
-        CapNhatNhom(nhom);
-        return Task.CompletedTask;
+        return Task.FromResult(CapNhatNhom(nhom));
     }
 
     public Task<bool> XoaNhomAsync(string maNhom, CancellationToken cancellationToken = default)

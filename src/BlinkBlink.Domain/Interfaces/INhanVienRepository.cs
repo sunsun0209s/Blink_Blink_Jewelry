@@ -13,7 +13,8 @@ public interface INhanVienRepository
     /// Lưu mới hồ sơ nhân viên vào cơ sở dữ liệu
     /// </summary>
     /// <param name="nv">Thực thể nhân viên cần lưu</param>
-    void LuuNhanVien(NhanVien nv);
+    /// <returns>True nếu lưu thành công</returns>
+    bool LuuNhanVien(NhanVien nv);
 
     /// <summary>
     /// Tìm kiếm nhân viên theo mã nhân viên định danh nội bộ
@@ -32,7 +33,8 @@ public interface INhanVienRepository
     /// Cập nhật thông tin hồ sơ nhân viên và vai trò
     /// </summary>
     /// <param name="nv">Thực thể nhân viên với thông tin cập nhật</param>
-    void CapNhatNhanVien(NhanVien nv);
+    /// <returns>True nếu cập nhật thành công; ngược lại False</returns>
+    bool CapNhatNhanVien(NhanVien nv);
 
     /// <summary>
     /// Kiểm tra xem nhân viên có thể xóa khỏi CSDL hay không (chưa từng tạo phiếu nhập kho, hóa đơn hoặc xử lý đơn).

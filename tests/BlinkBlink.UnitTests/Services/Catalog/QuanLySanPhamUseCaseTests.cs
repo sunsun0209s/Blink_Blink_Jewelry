@@ -16,15 +16,16 @@ public class QuanLySanPhamUseCaseTests
     {
         public readonly Dictionary<string, SanPhamTrangSuc> Data = new();
 
-        public void LuuSanPham(SanPhamTrangSuc sp)
+        public bool LuuSanPham(SanPhamTrangSuc sp)
         {
             Data[sp.MaSanPham] = sp;
+            return true;
         }
 
-        public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
+        public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
         {
             Data[sp.MaSanPham] = sp;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public SanPhamTrangSuc? TimTheoId(string id)
@@ -56,9 +57,9 @@ public class QuanLySanPhamUseCaseTests
             return false;
         }
 
-        public void XoaSanPham(string maSanPham)
+        public bool XoaSanPham(string maSanPham)
         {
-            Data.Remove(maSanPham);
+            return Data.Remove(maSanPham);
         }
 
         public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
@@ -67,10 +68,9 @@ public class QuanLySanPhamUseCaseTests
             return Task.FromResult((hasTx, lyDo));
         }
 
-        public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
+        public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
         {
-            XoaSanPham(maSanPham);
-            return Task.CompletedTask;
+            return Task.FromResult(XoaSanPham(maSanPham));
         }
     }
 
@@ -84,15 +84,16 @@ public class QuanLySanPhamUseCaseTests
             _spRepo = spRepo;
         }
 
-        public void LuuDanhMuc(DanhMuc dm)
+        public bool LuuDanhMuc(DanhMuc dm)
         {
             Data[dm.MaDanhMuc] = dm;
+            return true;
         }
 
-        public Task LuuDanhMucAsync(DanhMuc dm, CancellationToken cancellationToken = default)
+        public Task<bool> LuuDanhMucAsync(DanhMuc dm, CancellationToken cancellationToken = default)
         {
             Data[dm.MaDanhMuc] = dm;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public DanhMuc? TimTheoId(string id)
@@ -109,10 +110,10 @@ public class QuanLySanPhamUseCaseTests
         public List<DanhMuc> LayTatCa() => new List<DanhMuc>(Data.Values);
         public Task<List<DanhMuc>> LayTatCaAsync(CancellationToken cancellationToken = default) => Task.FromResult(LayTatCa());
 
-        public void XoaDanhMuc(string maDanhMuc)
+        public bool XoaDanhMuc(string maDanhMuc)
         {
-            if (string.Equals(maDanhMuc, "DM00", StringComparison.OrdinalIgnoreCase)) return;
-            Data.Remove(maDanhMuc);
+            if (string.Equals(maDanhMuc, "DM00", StringComparison.OrdinalIgnoreCase)) return false;
+            var removed = Data.Remove(maDanhMuc);
             if (_spRepo != null)
             {
                 foreach (var sp in _spRepo.Data.Values.Where(s => string.Equals(s.MaDanhMuc, maDanhMuc, StringComparison.OrdinalIgnoreCase)))
@@ -120,12 +121,12 @@ public class QuanLySanPhamUseCaseTests
                     sp.MaDanhMuc = "DM00";
                 }
             }
+            return removed;
         }
 
-        public Task XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default)
+        public Task<bool> XoaDanhMucAsync(string maDanhMuc, CancellationToken cancellationToken = default)
         {
-            XoaDanhMuc(maDanhMuc);
-            return Task.CompletedTask;
+            return Task.FromResult(XoaDanhMuc(maDanhMuc));
         }
     }
 

@@ -38,7 +38,7 @@ public class QuanLySanPhamUseCase
 
         // Tạo mã sản phẩm nếu chưa có
         var maSp = string.IsNullOrWhiteSpace(request.MaSanPham)
-            ? $"SP_{DateTime.UtcNow.Ticks % 1000000:D6}"
+            ? $"SP_{DateTime.Now.Ticks % 1000000:D6}"
             : request.MaSanPham.Trim();
 
         // Kiểm tra xem sản phẩm đã tồn tại hay chưa
@@ -174,7 +174,7 @@ public class QuanLySanPhamUseCase
         }
 
         var maSp = string.IsNullOrWhiteSpace(request.MaSanPham)
-            ? $"SP_{DateTime.UtcNow.Ticks % 1000000:D6}"
+            ? $"SP_{DateTime.Now.Ticks % 1000000:D6}"
             : request.MaSanPham.Trim();
 
         var existing = await _sanPhamRepo.TimTheoIdAsync(maSp, cancellationToken);
@@ -312,7 +312,11 @@ public class QuanLySanPhamUseCase
             return false;
         }
 
-        _sanPhamRepo.XoaSanPham(sp.MaSanPham);
+        if (!_sanPhamRepo.XoaSanPham(sp.MaSanPham))
+        {
+            thongBao = $"Không thể xóa sản phẩm [{sp.MaSanPham}] khỏi cơ sở dữ liệu.";
+            return false;
+        }
         thongBao = $"Đã xóa vĩnh viễn sản phẩm [{sp.MaSanPham}] khỏi hệ thống.";
         return true;
     }
@@ -336,7 +340,10 @@ public class QuanLySanPhamUseCase
             return (false, $"{lyDo} Sản phẩm chỉ có thể ẨN khỏi hệ thống thay vì xóa.");
         }
 
-        await _sanPhamRepo.XoaSanPhamAsync(sp.MaSanPham, cancellationToken);
+        if (!await _sanPhamRepo.XoaSanPhamAsync(sp.MaSanPham, cancellationToken))
+        {
+            return (false, $"Không thể xóa sản phẩm [{sp.MaSanPham}] khỏi cơ sở dữ liệu.");
+        }
         return (true, $"Đã xóa vĩnh viễn sản phẩm [{sp.MaSanPham}] khỏi hệ thống.");
     }
 }

@@ -68,7 +68,7 @@ public class GioHangRepository : IGioHangRepository
         return gh;
     }
 
-    public void CapNhatGioHang(GioHang gh)
+    public bool CapNhatGioHang(GioHang gh)
     {
         if (gh == null)
         {
@@ -135,6 +135,7 @@ public class GioHangRepository : IGioHangRepository
             }
 
             tx.Commit();
+            return true;
         }
         catch
         {
@@ -148,16 +149,9 @@ public class GioHangRepository : IGioHangRepository
         return Task.FromResult(LayGioHang(maKH));
     }
 
-    public Task CapNhatGioHangAsync(GioHang gh, CancellationToken cancellationToken = default)
+    public Task<bool> CapNhatGioHangAsync(GioHang gh, CancellationToken cancellationToken = default)
     {
-        CapNhatGioHang(gh);
-        return Task.CompletedTask;
-    }
-
-    public Task LuuGioHangAsync(GioHang gh, CancellationToken cancellationToken = default)
-    {
-        CapNhatGioHang(gh);
-        return Task.CompletedTask;
+        return Task.FromResult(CapNhatGioHang(gh));
     }
 
     private List<ChiTietGioHang> LayChiTietGioHang(string maGioHang)

@@ -132,9 +132,21 @@ public class GioHangController : ControllerBase
             }
         }
 
-        gh.DatHang(); // Đồng bộ tổng số lượng
+        gh.CapNhatTongSoLuong(); // Đồng bộ tổng số lượng
 
-        await _gioHangRepo.CapNhatGioHangAsync(gh, cancellationToken);
+        try
+        {
+            var saved = await _gioHangRepo.CapNhatGioHangAsync(gh, cancellationToken);
+            if (!saved)
+            {
+                return ApiResponseHelper.Fail(this, 500, ErrorCodes.DatabaseQueryError, "Không thể lưu giỏ hàng vào cơ sở dữ liệu.", _logger);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(nameof(GioHangController), "Lỗi khi cập nhật giỏ hàng xuống cơ sở dữ liệu.", ErrorCodes.DatabaseQueryError, ex);
+            return ApiResponseHelper.Fail(this, 500, ErrorCodes.DatabaseQueryError, "Không thể lưu giỏ hàng lên máy chủ. Vui lòng thử lại sau.", _logger);
+        }
 
         return Ok(new
         {
@@ -161,7 +173,20 @@ public class GioHangController : ControllerBase
         var maUser = ResolveMaNguoiDung(maKhachHang);
         var gh = new GioHang("GH_" + maUser, maUser);
         gh.DonDepGioHang();
-        await _gioHangRepo.CapNhatGioHangAsync(gh, cancellationToken);
+
+        try
+        {
+            var saved = await _gioHangRepo.CapNhatGioHangAsync(gh, cancellationToken);
+            if (!saved)
+            {
+                return ApiResponseHelper.Fail(this, 500, ErrorCodes.DatabaseQueryError, "Không thể dọn sạch giỏ hàng trong cơ sở dữ liệu.", _logger);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(nameof(GioHangController), "Lỗi khi dọn sạch giỏ hàng trong cơ sở dữ liệu.", ErrorCodes.DatabaseQueryError, ex);
+            return ApiResponseHelper.Fail(this, 500, ErrorCodes.DatabaseQueryError, "Không thể dọn sạch giỏ hàng trên máy chủ. Vui lòng thử lại sau.", _logger);
+        }
 
         return Ok(new { Success = true, Message = "Đã dọn sạch giỏ hàng trên máy chủ." });
     }

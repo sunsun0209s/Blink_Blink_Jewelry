@@ -13,10 +13,11 @@ public interface IBaoHanhRepository
 {
     /// <summary>
     /// Lưu phiếu bảo hành mới vào cơ sở dữ liệu (đồng bộ).
-    /// Khớp phương thức: + LuuPhieu(pbh: PhieuBaoHanh): void trong Diagram.
+    /// Khớp phương thức: + LuuPhieu(pbh: PhieuBaoHanh): bool trong Diagram.
     /// </summary>
     /// <param name="pbh">Thực thể phiếu bảo hành</param>
-    void LuuPhieu(PhieuBaoHanh pbh);
+    /// <returns>True nếu lưu thành công</returns>
+    bool LuuPhieu(PhieuBaoHanh pbh);
 
     /// <summary>
     /// Tìm phiếu bảo hành theo số phiếu định danh (đồng bộ).
@@ -44,7 +45,8 @@ public interface IBaoHanhRepository
     /// Cập nhật thông tin phiếu bảo hành vào cơ sở dữ liệu (đồng bộ).
     /// </summary>
     /// <param name="pbh">Thực thể phiếu bảo hành cần cập nhật</param>
-    void CapNhatPhieu(PhieuBaoHanh pbh);
+    /// <returns>True nếu cập nhật thành công</returns>
+    bool CapNhatPhieu(PhieuBaoHanh pbh);
 
     /// <summary>
     /// Tự động cập nhật mã khách hàng cho các phiếu bảo hành của khách vãng lai (mã '0' hoặc 'KH_0') theo số điện thoại khi khách tạo tài khoản mới.
@@ -62,10 +64,10 @@ public interface IBaoHanhRepository
     List<PhieuBaoHanh> TraCuuBaoHanh(string tuKhoa);
 
     // Mở rộng Task bất đồng bộ chuẩn Clean Architecture .NET 8
-    Task LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default);
+    Task<bool> LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default);
     Task<PhieuBaoHanh?> TimTheoSoPhieuAsync(string soPhieu, CancellationToken cancellationToken = default);
     Task<List<PhieuBaoHanh>> LayTheoKhachHangAsync(string maKH, CancellationToken cancellationToken = default);
     Task<List<PhieuBaoHanh>> LayDanhSachPhieuAsync(CancellationToken cancellationToken = default);
-    Task CapNhatPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default);
+    Task<bool> CapNhatPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default);
     Task<List<PhieuBaoHanh>> TraCuuBaoHanhAsync(string tuKhoa, CancellationToken cancellationToken = default);
 }

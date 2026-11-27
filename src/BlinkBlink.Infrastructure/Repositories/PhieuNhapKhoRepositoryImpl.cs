@@ -28,7 +28,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
     {
     }
 
-    public void LuuPhieuNhap(PhieuNhapKho phieu)
+    public bool LuuPhieuNhap(PhieuNhapKho phieu)
     {
         if (phieu == null)
         {
@@ -78,6 +78,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                     VALUES (@MaPhieuNhap, @NgayNhap, @NhaCungCap, @MaNhanVien, @TongSoSanPham, @TongGiaTri, @TrangThai);
                 END";
 
+            int rowsAffected;
             using (var cmdP = new SqlCommand(sqlPhieu, conn, tx))
             {
                 cmdP.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = phieu.MaPhieuNhap });
@@ -87,7 +88,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                 cmdP.Parameters.Add(new SqlParameter("@TongSoSanPham", SqlDbType.Int) { Value = phieu.TongSoSanPham });
                 cmdP.Parameters.Add(new SqlParameter("@TongGiaTri", SqlDbType.Decimal) { Precision = 18, Scale = 2, Value = phieu.TongGiaTri });
                 cmdP.Parameters.Add(new SqlParameter("@TrangThai", SqlDbType.NVarChar, 50) { Value = phieu.TrangThai });
-                cmdP.ExecuteNonQuery();
+                rowsAffected = cmdP.ExecuteNonQuery();
             }
 
             const string sqlDeleteCt = "DELETE FROM dbo.ChiTietNhapKho WHERE MaPhieuNhap = @MaPhieuNhap;";
@@ -162,6 +163,7 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
             }
 
             tx.Commit();
+            return rowsAffected > 0;
         }
         catch
         {
@@ -267,20 +269,20 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
         return phieu;
     }
 
-    public void DuyetPhieuNhap(string maPhieuNhap)
+    public bool DuyetPhieuNhap(string maPhieuNhap)
     {
-        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return;
+        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return false;
 
-        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 'DaDuyet' WHERE MaPhieuNhap = @MaPhieuNhap;";
+        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 'DaDuyet' WHERE MaPhieuNhap = @MaPhieuNhap AND TrangThai = 'ChoDuyet';";
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
-        cmd.ExecuteNonQuery();
+        return cmd.ExecuteNonQuery() > 0;
     }
 
-    public void XoaPhieuNhap(string maPhieuNhap)
+    public bool XoaPhieuNhap(string maPhieuNhap)
     {
-        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return;
+        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return false;
 
         using var conn = _dbHelper.GetConnection();
         using var tx = conn.BeginTransaction();
@@ -293,14 +295,22 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
                 cmdCt.ExecuteNonQuery();
             }
 
-            const string sqlDelP = "DELETE FROM dbo.PhieuNhapKho WHERE MaPhieuNhap = @MaPhieuNhap;";
+            int rowsAffected;
+            const string sqlDelP = "DELETE FROM dbo.PhieuNhapKho WHERE MaPhieuNhap = @MaPhieuNhap AND TrangThai = 'ChoDuyet';";
             using (var cmdP = new SqlCommand(sqlDelP, conn, tx))
             {
                 cmdP.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
-                cmdP.ExecuteNonQuery();
+                rowsAffected = cmdP.ExecuteNonQuery();
+            }
+
+            if (rowsAffected <= 0)
+            {
+                tx.Rollback();
+                return false;
             }
 
             tx.Commit();
+            return true;
         }
         catch
         {
@@ -309,21 +319,20 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
         }
     }
 
-    public void VoHieuHoaPhieuNhap(string maPhieuNhap)
+    public bool VoHieuHoaPhieuNhap(string maPhieuNhap)
     {
-        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return;
+        if (string.IsNullOrWhiteSpace(maPhieuNhap)) return false;
 
-        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 'DaHuy' WHERE MaPhieuNhap = @MaPhieuNhap;";
+        const string sql = "UPDATE dbo.PhieuNhapKho SET TrangThai = 'DaHuy' WHERE MaPhieuNhap = @MaPhieuNhap AND TrangThai <> 'DaHuy';";
         using var conn = _dbHelper.GetConnection();
         using var cmd = new SqlCommand(sql, conn);
         cmd.Parameters.Add(new SqlParameter("@MaPhieuNhap", SqlDbType.VarChar, 50) { Value = maPhieuNhap.Trim() });
-        cmd.ExecuteNonQuery();
+        return cmd.ExecuteNonQuery() > 0;
     }
 
-    public Task LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken cancellationToken = default)
+    public Task<bool> LuuPhieuNhapAsync(PhieuNhapKho phieu, CancellationToken cancellationToken = default)
     {
-        LuuPhieuNhap(phieu);
-        return Task.CompletedTask;
+        return Task.FromResult(LuuPhieuNhap(phieu));
     }
 
     public Task<List<PhieuNhapKho>> LayTatCaAsync(CancellationToken cancellationToken = default)
@@ -336,16 +345,14 @@ public class PhieuNhapKhoRepositoryImpl : IPhieuNhapKhoRepository
         return Task.FromResult(TimTheoId(maPhieu));
     }
 
-    public Task DuyetPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default)
+    public Task<bool> DuyetPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default)
     {
-        DuyetPhieuNhap(maPhieuNhap);
-        return Task.CompletedTask;
+        return Task.FromResult(DuyetPhieuNhap(maPhieuNhap));
     }
 
-    public Task XoaPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default)
+    public Task<bool> XoaPhieuNhapAsync(string maPhieuNhap, CancellationToken cancellationToken = default)
     {
-        XoaPhieuNhap(maPhieuNhap);
-        return Task.CompletedTask;
+        return Task.FromResult(XoaPhieuNhap(maPhieuNhap));
     }
 
     private List<ChiTietNhapKho> LayChiTietNhapKho(string maPhieuNhap)

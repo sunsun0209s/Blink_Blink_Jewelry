@@ -43,7 +43,7 @@ public class WarrantyWorkflowAndPosTests
         Assert.Equal("Khách cần gấp", phieu.GhiChu);
 
         // 2. Chuyển sang DangXuLy
-        var canDangXuLy = phieu.ChuyenSangDangXuLy();
+        var canDangXuLy = phieu.CapNhatTrangThai("DangXuLy");
         Assert.True(canDangXuLy);
         Assert.Equal("DangXuLy", phieu.TrangThaiXuLy);
 
@@ -54,7 +54,7 @@ public class WarrantyWorkflowAndPosTests
         Assert.Equal(350000m, phieu.ChiPhiThucTe);
 
         // 4. Hoàn tất & Trả khách sang DaTraKhach
-        var canTraKhach = phieu.HoanTatBaoHanh();
+        var canTraKhach = phieu.CapNhatTrangThai("DaTraKhach");
         Assert.True(canTraKhach);
         Assert.Equal("DaTraKhach", phieu.TrangThaiXuLy);
     }

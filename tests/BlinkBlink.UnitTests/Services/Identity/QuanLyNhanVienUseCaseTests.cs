@@ -13,9 +13,10 @@ public class QuanLyNhanVienUseCaseTests
     {
         public readonly Dictionary<string, NhanVien> Data = new();
 
-        public void LuuNhanVien(NhanVien nv)
+        public bool LuuNhanVien(NhanVien nv)
         {
             Data[nv.MaNhanVien] = nv;
+            return true;
         }
 
         public NhanVien? TimTheoMa(string maNV)
@@ -28,9 +29,10 @@ public class QuanLyNhanVienUseCaseTests
             return new List<NhanVien>(Data.Values);
         }
 
-        public void CapNhatNhanVien(NhanVien nv)
+        public bool CapNhatNhanVien(NhanVien nv)
         {
             Data[nv.MaNhanVien] = nv;
+            return true;
         }
 
         public bool KiemTraCoTheXoa(string maNV) => true;

@@ -216,6 +216,12 @@ public class DatabaseHelper
                     ALTER TABLE dbo.SanPhamTrangSuc ADD IsHidden BIT NOT NULL CONSTRAINT DF_SanPhamTrangSuc_IsHidden DEFAULT 0;
                 END
 
+                -- Cột IsHidden cho DanhMuc (Ẩn/Hiện danh mục trên Web khách hàng)
+                IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.DanhMuc') AND name = 'IsHidden')
+                BEGIN
+                    ALTER TABLE dbo.DanhMuc ADD IsHidden BIT NOT NULL CONSTRAINT DF_DanhMuc_IsHidden DEFAULT 0;
+                END
+
                 -- Chuẩn hóa cột TrangThai cho PhieuNhapKho (ChoDuyet, DaDuyet, DaHuy)
                 IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.PhieuNhapKho') AND name = 'TrangThai' AND system_type_id = 104)
                 BEGIN

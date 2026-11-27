@@ -20,14 +20,14 @@ public class ProductGroupWorkflowTests
     {
         public readonly Dictionary<string, NhomSanPham> Data = new();
 
-        public void LuuNhom(NhomSanPham nhom) => Data[nhom.MaNhom] = nhom;
-        public void CapNhatNhom(NhomSanPham nhom) => LuuNhom(nhom);
+        public bool LuuNhom(NhomSanPham nhom) { Data[nhom.MaNhom] = nhom; return true; }
+        public bool CapNhatNhom(NhomSanPham nhom) => LuuNhom(nhom);
         public bool XoaNhom(string maNhom) => Data.Remove(maNhom);
         public NhomSanPham? TimTheoId(string maNhom) => Data.TryGetValue(maNhom, out var n) ? n : null;
         public List<NhomSanPham> LayTatCa() => Data.Values.ToList();
 
-        public Task LuuNhomAsync(NhomSanPham nhom, CancellationToken ct = default) { LuuNhom(nhom); return Task.CompletedTask; }
-        public Task CapNhatNhomAsync(NhomSanPham nhom, CancellationToken ct = default) { CapNhatNhom(nhom); return Task.CompletedTask; }
+        public Task<bool> LuuNhomAsync(NhomSanPham nhom, CancellationToken ct = default) => Task.FromResult(LuuNhom(nhom));
+        public Task<bool> CapNhatNhomAsync(NhomSanPham nhom, CancellationToken ct = default) => Task.FromResult(CapNhatNhom(nhom));
         public Task<bool> XoaNhomAsync(string maNhom, CancellationToken ct = default) => Task.FromResult(XoaNhom(maNhom));
         public Task<NhomSanPham?> TimTheoIdAsync(string maNhom, CancellationToken ct = default) => Task.FromResult(TimTheoId(maNhom));
         public Task<List<NhomSanPham>> LayTatCaAsync(CancellationToken ct = default) => Task.FromResult(LayTatCa());
@@ -37,12 +37,12 @@ public class ProductGroupWorkflowTests
     {
         public readonly Dictionary<string, SanPhamTrangSuc> Data = new();
 
-        public void LuuSanPham(SanPhamTrangSuc sp) => Data[sp.MaSanPham] = sp;
+        public bool LuuSanPham(SanPhamTrangSuc sp) { Data[sp.MaSanPham] = sp; return true; }
         public SanPhamTrangSuc? TimTheoId(string maSanPham) => Data.TryGetValue(maSanPham, out var sp) ? sp : null;
         public List<SanPhamTrangSuc> LayTatCa() => Data.Values.ToList();
         public List<SanPhamTrangSuc> LayTheoNhom(string maNhom) => Data.Values.Where(s => s.MaNhom == maNhom).ToList();
 
-        public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken ct = default) { LuuSanPham(sp); return Task.CompletedTask; }
+        public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken ct = default) => Task.FromResult(LuuSanPham(sp));
         public Task<SanPhamTrangSuc?> TimTheoIdAsync(string maSanPham, CancellationToken ct = default) => Task.FromResult(TimTheoId(maSanPham));
         public Task<List<SanPhamTrangSuc>> LayTatCaAsync(CancellationToken ct = default) => Task.FromResult(LayTatCa());
         public Task<List<SanPhamTrangSuc>> LayTheoNhomAsync(string maNhom, CancellationToken ct = default) => Task.FromResult(LayTheoNhom(maNhom));
@@ -53,7 +53,7 @@ public class ProductGroupWorkflowTests
             return false;
         }
 
-        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+        public bool XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
 
         public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken ct = default)
         {
@@ -61,11 +61,7 @@ public class ProductGroupWorkflowTests
             return Task.FromResult((hasTx, lyDo));
         }
 
-        public Task XoaSanPhamAsync(string maSanPham, CancellationToken ct = default)
-        {
-            XoaSanPham(maSanPham);
-            return Task.CompletedTask;
-        }
+        public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken ct = default) => Task.FromResult(XoaSanPham(maSanPham));
     }
 
     [Fact]

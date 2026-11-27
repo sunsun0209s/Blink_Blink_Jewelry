@@ -10,11 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Data\AppDbContext.cs" />
-    <Compile Remove="Data\Configurations\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <EmbeddedResource Include="..\..\database\BlinkBlinkJewelry.sql" Link="BlinkBlinkJewelry.sql" Condition="Exists('..\..\database\BlinkBlinkJewelry.sql')" />
     <EmbeddedResource Include="..\..\BlinkBlinkJewelry.sql" Link="BlinkBlinkJewelry.sql" Condition="!Exists('..\..\database\BlinkBlinkJewelry.sql') And Exists('..\..\BlinkBlinkJewelry.sql')" />
   </ItemGroup>

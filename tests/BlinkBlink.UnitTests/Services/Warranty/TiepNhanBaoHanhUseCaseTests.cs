@@ -21,15 +21,16 @@ public class TiepNhanBaoHanhUseCaseTests
     {
         public readonly Dictionary<string, PhieuBaoHanh> Data = new();
 
-        public void LuuPhieu(PhieuBaoHanh pbh)
+        public bool LuuPhieu(PhieuBaoHanh pbh)
         {
             Data[pbh.SoPhieuBH] = pbh;
+            return true;
         }
 
-        public Task LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
+        public Task<bool> LuuPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
         {
             Data[pbh.SoPhieuBH] = pbh;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public PhieuBaoHanh? TimTheoSoPhieu(string soPhieu)
@@ -63,9 +64,10 @@ public class TiepNhanBaoHanhUseCaseTests
             return Task.FromResult(Data.Values.ToList());
         }
 
-        public void CapNhatPhieu(PhieuBaoHanh pbh)
+        public bool CapNhatPhieu(PhieuBaoHanh pbh)
         {
             Data[pbh.SoPhieuBH] = pbh;
+            return true;
         }
 
         public void CapNhatKhachHangTheoSoDienThoai(string soDienThoai, string maKhachHangMoi)
@@ -77,10 +79,10 @@ public class TiepNhanBaoHanhUseCaseTests
             }
         }
 
-        public Task CapNhatPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
+        public Task<bool> CapNhatPhieuAsync(PhieuBaoHanh pbh, CancellationToken cancellationToken = default)
         {
             Data[pbh.SoPhieuBH] = pbh;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public List<PhieuBaoHanh> TraCuuBaoHanh(string tuKhoa)
@@ -100,15 +102,16 @@ public class TiepNhanBaoHanhUseCaseTests
     {
         public readonly Dictionary<string, SanPhamTrangSuc> Data = new();
 
-        public void LuuSanPham(SanPhamTrangSuc sp)
+        public bool LuuSanPham(SanPhamTrangSuc sp)
         {
             Data[sp.MaSanPham] = sp;
+            return true;
         }
 
-        public Task LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
+        public Task<bool> LuuSanPhamAsync(SanPhamTrangSuc sp, CancellationToken cancellationToken = default)
         {
             Data[sp.MaSanPham] = sp;
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         }
 
         public SanPhamTrangSuc? TimTheoId(string maSanPham)
@@ -133,7 +136,7 @@ public class TiepNhanBaoHanhUseCaseTests
             return false;
         }
 
-        public void XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
+        public bool XoaSanPham(string maSanPham) => Data.Remove(maSanPham);
 
         public Task<(bool CoGiaoDich, string LyDo)> KiemTraPhatSinhGiaoDichAsync(string maSanPham, CancellationToken cancellationToken = default)
         {
@@ -141,11 +144,7 @@ public class TiepNhanBaoHanhUseCaseTests
             return Task.FromResult((hasTx, lyDo));
         }
 
-        public Task XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default)
-        {
-            XoaSanPham(maSanPham);
-            return Task.CompletedTask;
-        }
+        public Task<bool> XoaSanPhamAsync(string maSanPham, CancellationToken cancellationToken = default) => Task.FromResult(XoaSanPham(maSanPham));
     }
 
     [Fact]
